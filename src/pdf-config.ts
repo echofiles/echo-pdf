@@ -29,6 +29,22 @@ const resolveEnvRefs = (value: JsonValue, env: Env): JsonValue => {
 const validateConfig = (config: EchoPdfConfig): EchoPdfConfig => {
   if (!config.service?.name) throw new Error("service.name is required")
   if (!config.pdfium?.wasmUrl) throw new Error("pdfium.wasmUrl is required")
+  if (!config.service?.storage) throw new Error("service.storage is required")
+  if (!Number.isFinite(config.service.storage.maxFileBytes) || config.service.storage.maxFileBytes <= 0) {
+    throw new Error("service.storage.maxFileBytes must be positive")
+  }
+  if (!Number.isFinite(config.service.storage.maxTotalBytes) || config.service.storage.maxTotalBytes <= 0) {
+    throw new Error("service.storage.maxTotalBytes must be positive")
+  }
+  if (config.service.storage.maxTotalBytes < config.service.storage.maxFileBytes) {
+    throw new Error("service.storage.maxTotalBytes must be >= maxFileBytes")
+  }
+  if (!Number.isFinite(config.service.storage.ttlHours) || config.service.storage.ttlHours <= 0) {
+    throw new Error("service.storage.ttlHours must be positive")
+  }
+  if (!Number.isFinite(config.service.storage.cleanupBatchSize) || config.service.storage.cleanupBatchSize <= 0) {
+    throw new Error("service.storage.cleanupBatchSize must be positive")
+  }
   if (!config.agent?.defaultProvider) throw new Error("agent.defaultProvider is required")
   if (!config.providers?.[config.agent.defaultProvider]) {
     throw new Error(`default provider "${config.agent.defaultProvider}" missing`)

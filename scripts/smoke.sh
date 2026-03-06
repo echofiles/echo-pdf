@@ -65,4 +65,7 @@ curl -sS -X POST "${BASE_URL}/api/files/op" \
   -H "Content-Type: application/json" \
   -d "{\"op\":\"delete\",\"fileId\":\"${FILE_ID}\"}" | grep -q '"deleted":true'
 
+curl -sS "${BASE_URL}/api/files/stats" | grep -q '"totalBytes"'
+curl -sS -X POST "${BASE_URL}/api/files/cleanup" | grep -q '"deletedExpired"'
+
 echo "echo-pdf smoke test passed"

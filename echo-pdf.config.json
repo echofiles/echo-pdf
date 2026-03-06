@@ -3,7 +3,13 @@
     "name": "echo-pdf-agent",
     "maxPdfBytes": 31457280,
     "maxPagesPerRequest": 10,
-    "defaultRenderScale": 2
+    "defaultRenderScale": 2,
+    "storage": {
+      "maxFileBytes": 1200000,
+      "maxTotalBytes": 52428800,
+      "ttlHours": 24,
+      "cleanupBatchSize": 50
+    }
   },
   "pdfium": {
     "wasmUrl": "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"

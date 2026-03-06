@@ -43,6 +43,7 @@ export BASE_URL="https://echo-pdf-agent.<your-subdomain>.workers.dev"
 curl -sS "$BASE_URL/health"
 curl -sS "$BASE_URL/config"
 curl -sS "$BASE_URL/tools/catalog"
+curl -sS "$BASE_URL/api/files/stats"
 ```
 
 ### 3.2 上传 PDF
@@ -65,6 +66,12 @@ curl -sS -X POST "$BASE_URL/tools/call" \
       "returnMode":"file_id"
     }
   }'
+```
+
+### 3.5 存储清理（手动触发）
+
+```bash
+curl -sS -X POST "$BASE_URL/api/files/cleanup"
 ```
 
 ### 3.4 流式执行
@@ -138,6 +145,19 @@ npm run smoke
   - `OPENAI_API_KEY`
   - `OPENROUTER_KEY`
   - `VERCEL_AI_GATEWAY_KEY`
+
+存储策略（关键）位于 `service.storage`：
+
+- `maxFileBytes`：单文件上限（超过直接拒绝）
+- `maxTotalBytes`：总存储上限（写入前自动清理 + 淘汰最老文件）
+- `ttlHours`：文件存活时间，超时自动清理
+- `cleanupBatchSize`：单次自动淘汰的最大文件数
+
+说明：
+
+- 当前使用 Durable Object 做文件存储，超限不会再返回 SQLite 原生报错，而是返回可读错误：
+  - `FILE_TOO_LARGE`
+  - `STORAGE_QUOTA_EXCEEDED`
 
 ### 部署
 

@@ -1,4 +1,5 @@
 import { DurableObjectFileStore } from "./file-store-do"
+import type { EchoPdfConfig } from "./pdf-types"
 import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "./types"
 
 class InMemoryFileStore implements FileStore {
@@ -47,9 +48,47 @@ class InMemoryFileStore implements FileStore {
 
 const fallbackStore = new InMemoryFileStore()
 
-export const getRuntimeFileStore = (env: Env): FileStore => {
+export interface RuntimeFileStoreBundle {
+  readonly store: FileStore
+  stats: () => Promise<unknown>
+  cleanup: () => Promise<unknown>
+}
+
+export const getRuntimeFileStore = (env: Env, config: EchoPdfConfig): RuntimeFileStoreBundle => {
   if (env.FILE_STORE_DO) {
-    return new DurableObjectFileStore(env.FILE_STORE_DO)
+    const store = new DurableObjectFileStore(env.FILE_STORE_DO, config.service.storage)
+    return {
+      store,
+      stats: async () => store.stats(),
+      cleanup: async () => store.cleanup(),
+    }
   }
-  return fallbackStore
+
+  return {
+    store: fallbackStore,
+    stats: async () => {
+      const files = await fallbackStore.list()
+      const totalBytes = files.reduce((sum, file) => sum + file.sizeBytes, 0)
+      return {
+        backend: "memory",
+        policy: config.service.storage,
+        stats: {
+          fileCount: files.length,
+          totalBytes,
+        },
+      }
+    },
+    cleanup: async () => ({
+      backend: "memory",
+      deletedExpired: 0,
+      deletedEvicted: 0,
+      stats: await (async () => {
+        const files = await fallbackStore.list()
+        return {
+          fileCount: files.length,
+          totalBytes: files.reduce((sum, file) => sum + file.sizeBytes, 0),
+        }
+      })(),
+    }),
+  }
 }

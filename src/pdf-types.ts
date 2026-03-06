@@ -12,12 +12,20 @@ export interface EchoPdfProviderConfig {
   }
 }
 
+export interface StoragePolicy {
+  readonly maxFileBytes: number
+  readonly maxTotalBytes: number
+  readonly ttlHours: number
+  readonly cleanupBatchSize: number
+}
+
 export interface EchoPdfConfig {
   readonly service: {
     readonly name: string
     readonly maxPdfBytes: number
     readonly maxPagesPerRequest: number
     readonly defaultRenderScale: number
+    readonly storage: StoragePolicy
   }
   readonly pdfium: {
     readonly wasmUrl: string

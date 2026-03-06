@@ -94,7 +94,8 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     const config = loadEchoPdfConfig(env)
-    const fileStore = getRuntimeFileStore(env)
+    const runtimeStore = getRuntimeFileStore(env, config)
+    const fileStore = runtimeStore.store
 
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true, service: config.service.name, now: new Date().toISOString() })
@@ -110,6 +111,8 @@ export default {
           toolCallEndpoint: "/tools/call",
           fileOpsEndpoint: "/api/files/op",
           fileUploadEndpoint: "/api/files/upload",
+          fileStatsEndpoint: "/api/files/stats",
+          fileCleanupEndpoint: "/api/files/cleanup",
           supportedReturnModes: ["inline", "file_id", "url"],
         },
         mcp: {
@@ -260,6 +263,22 @@ export default {
       }
     }
 
+    if (request.method === "GET" && url.pathname === "/api/files/stats") {
+      try {
+        return json(await runtimeStore.stats(), 200)
+      } catch (error) {
+        return json({ error: toError(error) }, 500)
+      }
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/files/cleanup") {
+      try {
+        return json(await runtimeStore.cleanup(), 200)
+      } catch (error) {
+        return json({ error: toError(error) }, 500)
+      }
+    }
+
     if (request.method === "POST" && url.pathname === "/mcp") {
       try {
         return await handleMcpRequest(request, env, config, fileStore)
@@ -289,6 +308,8 @@ export default {
           stream: "POST /api/agent/stream",
           files: "POST /api/files/op",
           fileUpload: "POST /api/files/upload",
+          fileStats: "GET /api/files/stats",
+          fileCleanup: "POST /api/files/cleanup",
           mcp: "POST /mcp",
         },
       },
