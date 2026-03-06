@@ -3,6 +3,7 @@ import { encode as encodePng } from "@cf-wasm/png/workerd"
 import type { WrappedPdfiumModule } from "@embedpdf/pdfium"
 import type { EchoPdfConfig } from "./pdf-types"
 import { toDataUrl } from "./file-utils"
+import compiledPdfiumModule from "@embedpdf/pdfium/dist/pdfium.wasm"
 
 let moduleInstance: WrappedPdfiumModule | null = null
 let libraryInitialized = false
@@ -10,10 +11,36 @@ let libraryInitialized = false
 const toUint8 = (value: ArrayBuffer): Uint8Array => new Uint8Array(value)
 const textDecoder = new TextDecoder()
 
+const ensureWasmFunctionShim = (): void => {
+  const wasmApi = WebAssembly as unknown as {
+    Function?: unknown
+  }
+  if (typeof wasmApi.Function === "function") return
+  ;(wasmApi as { Function: (sig: unknown, fn: unknown) => unknown }).Function = (
+    _sig: unknown,
+    fn: unknown
+  ) => fn
+}
+
 const ensurePdfium = async (config: EchoPdfConfig): Promise<WrappedPdfiumModule> => {
+  ensureWasmFunctionShim()
   if (!moduleInstance) {
-    const wasmBinary = await fetch(config.pdfium.wasmUrl).then((res) => res.arrayBuffer())
-    moduleInstance = await init({ wasmBinary })
+    const maybeModule = compiledPdfiumModule as unknown
+    if (maybeModule instanceof WebAssembly.Module) {
+      moduleInstance = await init({
+        instantiateWasm: (
+          imports: WebAssembly.Imports,
+          successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void
+        ): WebAssembly.Exports => {
+          const instance = new WebAssembly.Instance(maybeModule, imports)
+          successCallback(instance, maybeModule)
+          return instance.exports
+        },
+      })
+    } else {
+      const wasmBinary = await fetch(config.pdfium.wasmUrl).then((res) => res.arrayBuffer())
+      moduleInstance = await init({ wasmBinary })
+    }
   }
   if (!libraryInitialized) {
     moduleInstance.FPDF_InitLibrary()

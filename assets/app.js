@@ -77,12 +77,12 @@ const fetchTools = async () => {
   state.tools = Array.isArray(data.tools) ? data.tools : []
 }
 
-const defaultForSchema = (schema) => {
+const defaultForSchema = (schema, key) => {
   if (!schema || typeof schema !== "object") return ""
   if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0]
   if (schema.type === "boolean") return false
   if (schema.type === "number" || schema.type === "integer") return 1
-  if (schema.type === "array") return "[]"
+  if (schema.type === "array") return key === "pages" ? "[1]" : "[]"
   if (schema.type === "object") return "{}"
   return ""
 }
@@ -100,7 +100,7 @@ const renderToolFields = () => {
     const field = document.createElement("div")
     field.className = "field"
     const type = schema?.type ?? "string"
-    const defaultValue = defaultForSchema(schema)
+    const defaultValue = defaultForSchema(schema, key)
 
     if (Array.isArray(schema?.enum)) {
       field.innerHTML = `<label>${key}</label><select data-key="${key}">${schema.enum
@@ -187,6 +187,9 @@ const readToolArguments = () => {
   }
   if (selected.name.startsWith("pdf_") && !args.fileId && state.uploadedFileId) {
     args.fileId = state.uploadedFileId
+  }
+  if (selected.name.startsWith("pdf_") && (!Array.isArray(args.pages) || args.pages.length === 0)) {
+    throw new Error("pages is required, e.g. [1] or [1,2]")
   }
 
   return args

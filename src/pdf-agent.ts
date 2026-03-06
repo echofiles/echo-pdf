@@ -143,8 +143,9 @@ export const runPdfAgent = async (
   }
 
   const providerAlias = request.provider ?? config.agent.defaultProvider
-  if (!request.model || request.model.trim().length === 0) {
-    throw new Error("model is required for OCR or table extraction")
+  const model = request.model?.trim() || config.agent.defaultModel?.trim()
+  if (!model) {
+    throw new Error("model is required for OCR or table extraction; set model in top-level provider settings")
   }
 
   if (request.operation === "ocr_pages") {
@@ -159,7 +160,7 @@ export const runPdfAgent = async (
         config,
         env,
         providerAlias,
-        model: request.model,
+        model,
         prompt,
         imageDataUrl,
         runtimeApiKeys: request.providerApiKeys,
@@ -172,7 +173,7 @@ export const runPdfAgent = async (
       fileId: file.id,
       pageCount,
       provider: providerAlias,
-      model: request.model,
+      model,
       pages: results,
     }
     traceStep(opts, "end", "pdf.operation", { operation: request.operation })
@@ -189,7 +190,7 @@ export const runPdfAgent = async (
       config,
       env,
       providerAlias,
-      model: request.model,
+      model,
       prompt,
       imageDataUrl,
       runtimeApiKeys: request.providerApiKeys,
@@ -201,7 +202,7 @@ export const runPdfAgent = async (
     fileId: file.id,
     pageCount,
     provider: providerAlias,
-    model: request.model,
+    model,
     pages: tables,
   }
   traceStep(opts, "end", "pdf.operation", { operation: request.operation })
