@@ -1,45 +1,43 @@
 # Echo PDF Agent (Cloudflare Workers + MCP)
 
-面向 PDF 的在线 Agent 服务。部署后可直接通过 HTTP API、MCP、Web UI 使用。
+部署后可直接作为在线 PDF Agent 服务，支持三种使用方式：Web UI、HTTP API、MCP。
 
-## Online Service First
+## 1. 不同用户怎么用
 
-部署成功后，服务地址通常是：
+### A. 产品/运营用户（Web UI）
 
-- `https://echo-pdf-agent.<your-subdomain>.workers.dev`
-- 或你绑定的自定义域名
+适合：手工上传 PDF、点选工具、查看 trace 与结果。
 
-以下示例使用：
+1. 打开部署地址根路径：`GET /`
+2. 选择 Provider/Model（或使用默认）
+3. 上传 PDF（自动得到 `fileId`）
+4. 运行 `pdf_extract_pages` / `pdf_ocr_pages` / `pdf_tables_to_latex`
+
+### B. 后端/数据工程（HTTP API）
+
+适合：服务端自动化调用，和你现有系统对接。
+
+1. `POST /api/files/upload` 上传文件
+2. `POST /tools/call` 执行工具
+3. `POST /api/agent/stream` 获取流式 step/io/result
+
+### C. Agent 平台开发者（MCP Client）
+
+适合：把 echo-pdf 当外部 MCP 工具服务接入 Agent。
+
+1. `POST /mcp` 调 `initialize`
+2. `POST /mcp` 调 `tools/list`
+3. `POST /mcp` 调 `tools/call`
+
+## 2. 部署后的服务地址
 
 ```bash
 export BASE_URL="https://echo-pdf-agent.<your-subdomain>.workers.dev"
 ```
 
-## Core Capabilities
+## 3. HTTP API 快速示例
 
-- `pdf_extract_pages`: 指定页渲染成图片（`inline`/`file_id`/`url`）
-- `pdf_ocr_pages`: 指定页 OCR
-- `pdf_tables_to_latex`: 表格识别转 LaTeX
-- `file_ops`: 文件 list/read/delete/put
-- `POST /mcp`: MCP server（`initialize`, `tools/list`, `tools/call`）
-
-## Web UI (Deployed)
-
-直接访问：
-
-- `GET /`（部署域名根路径）
-
-UI 支持：
-
-- provider 与 model 动态加载
-- session key 输入（不落库）
-- PDF 直接上传（自动回填 `fileId`）
-- tool schema 动态表单
-- trace stream
-
-## API (Deployed)
-
-### Health / Config / Tool Catalog
+### 3.1 Health / Config / Catalog
 
 ```bash
 curl -sS "$BASE_URL/health"
@@ -47,16 +45,14 @@ curl -sS "$BASE_URL/config"
 curl -sS "$BASE_URL/tools/catalog"
 ```
 
-### Upload PDF
+### 3.2 上传 PDF
 
 ```bash
 curl -sS -X POST "$BASE_URL/api/files/upload" \
   -F "file=@./sample.pdf"
 ```
 
-返回 `file.id` 后可在后续调用中使用。
-
-### Extract Pages
+### 3.3 调工具
 
 ```bash
 curl -sS -X POST "$BASE_URL/tools/call" \
@@ -65,29 +61,13 @@ curl -sS -X POST "$BASE_URL/tools/call" \
     "name":"pdf_extract_pages",
     "arguments":{
       "fileId":"<file_id>",
-      "pages":[1,2],
+      "pages":[1],
       "returnMode":"file_id"
     }
   }'
 ```
 
-### OCR
-
-```bash
-curl -sS -X POST "$BASE_URL/tools/call" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name":"pdf_ocr_pages",
-    "arguments":{
-      "fileId":"<file_id>",
-      "pages":[1],
-      "provider":"openrouter",
-      "model":"<vision_model>"
-    }
-  }'
-```
-
-### Stream Run
+### 3.4 流式执行
 
 ```bash
 curl -sS -N -X POST "$BASE_URL/api/agent/stream" \
@@ -95,60 +75,83 @@ curl -sS -N -X POST "$BASE_URL/api/agent/stream" \
   -d '{"operation":"extract_pages","fileId":"<file_id>","pages":[1],"returnMode":"file_id"}'
 ```
 
-## MCP Usage
+## 4. MCP 使用说明
 
 端点：`POST /mcp`
 
-- `initialize`
-- `tools/list`
-- `tools/call`
+### 4.1 initialize
 
-若配置了 `mcp.authHeader + mcp.authEnv`，调用 MCP 需带鉴权头。
+```bash
+curl -sS -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+```
 
-## Deploy
+### 4.2 tools/list
+
+```bash
+curl -sS -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+```
+
+### 4.3 tools/call
+
+```bash
+curl -sS -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_ops","arguments":{"op":"list"}}}'
+```
+
+若配置了 `mcp.authHeader + mcp.authEnv`，调用 MCP 时要带对应请求头。
+
+## 5. 工具列表
+
+- `pdf_extract_pages`
+- `pdf_ocr_pages`
+- `pdf_tables_to_latex`
+- `file_ops`
+
+说明：`pdf_*` 工具默认继承主 provider/model（可在请求顶层传入覆盖）。
+
+## 6. 测试覆盖（含 MCP）
+
+```bash
+npm run typecheck
+npm run smoke
+```
+
+当前 smoke 覆盖：
+
+- `health/config/tools/catalog`
+- `file_ops` put/read/delete
+- `pdf_extract_pages`
+- MCP `initialize/tools/list/tools/call`
+
+## 7. 配置与部署
+
+### 配置
+
+- 主配置：`echo-pdf.config.json`
+- 可覆盖：`ECHO_PDF_CONFIG_JSON`
+- 默认 provider env：
+  - `OPENAI_API_KEY`
+  - `OPENROUTER_KEY`
+  - `VERCEL_AI_GATEWAY_KEY`
+
+### 部署
 
 ```bash
 npm install
 npm run deploy
 ```
 
-`wrangler.toml` 默认 worker 名称：`echo-pdf-agent`。
+## 8. CI/CD
 
-## Configuration
+- CI：`typecheck + smoke`
+- CD：部署前会校验 secrets
 
-主配置：`echo-pdf.config.json`
-
-可覆盖：`ECHO_PDF_CONFIG_JSON`
-
-provider key 默认读取配置中的 `apiKeyEnv`。
-当前默认：
-
-- `OPENAI_API_KEY`
-- `OPENROUTER_KEY`
-- `VERCEL_AI_GATEWAY_KEY`
-
-## CI/CD
-
-- CI: `typecheck + smoke`
-- CD: 部署前先校验 secrets
-
-GitHub Actions 需要：
+GitHub Actions 必需：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-
-## Local Development
-
-```bash
-cp .dev.vars.example .dev.vars
-npm run dev
-```
-
-本地地址：`http://127.0.0.1:8787`
-
-## Tests
-
-```bash
-npm run typecheck
-npm run smoke
-```

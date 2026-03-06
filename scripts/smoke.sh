@@ -51,7 +51,15 @@ curl -sS -X POST "${BASE_URL}/tools/call" \
 
 curl -sS -X POST "${BASE_URL}/mcp" \
   -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{}}' | grep -q '"serverInfo"'
+
+curl -sS -X POST "${BASE_URL}/mcp" \
+  -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q 'pdf_ocr_pages'
+
+curl -sS -X POST "${BASE_URL}/mcp" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_ops","arguments":{"op":"list"}}}' | grep -q '"content"'
 
 curl -sS -X POST "${BASE_URL}/api/files/op" \
   -H "Content-Type: application/json" \
