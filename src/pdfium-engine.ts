@@ -8,6 +8,7 @@ let moduleInstance: WrappedPdfiumModule | null = null
 let libraryInitialized = false
 
 const toUint8 = (value: ArrayBuffer): Uint8Array => new Uint8Array(value)
+const textDecoder = new TextDecoder()
 
 const ensurePdfium = async (config: EchoPdfConfig): Promise<WrappedPdfiumModule> => {
   if (!moduleInstance) {
@@ -151,5 +152,29 @@ export const toBytes = async (value: string): Promise<Uint8Array> => {
   if (!response.ok) {
     throw new Error(`Failed to fetch source: HTTP ${response.status}`)
   }
-  return toUint8(await response.arrayBuffer())
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase()
+  const bytes = toUint8(await response.arrayBuffer())
+  const signature = textDecoder.decode(bytes.subarray(0, Math.min(8, bytes.length)))
+
+  if (contentType.includes("application/pdf") || signature.startsWith("%PDF-")) {
+    return bytes
+  }
+
+  const html = textDecoder.decode(bytes)
+  const pdfMatch = html.match(/https?:\/\/[^"' )]+\.pdf[^"' )]*/i)
+  if (!pdfMatch || pdfMatch.length === 0) {
+    throw new Error("URL does not point to a PDF and no PDF link was found in the page")
+  }
+
+  const resolvedUrl = pdfMatch[0].replace(/&amp;/g, "&")
+  const pdfResponse = await fetch(resolvedUrl)
+  if (!pdfResponse.ok) {
+    throw new Error(`Failed to fetch resolved PDF url: HTTP ${pdfResponse.status}`)
+  }
+  const pdfBytes = toUint8(await pdfResponse.arrayBuffer())
+  const pdfSignature = textDecoder.decode(pdfBytes.subarray(0, Math.min(8, pdfBytes.length)))
+  if (!pdfSignature.startsWith("%PDF-")) {
+    throw new Error("Resolved file is not a valid PDF")
+  }
+  return pdfBytes
 }
