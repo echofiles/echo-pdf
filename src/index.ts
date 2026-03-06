@@ -107,6 +107,7 @@ export default {
           toolCatalogEndpoint: "/tools/catalog",
           toolCallEndpoint: "/tools/call",
           fileOpsEndpoint: "/api/files/op",
+          fileUploadEndpoint: "/api/files/upload",
           supportedReturnModes: ["inline", "file_id", "url"],
         },
         mcp: {
@@ -222,6 +223,29 @@ export default {
       }
     }
 
+    if (request.method === "POST" && url.pathname === "/api/files/upload") {
+      try {
+        const formData = await request.formData()
+        const file = formData.get("file") as {
+          readonly name?: string
+          readonly type?: string
+          arrayBuffer?: () => Promise<ArrayBuffer>
+        } | null
+        if (!file || typeof file.arrayBuffer !== "function") {
+          return json({ error: "Missing file field: file" }, 400)
+        }
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        const stored = await runtimeFileStore.put({
+          filename: file.name || `upload-${Date.now()}.pdf`,
+          mimeType: file.type || "application/pdf",
+          bytes,
+        })
+        return json({ file: stored }, 200)
+      } catch (error) {
+        return json({ error: toError(error) }, 500)
+      }
+    }
+
     if (request.method === "POST" && url.pathname === "/mcp") {
       try {
         return await handleMcpRequest(request, env, config, runtimeFileStore)
@@ -250,6 +274,7 @@ export default {
           run: "POST /api/agent/run",
           stream: "POST /api/agent/stream",
           files: "POST /api/files/op",
+          fileUpload: "POST /api/files/upload",
           mcp: "POST /mcp",
         },
       },

@@ -7,6 +7,9 @@ const els = {
   openrouterKeyInput: document.getElementById("openrouterKeyInput"),
   testModelsBtn: document.getElementById("testModelsBtn"),
   refreshToolsBtn: document.getElementById("refreshToolsBtn"),
+  pdfUploadInput: document.getElementById("pdfUploadInput"),
+  uploadPdfBtn: document.getElementById("uploadPdfBtn"),
+  uploadedFileText: document.getElementById("uploadedFileText"),
   toolSelect: document.getElementById("toolSelect"),
   toolSourceText: document.getElementById("toolSourceText"),
   toolFields: document.getElementById("toolFields"),
@@ -19,6 +22,7 @@ const els = {
 const state = {
   config: null,
   tools: [],
+  uploadedFileId: "",
 }
 
 const setStatus = (text) => {
@@ -121,6 +125,13 @@ const renderToolFields = () => {
     field.innerHTML = `<label>${key}</label><input data-key="${key}" type="text" value="${defaultValue}"/>`
     els.toolFields.appendChild(field)
   }
+
+  if (state.uploadedFileId) {
+    const fileIdInput = els.toolFields.querySelector("[data-key='fileId']")
+    if (fileIdInput) {
+      fileIdInput.value = state.uploadedFileId
+    }
+  }
 }
 
 const renderTools = () => {
@@ -174,8 +185,32 @@ const readToolArguments = () => {
   if (selected.name.startsWith("pdf_") && !args.provider) {
     args.provider = els.providerSelect.value
   }
+  if (selected.name.startsWith("pdf_") && !args.fileId && state.uploadedFileId) {
+    args.fileId = state.uploadedFileId
+  }
 
   return args
+}
+
+const uploadPdf = async () => {
+  const file = els.pdfUploadInput.files?.[0]
+  if (!file) {
+    throw new Error("Please select a PDF file first")
+  }
+  const formData = new FormData()
+  formData.set("file", file)
+  const res = await fetch("/api/files/upload", {
+    method: "POST",
+    body: formData,
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error ?? `upload failed: ${res.status}`)
+  const fileId = data.file?.id
+  if (!fileId) throw new Error("Upload succeeded but no fileId returned")
+  state.uploadedFileId = fileId
+  els.uploadedFileText.textContent = `uploaded fileId: ${fileId} (${data.file.filename})`
+  renderToolFields()
+  appendTrace("file.upload", { file: data.file })
 }
 
 const runTool = async () => {
@@ -292,6 +327,16 @@ els.refreshToolsBtn.addEventListener("click", async () => {
   } catch (error) {
     appendTrace("tools.error", { message: String(error) })
     setStatus("Tool refresh failed")
+  }
+})
+els.uploadPdfBtn.addEventListener("click", async () => {
+  try {
+    setStatus("Uploading PDF...")
+    await uploadPdf()
+    setStatus("Upload completed")
+  } catch (error) {
+    appendTrace("upload.error", { message: String(error) })
+    setStatus("Upload failed")
   }
 })
 els.toolSelect.addEventListener("change", renderToolFields)

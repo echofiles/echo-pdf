@@ -47,6 +47,13 @@
 
       <section class="panel">
         <h2>Tool Workbench</h2>
+        <label for="pdfUploadInput">Upload PDF</label>
+        <input id="pdfUploadInput" type="file" accept="application/pdf,.pdf" />
+        <div class="actions">
+          <button id="uploadPdfBtn">Upload PDF</button>
+        </div>
+        <p class="hint mono" id="uploadedFileText"></p>
+
         <label for="toolSelect">Tool</label>
         <select id="toolSelect"></select>
         <p class="hint mono" id="toolSourceText"></p>
