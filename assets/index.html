@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echo PDF Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Workers-native PDF Agent</p>
+          <h1>Echo PDF Console</h1>
+        </div>
+        <p id="statusText">Loading...</p>
+      </header>
+
+      <section class="panel">
+        <h2>Provider</h2>
+        <label for="providerSelect">Provider</label>
+        <select id="providerSelect"></select>
+
+        <label for="modelSelect">Model</label>
+        <select id="modelSelect"></select>
+
+        <label for="openaiKeyInput">OpenAI key (session only)</label>
+        <input id="openaiKeyInput" type="password" autocomplete="off" />
+
+        <label for="vercelKeyInput">Vercel AI Gateway key (session only)</label>
+        <input id="vercelKeyInput" type="password" autocomplete="off" />
+
+        <label for="openrouterKeyInput">OpenRouter key (session only)</label>
+        <input id="openrouterKeyInput" type="password" autocomplete="off" />
+
+        <div class="actions">
+          <button id="testModelsBtn">测试模型列表</button>
+          <button id="refreshToolsBtn" class="secondary">刷新 Tools</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Tool Workbench</h2>
+        <label for="toolSelect">Tool</label>
+        <select id="toolSelect"></select>
+        <p class="hint mono" id="toolSourceText"></p>
+
+        <div id="toolFields" class="tool-fields"></div>
+
+        <div class="actions">
+          <button id="runToolBtn">Run Tool</button>
+          <button id="runStreamBtn" class="secondary">Run Stream</button>
+        </div>
+      </section>
+
+      <section class="panel span2">
+        <h2>Trace Stream</h2>
+        <pre id="traceOutput" class="mono"></pre>
+      </section>
+
+      <section class="panel span2">
+        <h2>Result</h2>
+        <pre id="resultOutput" class="mono"></pre>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

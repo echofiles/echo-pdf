@@ -1,0 +1,52 @@
+{
+  "service": {
+    "name": "echo-pdf-agent",
+    "maxPdfBytes": 31457280,
+    "maxPagesPerRequest": 10,
+    "defaultRenderScale": 2
+  },
+  "pdfium": {
+    "wasmUrl": "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"
+  },
+  "agent": {
+    "defaultProvider": "openai",
+    "defaultModel": "",
+    "ocrPrompt": "Extract readable text from this PDF page image. Preserve line breaks and section structure.",
+    "tablePrompt": "Detect all tabular structures from this PDF page image and output valid LaTeX tabular environments only."
+  },
+  "providers": {
+    "openai": {
+      "type": "openai",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "baseUrl": "https://api.openai.com/v1",
+      "endpoints": {
+        "chatCompletionsPath": "/chat/completions",
+        "modelsPath": "/models"
+      }
+    },
+    "vercel_gateway": {
+      "type": "vercel-ai-gateway",
+      "apiKeyEnv": "VERCEL_AI_GATEWAY_KEY",
+      "baseUrl": "https://ai-gateway.vercel.sh/v1",
+      "endpoints": {
+        "chatCompletionsPath": "/chat/completions",
+        "modelsPath": "/models"
+      }
+    },
+    "openrouter": {
+      "type": "openrouter",
+      "apiKeyEnv": "OPENROUTER_KEY",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "endpoints": {
+        "chatCompletionsPath": "/chat/completions",
+        "modelsPath": "/models"
+      }
+    }
+  },
+  "mcp": {
+    "serverName": "echo-pdf-mcp",
+    "version": "0.1.0",
+    "authHeader": "x-mcp-key",
+    "authEnv": "ECHO_PDF_MCP_KEY"
+  }
+}
