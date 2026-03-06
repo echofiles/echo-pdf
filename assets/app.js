@@ -179,12 +179,6 @@ const readToolArguments = () => {
     args[key] = raw
   }
 
-  if ((selected.name === "pdf_ocr_pages" || selected.name === "pdf_tables_to_latex") && !args.model) {
-    args.model = els.modelSelect.value
-  }
-  if (selected.name.startsWith("pdf_") && !args.provider) {
-    args.provider = els.providerSelect.value
-  }
   if (selected.name.startsWith("pdf_") && !args.fileId && state.uploadedFileId) {
     args.fileId = state.uploadedFileId
   }
@@ -225,6 +219,8 @@ const runTool = async () => {
     body: JSON.stringify({
       name,
       arguments: argumentsPayload,
+      provider: els.providerSelect.value,
+      model: els.modelSelect.value,
       providerApiKeys: collectApiKeys(),
     }),
   })
@@ -248,6 +244,8 @@ const runStream = async () => {
   const payload = {
     operation: op,
     ...args,
+    provider: els.providerSelect.value,
+    model: els.modelSelect.value,
     providerApiKeys: collectApiKeys(),
   }
 

@@ -1,7 +1,8 @@
 import { normalizeReturnMode } from "./file-utils"
+import { FileStoreDO } from "./file-store-do"
 import { handleMcpRequest } from "./mcp-server"
 import { loadEchoPdfConfig } from "./pdf-config"
-import { runtimeFileStore } from "./pdf-storage"
+import { getRuntimeFileStore } from "./pdf-storage"
 import { listProviderModels } from "./provider-client"
 import { callTool, listToolSchemas } from "./tool-registry"
 import type { AgentTraceEvent, PdfOperationRequest } from "./pdf-types"
@@ -93,6 +94,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     const config = loadEchoPdfConfig(env)
+    const fileStore = getRuntimeFileStore(env)
 
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true, service: config.service.name, now: new Date().toISOString() })
@@ -127,10 +129,22 @@ export default {
       const name = typeof body.name === "string" ? body.name : ""
       if (!name) return json({ error: "Missing required field: name" }, 400)
       try {
-        const result = await callTool(name, body.arguments, {
+        const args = asObj(body.arguments)
+        const preferredProvider = typeof body.provider === "string" ? body.provider : config.agent.defaultProvider
+        const preferredModel = typeof body.model === "string" ? body.model : config.agent.defaultModel
+        if (name.startsWith("pdf_")) {
+          if (typeof args.provider !== "string" || args.provider.length === 0) {
+            args.provider = preferredProvider
+          }
+          if (typeof args.model !== "string" || args.model.length === 0) {
+            args.model = preferredModel
+          }
+        }
+
+        const result = await callTool(name, args, {
           config,
           env,
-          fileStore: runtimeFileStore,
+          fileStore,
           providerApiKeys: typeof body.providerApiKeys === "object" && body.providerApiKeys !== null
             ? (body.providerApiKeys as Record<string, string>)
             : undefined,
@@ -162,7 +176,7 @@ export default {
         const result = await callTool(toolNameByOperation[requestPayload.operation], operationArgsFromRequest(requestPayload), {
           config,
           env,
-          fileStore: runtimeFileStore,
+          fileStore,
           providerApiKeys: requestPayload.providerApiKeys,
         })
         return json(result)
@@ -189,7 +203,7 @@ export default {
           const result = await callTool(toolNameByOperation[requestPayload.operation], operationArgsFromRequest(requestPayload), {
             config,
             env,
-            fileStore: runtimeFileStore,
+            fileStore,
             providerApiKeys: requestPayload.providerApiKeys,
             trace: (event: AgentTraceEvent) => send("step", event),
           })
@@ -215,7 +229,7 @@ export default {
         const result = await callTool("file_ops", asObj(body), {
           config,
           env,
-          fileStore: runtimeFileStore,
+          fileStore,
         })
         return json(result)
       } catch (error) {
@@ -235,7 +249,7 @@ export default {
           return json({ error: "Missing file field: file" }, 400)
         }
         const bytes = new Uint8Array(await file.arrayBuffer())
-        const stored = await runtimeFileStore.put({
+        const stored = await fileStore.put({
           filename: file.name || `upload-${Date.now()}.pdf`,
           mimeType: file.type || "application/pdf",
           bytes,
@@ -248,7 +262,7 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/mcp") {
       try {
-        return await handleMcpRequest(request, env, config, runtimeFileStore)
+        return await handleMcpRequest(request, env, config, fileStore)
       } catch (error) {
         return json({ error: toError(error) }, 500)
       }
@@ -282,3 +296,5 @@ export default {
     )
   },
 }
+
+export { FileStoreDO }

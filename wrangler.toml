@@ -5,3 +5,11 @@ compatibility_date = "2026-03-06"
 [assets]
 directory = "./assets"
 binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "FILE_STORE_DO"
+class_name = "FileStoreDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FileStoreDO"]

@@ -45,6 +45,10 @@ curl -sS -X POST "${BASE_URL}/tools/call" \
   -H "Content-Type: application/json" \
   -d '{"name":"file_ops","arguments":{"op":"list"}}' | grep -q 'smoke.txt'
 
+curl -sS -X POST "${BASE_URL}/tools/call" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"pdf_extract_pages","arguments":{"url":"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf","pages":[1],"returnMode":"file_id"}}' | grep -q '"images"'
+
 curl -sS -X POST "${BASE_URL}/mcp" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q 'pdf_ocr_pages'

@@ -1,6 +1,7 @@
-import type { FileStore, StoredFileMeta, StoredFileRecord } from "./types"
+import { DurableObjectFileStore } from "./file-store-do"
+import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "./types"
 
-export class InMemoryFileStore implements FileStore {
+class InMemoryFileStore implements FileStore {
   private readonly store = new Map<string, StoredFileRecord>()
 
   async put(input: {
@@ -44,4 +45,11 @@ export class InMemoryFileStore implements FileStore {
   }
 }
 
-export const runtimeFileStore = new InMemoryFileStore()
+const fallbackStore = new InMemoryFileStore()
+
+export const getRuntimeFileStore = (env: Env): FileStore => {
+  if (env.FILE_STORE_DO) {
+    return new DurableObjectFileStore(env.FILE_STORE_DO)
+  }
+  return fallbackStore
+}
