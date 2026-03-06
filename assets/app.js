@@ -16,6 +16,7 @@ const els = {
   runToolBtn: document.getElementById("runToolBtn"),
   runStreamBtn: document.getElementById("runStreamBtn"),
   traceOutput: document.getElementById("traceOutput"),
+  resultPreview: document.getElementById("resultPreview"),
   resultOutput: document.getElementById("resultOutput"),
 }
 
@@ -32,6 +33,41 @@ const setStatus = (text) => {
 const appendTrace = (label, payload) => {
   els.traceOutput.textContent += `[${new Date().toLocaleTimeString()}] ${label}\n${JSON.stringify(payload, null, 2)}\n\n`
   els.traceOutput.scrollTop = els.traceOutput.scrollHeight
+}
+
+const clearResultPreview = () => {
+  els.resultPreview.innerHTML = ""
+}
+
+const appendPreviewImage = (src, label) => {
+  const card = document.createElement("article")
+  card.className = "img-card"
+  const meta = document.createElement("div")
+  meta.className = "meta"
+  meta.textContent = label
+  const img = document.createElement("img")
+  img.src = src
+  img.alt = label
+  card.append(meta, img)
+  els.resultPreview.appendChild(card)
+}
+
+const renderResultPreview = (result) => {
+  clearResultPreview()
+  if (!result || typeof result !== "object") return
+
+  if (typeof result.dataUrl === "string" && result.dataUrl.startsWith("data:image/")) {
+    appendPreviewImage(result.dataUrl, "inline image")
+  }
+
+  if (Array.isArray(result.images)) {
+    result.images.forEach((item, idx) => {
+      if (item && typeof item.data === "string" && item.data.startsWith("data:image/")) {
+        const pageText = Number.isFinite(item.page) ? `page ${item.page}` : `image ${idx + 1}`
+        appendPreviewImage(item.data, pageText)
+      }
+    })
+  }
 }
 
 const collectApiKeys = () => {
@@ -226,6 +262,7 @@ const runTool = async () => {
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error ?? `tool failed: ${res.status}`)
+  renderResultPreview(data.output)
   els.resultOutput.textContent = JSON.stringify(data.output, null, 2)
   appendTrace("tool.result", { name, arguments: argumentsPayload })
 }
@@ -250,6 +287,7 @@ const runStream = async () => {
   }
 
   els.traceOutput.textContent = ""
+  clearResultPreview()
   els.resultOutput.textContent = ""
   const res = await fetch("/api/agent/stream", {
     method: "POST",
@@ -280,7 +318,9 @@ const runStream = async () => {
       const dataLine = lines.find((l) => l.startsWith("data:"))?.slice(5).trim() || "{}"
       const data = JSON.parse(dataLine)
       if (event === "result") {
-        els.resultOutput.textContent = JSON.stringify(data.output ?? data, null, 2)
+        const output = data.output ?? data
+        renderResultPreview(output)
+        els.resultOutput.textContent = JSON.stringify(output, null, 2)
       } else {
         appendTrace(event, data)
       }
