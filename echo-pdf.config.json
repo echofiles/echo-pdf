@@ -1,6 +1,6 @@
 {
   "service": {
-    "name": "echo-pdf-agent",
+    "name": "echo-pdf",
     "maxPdfBytes": 31457280,
     "maxPagesPerRequest": 10,
     "defaultRenderScale": 2,

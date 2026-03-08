@@ -1,46 +1,40 @@
 # echo-pdf (MCP-first PDF Agent)
 
-`echo-pdf` 是一个运行在 Cloudflare Workers 的 PDF Agent。  
-主使用方式是 **MCP Server**；Web 页面仅作为线上 Demo。
+`echo-pdf` 是一个部署在 Cloudflare Workers 的 PDF Agent。  
+主使用方式是 **MCP Server**；Web UI 只是线上 demo。
 
 - MCP endpoint: `https://xx.echofilesai.workers.dev/mcp`
 - Demo UI: `https://xx.echofilesai.workers.dev/`
-- HTTP tools endpoint: `https://xx.echofilesai.workers.dev/tools/call`
+- HTTP API: `https://xx.echofilesai.workers.dev`
 
-## Why npm CLI
+## 1. Node 与运行要求
 
-是的，打包成 npm package 更方便发布和部署，原因：
+- Node.js `>=20.0.0`（仓库内有 `.nvmrc`）
+- npm、curl、grep、sed
 
-- 统一安装：`npm i -g echo-pdf-agent`
-- 统一 provider 配置与模型发现
-- 统一输出不同 MCP 客户端的配置片段
-- 方便在 CI/CD 或脚本里直接调用
-
-## 1. 安装 CLI
+执行前置检查：
 
 ```bash
-npm i -g echo-pdf-agent
+npm run check:runtime
 ```
 
-或在仓库内直接运行：
+## 2. 安装与初始化 CLI
+
+包名已改为 `echo-pdf`。
 
 ```bash
-node ./bin/echo-pdf.js --help
+npm i -g echo-pdf
 ```
-
-## 2. 初始化 CLI（服务地址）
 
 ```bash
 echo-pdf init --service-url https://xx.echofilesai.workers.dev
 ```
 
-说明：也支持环境变量 `ECHO_PDF_SERVICE_URL` 作为默认值。
+CLI 本地配置文件：`~/.config/echo-pdf-cli/config.json`
 
-## 3. Provider 配置（本地不落库到服务端）
+## 3. LLM 配置：provider + model list + model set
 
-CLI 会把 key 保存在本机 `~/.config/echo-pdf-cli/config.json`。
-
-### 3.1 设置 key
+### 3.1 配置 provider key（仅本地）
 
 ```bash
 echo-pdf provider set --provider openai --api-key <OPENAI_API_KEY>
@@ -48,41 +42,34 @@ echo-pdf provider set --provider openrouter --api-key <OPENROUTER_KEY>
 echo-pdf provider set --provider vercel-ai-gateway --api-key <VERCEL_AI_GATEWAY_KEY>
 ```
 
-### 3.2 查看配置状态
+### 3.2 设置默认 provider（用于 call 默认路由）
 
 ```bash
+echo-pdf provider use --provider openrouter
 echo-pdf provider list
 ```
 
-## 4. 从 API 动态获取模型列表（无硬编码）
+说明：`provider use` 使用 provider alias（`openai|openrouter|vercel_gateway`）。
+
+### 3.3 动态拉取模型列表（无硬编码）
 
 ```bash
-echo-pdf models --provider openai
 echo-pdf models --provider openrouter
-echo-pdf models --provider vercel-ai-gateway
 ```
 
-## 5. 基础工具调用
-
-### 5.1 查看可用工具
+### 3.4 设置默认 model（新增）
 
 ```bash
-echo-pdf tools
+echo-pdf model set --provider openrouter --model openai/gpt-4o-mini
+echo-pdf model get --provider openrouter
+echo-pdf model list
 ```
 
-### 5.2 直接调用工具
+说明：`echo-pdf call` 不传 `--model` 时，会自动使用该 provider 的默认 model。
 
-```bash
-echo-pdf call --tool file_ops --args '{"op":"list"}'
-```
+## 4. MCP（主要使用方式）
 
-```bash
-echo-pdf call --tool pdf_extract_pages --args '{"fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}'
-```
-
-## 6. MCP 使用（主要方式）
-
-### 6.1 快速检查 MCP 可用性
+### 4.1 MCP 可用性检查
 
 ```bash
 echo-pdf mcp initialize
@@ -90,7 +77,7 @@ echo-pdf mcp tools
 echo-pdf mcp call --tool file_ops --args '{"op":"list"}'
 ```
 
-### 6.2 手工 JSON-RPC 调用
+### 4.2 手工 JSON-RPC
 
 ```bash
 curl -sS -X POST https://xx.echofilesai.workers.dev/mcp \
@@ -110,7 +97,7 @@ curl -sS -X POST https://xx.echofilesai.workers.dev/mcp \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_ops","arguments":{"op":"list"}}}'
 ```
 
-## 7. 给不同工具安装 MCP（CLI 输出配置片段）
+### 4.3 不同客户端安装 MCP
 
 ```bash
 echo-pdf setup add claude-desktop
@@ -122,61 +109,96 @@ echo-pdf setup add gemini
 echo-pdf setup add json
 ```
 
-说明：
+- `claude-desktop/cursor/cline/windsurf`：输出可直接粘贴的 `mcpServers` 片段。
+- `claude-code/gemini`：若无 streamable-http 原生支持，使用 HTTP->stdio bridge（如 `mcp-remote`）。
 
-- `claude-desktop/cursor/cline/windsurf`：输出可直接粘贴的 `mcpServers` 配置片段。
-- `claude-code/gemini`：若不直接支持 streamable-http，CLI 会提示使用 HTTP->stdio bridge（如 `mcp-remote`）。
-
-## 8. 线上 Demo / HTTP API（次要）
-
-### 上传 PDF
+## 5. HTTP / Demo（次要）
 
 ```bash
 curl -sS -X POST https://xx.echofilesai.workers.dev/api/files/upload \
   -F 'file=@./sample.pdf'
 ```
 
-### 流式 trace
-
 ```bash
-curl -sS -N -X POST https://xx.echofilesai.workers.dev/api/agent/stream \
+curl -sS -X POST https://xx.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
-  -d '{"operation":"extract_pages","fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}'
+  -d '{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}}'
 ```
 
-## 9. 现有工具能力
-
-- `pdf_extract_pages`
-- `pdf_ocr_pages`
-- `pdf_tables_to_latex`
-- `file_ops`
-
-默认规则：工具会继承主 agent 的 provider/model；需要时可请求级覆盖。
-
-## 10. 存储策略（线上必看）
-
-- 单文件限制：`service.storage.maxFileBytes`
-- 总量限制：`service.storage.maxTotalBytes`
-- 过期清理：`service.storage.ttlHours`
-- 批量清理：`service.storage.cleanupBatchSize`
-
-附加接口：
+## 6. 测试工程（unit + integration）
 
 ```bash
-curl -sS https://xx.echofilesai.workers.dev/api/files/stats
-curl -sS -X POST https://xx.echofilesai.workers.dev/api/files/cleanup
-```
-
-## 11. 本地开发与验证
-
-```bash
-npm install
 npm run typecheck
+npm run test:unit
+npm run test:integration
+npm run test
 npm run smoke
+```
+
+`unit` 覆盖：
+
+- `file-utils` 编解码与 returnMode 归一化
+- `runFileOp` 文件操作逻辑
+- `config` 解析与覆盖
+
+`integration` 覆盖：
+
+- runtime 前置检查（Node>=20 + 命令依赖）
+- `health/config/tools` 结构断言
+- PDF 上传 + 文件读写 + 删除
+- `pdf_extract_pages` 返回 inline 图片 data URL
+- `/api/agent/stream` SSE done/result 断言
+- MCP `initialize/tools/list/tools/call`
+- 存储 stats/cleanup
+- 若存在 provider key：真实执行 `/providers/models` + `pdf_ocr_pages`（真实 LLM 链路）
+
+可选参数：
+
+- `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run test:integration`（直接测已部署服务）
+- `SMOKE_REQUIRE_LLM=1 npm run test:integration`（强制要求存在 provider key）
+- `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run smoke`（快速脚本模式）
+
+测试用 PDF 固定文件：`scripts/fixtures/smoke.pdf`
+
+## 7. 部署
+
+```bash
 npm run deploy
 ```
 
-GitHub Actions secrets：
+GitHub Actions 必需 secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+
+可选（用于 CI 真实 LLM 集成测试）：
+
+- `OPENAI_API_KEY`
+- `OPENROUTER_KEY`
+- `VERCEL_AI_GATEWAY_KEY`
+
+## 8. 发布到 npm（协助步骤）
+
+先确认 npm 身份和包名可用：
+
+```bash
+npm whoami
+npm view echo-pdf version
+```
+
+本地打包检查：
+
+```bash
+npm pack --dry-run
+```
+
+发布：
+
+```bash
+npm publish --access public
+```
+
+如果 `echo-pdf` 包名已被占用，你有两个选项：
+
+1. 改为 scope 包：`@<your-scope>/echo-pdf`
+2. 改为新公共名（例如 `echo-pdf-cli`）

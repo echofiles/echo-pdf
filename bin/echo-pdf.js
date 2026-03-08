@@ -6,12 +6,16 @@ import path from "node:path"
 const CONFIG_DIR = path.join(os.homedir(), ".config", "echo-pdf-cli")
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
 const DEFAULT_SERVICE_URL = process.env.ECHO_PDF_SERVICE_URL || "https://xx.echofilesai.workers.dev"
+const PROVIDER_KEY_NAMES = ["openai", "openrouter", "vercel-ai-gateway"]
+const PROVIDER_ALIASES = ["openai", "openrouter", "vercel_gateway"]
 
 const defaultConfig = () => ({
   serviceUrl: DEFAULT_SERVICE_URL,
   profile: "default",
   profiles: {
     default: {
+      defaultProvider: "openai",
+      models: {},
       providers: {
         openai: { apiKey: "" },
         openrouter: { apiKey: "" },
@@ -30,7 +34,22 @@ const ensureConfig = () => {
 
 const loadConfig = () => {
   ensureConfig()
-  return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"))
+  const config = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"))
+  if (!config.profiles || typeof config.profiles !== "object") {
+    config.profiles = {}
+  }
+  if (typeof config.profile !== "string" || !config.profile) {
+    config.profile = "default"
+  }
+  const profile = getProfile(config, config.profile)
+  if (typeof profile.defaultProvider !== "string" || !profile.defaultProvider) {
+    profile.defaultProvider = "openai"
+  }
+  if (!profile.models || typeof profile.models !== "object") {
+    profile.models = {}
+  }
+  saveConfig(config)
+  return config
 }
 
 const saveConfig = (config) => {
@@ -58,9 +77,31 @@ const parseFlags = (args) => {
 const getProfile = (config, name) => {
   const profileName = name || config.profile || "default"
   if (!config.profiles[profileName]) {
-    config.profiles[profileName] = { providers: {} }
+    config.profiles[profileName] = {
+      defaultProvider: "openai",
+      models: {},
+      providers: {},
+    }
   }
-  return config.profiles[profileName]
+  const profile = config.profiles[profileName]
+  if (!profile.providers || typeof profile.providers !== "object") profile.providers = {}
+  if (!profile.models || typeof profile.models !== "object") profile.models = {}
+  if (typeof profile.defaultProvider !== "string" || !profile.defaultProvider) {
+    profile.defaultProvider = "openai"
+  }
+  return profile
+}
+
+const getProfileName = (config, profileName) => profileName || config.profile || "default"
+
+const resolveProviderAlias = (profile, explicitProvider) =>
+  typeof explicitProvider === "string" && explicitProvider.length > 0
+    ? explicitProvider
+    : profile.defaultProvider || "openai"
+
+const resolveDefaultModel = (profile, providerAlias) => {
+  const model = profile.models?.[providerAlias]
+  return typeof model === "string" ? model : ""
 }
 
 const buildProviderApiKeys = (config, profileName) => {
@@ -100,8 +141,12 @@ const usage = () => {
   process.stdout.write(`Commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
   process.stdout.write(`  provider set --provider <openai|openrouter|vercel-ai-gateway> --api-key <KEY> [--profile name]\n`)
+  process.stdout.write(`  provider use --provider <openai|openrouter|vercel_gateway> [--profile name]\n`)
   process.stdout.write(`  provider list [--profile name]\n`)
   process.stdout.write(`  models [--provider alias] [--profile name]\n`)
+  process.stdout.write(`  model set --model <model-id> [--provider alias] [--profile name]\n`)
+  process.stdout.write(`  model get [--provider alias] [--profile name]\n`)
+  process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
   process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name]\n`)
   process.stdout.write(`  mcp initialize\n`)
@@ -197,34 +242,90 @@ const main = async () => {
     if (typeof provider !== "string" || typeof apiKey !== "string") {
       throw new Error("provider set requires --provider and --api-key")
     }
+    if (!PROVIDER_KEY_NAMES.includes(provider)) {
+      throw new Error(`provider must be one of: ${PROVIDER_KEY_NAMES.join(", ")}`)
+    }
     const config = loadConfig()
-    const profile = getProfile(config, flags.profile)
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
     if (!profile.providers) profile.providers = {}
     profile.providers[provider] = { apiKey }
     saveConfig(config)
-    print({ ok: true, provider, profile: flags.profile || config.profile, configFile: CONFIG_FILE })
+    print({ ok: true, provider, profile: profileName, configFile: CONFIG_FILE })
+    return
+  }
+
+  if (command === "provider" && subcommand === "use") {
+    const provider = flags.provider
+    if (typeof provider !== "string" || provider.length === 0) {
+      throw new Error("provider use requires --provider")
+    }
+    if (!PROVIDER_ALIASES.includes(provider)) {
+      throw new Error(`provider alias must be one of: ${PROVIDER_ALIASES.join(", ")}`)
+    }
+    const config = loadConfig()
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
+    profile.defaultProvider = provider
+    saveConfig(config)
+    print({ ok: true, profile: profileName, defaultProvider: provider, configFile: CONFIG_FILE })
     return
   }
 
   if (command === "provider" && subcommand === "list") {
     const config = loadConfig()
-    const profileName = flags.profile || config.profile
+    const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
     const providers = Object.entries(profile.providers || {}).map(([name, value]) => ({
       provider: name,
       configured: Boolean(value?.apiKey),
       apiKeyPreview: value?.apiKey ? `${String(value.apiKey).slice(0, 6)}...` : "",
     }))
-    print({ profile: profileName, providers })
+    print({ profile: profileName, defaultProvider: profile.defaultProvider, providers })
     return
   }
 
   if (command === "models") {
     const config = loadConfig()
-    const provider = typeof flags.provider === "string" ? flags.provider : "openrouter"
-    const providerApiKeys = buildProviderApiKeys(config, flags.profile)
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
+    const provider = resolveProviderAlias(profile, flags.provider)
+    const providerApiKeys = buildProviderApiKeys(config, profileName)
     const data = await postJson(`${config.serviceUrl}/providers/models`, { provider, providerApiKeys })
     print(data)
+    return
+  }
+
+  if (command === "model" && subcommand === "set") {
+    const model = flags.model
+    if (typeof model !== "string" || model.length === 0) {
+      throw new Error("model set requires --model")
+    }
+    const config = loadConfig()
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
+    const provider = resolveProviderAlias(profile, flags.provider)
+    profile.models[provider] = model
+    saveConfig(config)
+    print({ ok: true, profile: profileName, provider, model, configFile: CONFIG_FILE })
+    return
+  }
+
+  if (command === "model" && subcommand === "get") {
+    const config = loadConfig()
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
+    const provider = resolveProviderAlias(profile, flags.provider)
+    const model = resolveDefaultModel(profile, provider)
+    print({ profile: profileName, provider, model })
+    return
+  }
+
+  if (command === "model" && subcommand === "list") {
+    const config = loadConfig()
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
+    print({ profile: profileName, defaultProvider: profile.defaultProvider, models: profile.models || {} })
     return
   }
 
@@ -239,15 +340,19 @@ const main = async () => {
 
   if (command === "call") {
     const config = loadConfig()
+    const profileName = getProfileName(config, flags.profile)
+    const profile = getProfile(config, profileName)
     const tool = flags.tool
     if (typeof tool !== "string") throw new Error("call requires --tool")
     const args = typeof flags.args === "string" ? JSON.parse(flags.args) : {}
-    const providerApiKeys = buildProviderApiKeys(config, flags.profile)
+    const provider = resolveProviderAlias(profile, flags.provider)
+    const model = typeof flags.model === "string" ? flags.model : resolveDefaultModel(profile, provider)
+    const providerApiKeys = buildProviderApiKeys(config, profileName)
     const payload = {
       name: tool,
       arguments: args,
-      provider: typeof flags.provider === "string" ? flags.provider : undefined,
-      model: typeof flags.model === "string" ? flags.model : undefined,
+      provider,
+      model,
       providerApiKeys,
     }
     const data = await postJson(`${config.serviceUrl}/tools/call`, payload)

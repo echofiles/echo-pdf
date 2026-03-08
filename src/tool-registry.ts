@@ -1,5 +1,6 @@
 import { normalizeReturnMode } from "./file-utils"
-import { runFileOp, runPdfAgent } from "./pdf-agent"
+import { runFileOp } from "./file-ops"
+import { runPdfAgent } from "./pdf-agent"
 import type { EchoPdfConfig, PdfOperationRequest, ToolSchema } from "./pdf-types"
 import type { Env, FileStore, JsonObject } from "./types"
 
