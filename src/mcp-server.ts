@@ -1,5 +1,6 @@
 import type { Env, FileStore } from "./types"
 import type { EchoPdfConfig } from "./pdf-types"
+import { buildMcpContent, buildToolOutputEnvelope } from "./response-schema"
 import { callTool, listToolSchemas } from "./tool-registry"
 
 interface JsonRpcRequest {
@@ -19,12 +20,17 @@ const ok = (id: JsonRpcRequest["id"], result: unknown): Response =>
     { headers: { "Content-Type": "application/json" } }
   )
 
-const err = (id: JsonRpcRequest["id"], code: number, message: string): Response =>
+const err = (
+  id: JsonRpcRequest["id"],
+  code: number,
+  message: string,
+  data?: Record<string, unknown>
+): Response =>
   new Response(
     JSON.stringify({
       jsonrpc: "2.0",
       id: id ?? null,
-      error: { code, message },
+      error: data ? { code, message, data } : { code, message },
     }),
     { status: 400, headers: { "Content-Type": "application/json" } }
   )
@@ -95,6 +101,12 @@ export const handleMcpRequest = async (
 
   const toolName = typeof params.name === "string" ? params.name : ""
   const args = asObj(params.arguments)
+  if (!toolName) {
+    return err(id, -32602, "Invalid params: name is required", {
+      code: "INVALID_PARAMS",
+      status: 400,
+    })
+  }
 
   try {
     const result = await callTool(toolName, args, {
@@ -102,8 +114,32 @@ export const handleMcpRequest = async (
       env,
       fileStore,
     })
-    return ok(id, { content: [{ type: "text", text: JSON.stringify(result) }] })
+    const envelope = buildToolOutputEnvelope(result, request.url)
+    return ok(id, { content: buildMcpContent(envelope) })
   } catch (error) {
-    return err(id, -32000, error instanceof Error ? error.message : String(error))
+    const message = error instanceof Error ? error.message : String(error)
+    const status = (error as { status?: unknown })?.status
+    const stableStatus = typeof status === "number" && Number.isFinite(status) ? status : 500
+    const code = (error as { code?: unknown })?.code
+    const details = (error as { details?: unknown })?.details
+    if (message.startsWith("Unknown tool:")) {
+      return err(id, -32601, message, {
+        code: typeof code === "string" ? code : "TOOL_NOT_FOUND",
+        status: 404,
+        details,
+      })
+    }
+    if (stableStatus >= 400 && stableStatus < 500) {
+      return err(id, -32602, message, {
+        code: typeof code === "string" ? code : "INVALID_PARAMS",
+        status: stableStatus,
+        details,
+      })
+    }
+    return err(id, -32000, message, {
+      code: typeof code === "string" ? code : "INTERNAL_ERROR",
+      status: stableStatus,
+      details,
+    })
   }
 }

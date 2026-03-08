@@ -274,10 +274,10 @@ describe("echo-pdf integration", () => {
       name: "pdf_extract_pages",
       arguments: { fileId, pages: [1], returnMode: "inline" },
     }) as {
-      output?: { images?: Array<{ data?: string }> }
+      data?: { images?: Array<{ data?: string }> }
     }
-    expect(Array.isArray(extractData.output?.images)).toBe(true)
-    expect(extractData.output?.images?.[0]?.data?.startsWith("data:image/png;base64,")).toBe(true)
+    expect(Array.isArray(extractData.data?.images)).toBe(true)
+    expect(extractData.data?.images?.[0]?.data?.startsWith("data:image/png;base64,")).toBe(true)
 
     const streamResponse = await fetch(`${baseUrl}/api/agent/stream`, {
       method: "POST",
@@ -301,11 +301,13 @@ describe("echo-pdf integration", () => {
       name: "pdf_extract_pages",
       arguments: { fileId, pages: [1], returnMode: "url" },
     }) as {
-      output?: { images?: Array<{ url?: string; fileId?: string }> }
+      data?: { images?: Array<{ url?: string; fileId?: string }> }
+      artifacts?: Array<{ url?: string }>
     }
-    const url = extractData.output?.images?.[0]?.url ?? ""
+    const url = extractData.data?.images?.[0]?.url ?? ""
     expect(typeof url).toBe("string")
     expect(url.startsWith("/api/files/get?fileId=")).toBe(true)
+    expect((extractData.artifacts ?? []).some((artifact) => typeof artifact.url === "string")).toBe(true)
 
     const imgRes = await fetch(`${baseUrl}${url}`)
     expect(imgRes.ok).toBe(true)
@@ -342,9 +344,22 @@ describe("echo-pdf integration", () => {
       method: "tools/call",
       params: { name: "file_ops", arguments: { op: "list" } },
     }) as {
-      result?: { content?: unknown[] }
+      result?: { content?: Array<{ type?: string }> }
     }
     expect(Array.isArray(callData.result?.content)).toBe(true)
+    expect(callData.result?.content?.[0]?.type).toBe("text")
+    expect(callData.result?.content?.some((item) => item.type === "resource_link")).toBe(false)
+  })
+
+  it("returns -32602 for invalid mcp tool params", async () => {
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { arguments: {} } }),
+    })
+    const payload = await response.json() as { error?: { code?: number } }
+    expect(response.status).toBe(400)
+    expect(payload.error?.code).toBe(-32602)
   })
 
   it("returns json-rpc parse error for invalid mcp payload", async () => {
@@ -405,11 +420,11 @@ describe("echo-pdf integration", () => {
       model,
       providerApiKeys: providerApiKeys(),
     }) as {
-      output?: {
+      data?: {
         pages?: Array<{ text?: string }>
       }
     }
-    const ocrOutput = ocrData.output ?? null
+    const ocrOutput = ocrData.data ?? null
 
     expect(Array.isArray(ocrOutput.pages)).toBe(true)
     expect(typeof ocrOutput.pages?.[0]?.text).toBe("string")
@@ -427,11 +442,11 @@ describe("echo-pdf integration", () => {
       model,
       providerApiKeys: providerApiKeys(),
     }) as {
-      output?: {
+      data?: {
         pages?: Array<{ latex?: string }>
       }
     }
-    const tableOutput = tableData.output ?? null
+    const tableOutput = tableData.data ?? null
     expect(Array.isArray(tableOutput.pages)).toBe(true)
     expect(typeof tableOutput.pages?.[0]?.latex).toBe("string")
     expect(tableOutput.pages?.[0]?.latex?.includes("\\begin{tabular}")).toBe(true)

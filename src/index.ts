@@ -5,6 +5,7 @@ import { handleMcpRequest } from "./mcp-server"
 import { loadEchoPdfConfig } from "./pdf-config"
 import { getRuntimeFileStore } from "./pdf-storage"
 import { listProviderModels } from "./provider-client"
+import { buildToolOutputEnvelope } from "./response-schema"
 import { callTool, listToolSchemas } from "./tool-registry"
 import type { AgentTraceEvent, PdfOperationRequest } from "./pdf-types"
 import type { Env, JsonObject } from "./types"
@@ -182,7 +183,7 @@ export default {
             ? (body.providerApiKeys as Record<string, string>)
             : undefined,
         })
-        return json({ name, output: result })
+        return json(buildToolOutputEnvelope(result, request.url))
       } catch (error) {
         return jsonError(error, 500)
       }

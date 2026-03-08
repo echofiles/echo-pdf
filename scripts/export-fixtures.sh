@@ -41,12 +41,12 @@ run_json() {
 
 validate_ocr_json() {
   local json_file="$1"
-  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.output?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.text||"").trim();if(t.length===0)process.exit(1);' "$json_file"
+  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.data?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.text||"").trim();if(t.length===0)process.exit(1);' "$json_file"
 }
 
 validate_tables_json() {
   local json_file="$1"
-  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.output?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.latex||"").trim();if(t.length===0)process.exit(1);' "$json_file"
+  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.data?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.latex||"").trim();if(t.length===0)process.exit(1);' "$json_file"
 }
 
 # 1) Save test logs locally (do not block artifact export on transient network failure)
@@ -142,7 +142,7 @@ if [[ -n "${PROVIDER}" ]]; then
 else
   run_json "cli-extract-pages" cli call --tool pdf_extract_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"returnMode\":\"inline\"}"
 fi
-node -e 'const fs=require("fs");const p=process.argv[1];const out=process.argv[2];const j=JSON.parse(fs.readFileSync(p,"utf8"));const d=j.output?.images?.[0]?.data||"";if(!d.startsWith("data:image/"))process.exit(1);fs.writeFileSync(out, Buffer.from(d.split(",")[1]||"","base64"));' "${OUT_DIR}/cli-extract-pages.json" "${OUT_DIR}/page-1-cli.png"
+node -e 'const fs=require("fs");const p=process.argv[1];const out=process.argv[2];const j=JSON.parse(fs.readFileSync(p,"utf8"));const d=j.data?.images?.[0]?.data||"";if(!d.startsWith("data:image/"))process.exit(1);fs.writeFileSync(out, Buffer.from(d.split(",")[1]||"","base64"));' "${OUT_DIR}/cli-extract-pages.json" "${OUT_DIR}/page-1-cli.png"
 
 # 6) MCP tool calls
 run_json "mcp-initialize" cli mcp initialize

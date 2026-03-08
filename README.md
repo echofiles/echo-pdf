@@ -17,15 +17,15 @@
 
 请先确定你的线上地址（Worker 域名）。文档里用：
 
-- `https://echo-pdf.echofilesai.workers.dev`
+- `https://echo-pdf-agent.echofilesai.workers.dev`
 
 你自己的地址如果不同，把下面命令里的域名全部替换掉。
 
 主要端点：
 
-- Web UI: `https://echo-pdf.echofilesai.workers.dev/`
-- MCP: `https://echo-pdf.echofilesai.workers.dev/mcp`
-- HTTP API 根路径: `https://echo-pdf.echofilesai.workers.dev`
+- Web UI: `https://echo-pdf-agent.echofilesai.workers.dev/`
+- MCP: `https://echo-pdf-agent.echofilesai.workers.dev/mcp`
+- HTTP API 根路径: `https://echo-pdf-agent.echofilesai.workers.dev`
 
 ## 2. 快速开始（CLI）
 
@@ -38,7 +38,7 @@ npm i -g @echofiles/echo-pdf
 初始化服务地址：
 
 ```bash
-echo-pdf init --service-url https://echo-pdf.echofilesai.workers.dev
+echo-pdf init --service-url https://echo-pdf-agent.echofilesai.workers.dev
 ```
 
 配置 API Key（仅保存在本机 CLI 配置，不会上报到服务端存储）：
@@ -104,7 +104,7 @@ echo-pdf setup add json
 
 打开：
 
-- `https://echo-pdf.echofilesai.workers.dev/`
+- `https://echo-pdf-agent.echofilesai.workers.dev/`
 
 流程：
 
@@ -117,7 +117,8 @@ echo-pdf setup add json
 说明：
 
 - UI 中输入的 key 属于当前会话，不落库到服务端。
-- `returnMode` 目前仅支持 `inline` 和 `file_id`（`url` 尚未实现）。
+- `returnMode` 支持 `inline`、`file_id`、`url`。
+- `tools/call` 返回统一结构：`{ ok, data, artifacts }`，其中 `artifacts[*].url` 可直接下载。
 - 表格工具返回值会校验并要求包含合法 `tabular`，否则报错。
 
 ## 5. HTTP API 使用
@@ -125,7 +126,7 @@ echo-pdf setup add json
 ### 5.1 上传 PDF
 
 ```bash
-curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/api/files/upload \
+curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/api/files/upload \
   -F 'file=@./sample.pdf'
 ```
 
@@ -134,7 +135,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/api/files/upload \
 ### 5.2 提取页面图片
 
 ```bash
-curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
+curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
   -d '{
     "name":"pdf_extract_pages",
@@ -147,7 +148,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 ### 5.3 OCR
 
 ```bash
-curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
+curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
   -d '{
     "name":"pdf_ocr_pages",
@@ -158,7 +159,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 ### 5.4 表格识别为 LaTeX
 
 ```bash
-curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
+curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
   -d '{
     "name":"pdf_tables_to_latex",
@@ -244,7 +245,7 @@ INPUT_PDF=./fixtures/input.pdf ./scripts/export-fixtures.sh
 示例（提取页面并返回 URL）：
 
 ```bash
-curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
+curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
   -d '{
     "name":"pdf_extract_pages",
