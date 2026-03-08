@@ -21,13 +21,15 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - name: Configure npm auth
+      - name: Verify npm auth token
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "${NPM_TOKEN}" ]; then
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
             echo "NPM_TOKEN secret is empty or unavailable"
             exit 1
           fi
-          printf "//registry.npmjs.org/:_authToken=%s\n" "${NPM_TOKEN}" > "$HOME/.npmrc"
+          npm whoami
       - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
