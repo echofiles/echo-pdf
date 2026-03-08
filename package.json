@@ -9,15 +9,24 @@
   "bin": {
     "echo-pdf": "./bin/echo-pdf.js"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "bin",
-    "src",
+    "dist",
     "scripts",
     "README.md",
     "wrangler.toml",
     "echo-pdf.config.json"
   ],
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "check:runtime": "bash ./scripts/check-runtime.sh",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
@@ -26,7 +35,7 @@
     "test:integration": "npm run check:runtime && vitest run tests/integration",
     "test": "npm run test:unit && npm run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
-    "prepublishOnly": "npm run typecheck && npm run test"
+    "prepublishOnly": "npm run build && npm run typecheck && npm run test"
   },
   "engines": {
     "node": ">=20.0.0"
