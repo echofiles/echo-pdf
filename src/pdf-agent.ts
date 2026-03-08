@@ -1,5 +1,6 @@
 import type { Env, FileStore, ReturnMode } from "./types"
 import type { AgentTraceEvent, EchoPdfConfig, PdfOperationRequest } from "./pdf-types"
+import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults"
 import { fromBase64, normalizeReturnMode, toDataUrl } from "./file-utils"
 import { extractPdfPageText, getPdfPageCount, renderPdfPageToPng, toBytes } from "./pdfium-engine"
 import { visionRecognize } from "./provider-client"
@@ -142,10 +143,10 @@ export const runPdfAgent = async (
     return result
   }
 
-  const providerAlias = request.provider ?? config.agent.defaultProvider
-  const model = request.model?.trim() || config.agent.defaultModel?.trim()
+  const providerAlias = resolveProviderAlias(config, request.provider)
+  const model = resolveModelForProvider(config, providerAlias, request.model)
   if (!model) {
-    throw new Error("model is required for OCR or table extraction; set model in top-level provider settings")
+    throw new Error(`model is required for OCR or table extraction; set agent.defaultModels.${providerAlias}`)
   }
 
   if (request.operation === "ocr_pages") {

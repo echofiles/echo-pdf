@@ -12,9 +12,9 @@
 
 线上地址：
 
-- MCP: `https://echo-pdf-agent.echofilesai.workers.dev/mcp`
-- Web UI: `https://echo-pdf-agent.echofilesai.workers.dev/`
-- HTTP API: `https://echo-pdf-agent.echofilesai.workers.dev`
+- MCP: `https://echo-pdf.echofilesai.workers.dev/mcp`
+- Web UI: `https://echo-pdf.echofilesai.workers.dev/`
+- HTTP API: `https://echo-pdf.echofilesai.workers.dev`
 
 ## 快速开始（CLI）
 
@@ -27,7 +27,7 @@ npm i -g echo-pdf
 初始化服务地址：
 
 ```bash
-echo-pdf init --service-url https://echo-pdf-agent.echofilesai.workers.dev
+echo-pdf init --service-url https://echo-pdf.echofilesai.workers.dev
 ```
 
 配置 provider key（仅保存在本机）：
@@ -79,14 +79,14 @@ echo-pdf setup add json
 上传 PDF：
 
 ```bash
-curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/api/files/upload \
+curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/api/files/upload \
   -F 'file=@./sample.pdf'
 ```
 
 提取页面图片：
 
 ```bash
-curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
+curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
   -H 'content-type: application/json' \
   -d '{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}}'
 ```
@@ -94,7 +94,7 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
 MCP JSON-RPC（手工调用）：
 
 ```bash
-curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/mcp \
+curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/mcp \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
@@ -111,7 +111,7 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/mcp \
 `echo-pdf.config.json` 中的关键项：
 
 - `agent.defaultProvider`
-- `agent.defaultModel`
+- `agent.defaultModels.<providerAlias>`
 - `service.storage.maxFileBytes`
 - `service.storage.maxTotalBytes`
 - `service.storage.ttlHours`
@@ -123,6 +123,10 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/mcp \
 - `VERCEL_AI_GATEWAY_API_KEY` / `VERCEL_AI_GATEWAY_KEY`
 - `ECHO_PDF_DEFAULT_PROVIDER`
 - `ECHO_PDF_DEFAULT_MODEL`
+- `ECHO_PDF_MODEL_OPENAI`
+- `ECHO_PDF_MODEL_VERCEL_GATEWAY`
+- `ECHO_PDF_MODEL_OPENROUTER`
+- `ECHO_PDF_WORKER_NAME`（CLI 默认服务地址推导）
 - `ECHO_PDF_MCP_KEY`（可选，用于保护 `/mcp`）
 
 ---

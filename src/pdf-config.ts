@@ -49,8 +49,27 @@ const validateConfig = (config: EchoPdfConfig): EchoPdfConfig => {
   if (!config.providers?.[config.agent.defaultProvider]) {
     throw new Error(`default provider "${config.agent.defaultProvider}" missing`)
   }
+  if (!config.agent.defaultModels || typeof config.agent.defaultModels !== "object") {
+    throw new Error("agent.defaultModels is required")
+  }
   return config
 }
+
+const normalizeDefaultModels = (config: EchoPdfConfig): Record<string, string> => {
+  const mapped = typeof config.agent.defaultModels === "object" && config.agent.defaultModels !== null
+    ? config.agent.defaultModels
+    : {}
+  const result: Record<string, string> = {}
+  for (const alias of Object.keys(config.providers)) {
+    const value = mapped[alias]
+    if (typeof value === "string") result[alias] = value.trim()
+    else result[alias] = ""
+  }
+  return result
+}
+
+const envKeyForProviderModel = (providerAlias: string): string =>
+  `ECHO_PDF_MODEL_${providerAlias.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`
 
 export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
   const fromEnv = env.ECHO_PDF_CONFIG_JSON?.trim()
@@ -59,18 +78,30 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
 
   const providerOverride = env.ECHO_PDF_DEFAULT_PROVIDER
   const modelOverride = env.ECHO_PDF_DEFAULT_MODEL
+  const normalizedDefaultModels = normalizeDefaultModels(resolved)
+
+  const defaultProvider =
+    typeof providerOverride === "string" && providerOverride.trim().length > 0
+      ? providerOverride.trim()
+      : resolved.agent.defaultProvider
+
+  for (const providerAlias of Object.keys(resolved.providers)) {
+    const override = env[envKeyForProviderModel(providerAlias)]
+    if (typeof override === "string" && override.trim().length > 0) {
+      normalizedDefaultModels[providerAlias] = override.trim()
+    }
+  }
+  if (typeof modelOverride === "string" && modelOverride.trim().length > 0) {
+    normalizedDefaultModels[defaultProvider] = modelOverride.trim()
+  }
+
   const withOverrides: EchoPdfConfig = {
     ...resolved,
     agent: {
       ...resolved.agent,
-      defaultProvider:
-        typeof providerOverride === "string" && providerOverride.trim().length > 0
-          ? providerOverride.trim()
-          : resolved.agent.defaultProvider,
-      defaultModel:
-        typeof modelOverride === "string" && modelOverride.trim().length > 0
-          ? modelOverride.trim()
-          : resolved.agent.defaultModel,
+      defaultProvider,
+      defaultModel: normalizedDefaultModels[defaultProvider] ?? "",
+      defaultModels: normalizedDefaultModels,
     },
   }
 

@@ -29,7 +29,9 @@ describe("loadEchoPdfConfig", () => {
         },
         agent: {
           defaultProvider: "openai",
-          defaultModel: "",
+          defaultModels: {
+            openai: "gpt-4.1-mini",
+          },
           ocrPrompt: "ocr",
           tablePrompt: "table",
         },
@@ -46,5 +48,6 @@ describe("loadEchoPdfConfig", () => {
       }),
     } as Env)
     expect(config.service.name).toBe("echo-pdf-test")
+    expect(config.agent.defaultModels?.openai).toBe("gpt-4.1-mini")
   })
 })

@@ -3,10 +3,11 @@ import { spawn, type ChildProcess } from "node:child_process"
 import { readdir, readFile, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import configJson from "../../echo-pdf.config.json"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const bundledFixtureDir = path.join(rootDir, "scripts/fixtures")
+const bundledFixtureDir = path.join(rootDir, "fixtures")
 const defaultFixturePdf = path.join(bundledFixtureDir, "smoke.pdf")
 const testcaseDir = process.env.TESTCASE_DIR ?? path.resolve(rootDir, "..", "testcase/eda")
 const port = process.env.PORT ?? "8788"
@@ -18,6 +19,23 @@ let devLogs = ""
 let fixturePdf = defaultFixturePdf
 let fallbackFixturePdf = defaultFixturePdf
 let maxFileBytes = 0
+
+const providerEntries = Object.entries(configJson.providers ?? {})
+
+const envCandidates = (key: string): string[] => {
+  const candidates = [key]
+  if (key.endsWith("_API_KEY")) candidates.push(key.replace(/_API_KEY$/, "_KEY"))
+  if (key.endsWith("_KEY")) candidates.push(key.replace(/_KEY$/, "_API_KEY"))
+  return Array.from(new Set(candidates))
+}
+
+const readFirstEnv = (keys: string[]): string => {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (typeof value === "string" && value.trim().length > 0) return value.trim()
+  }
+  return ""
+}
 
 const readEnvLocal = async (): Promise<void> => {
   const envPath = path.resolve(rootDir, "..", ".env.local")
@@ -58,22 +76,29 @@ const postJson = async (pathname: string, payload: unknown): Promise<unknown> =>
   return data
 }
 
-const detectLlmProvider = (): "openrouter" | "openai" | "vercel_gateway" | null => {
+const detectLlmProvider = (): string | null => {
   const forced = process.env.SMOKE_LLM_PROVIDER
-  if (forced === "openrouter" || forced === "openai" || forced === "vercel_gateway") {
-    return forced
+  if (typeof forced === "string" && forced.trim().length > 0) {
+    const normalized = forced.trim()
+    if (configJson.providers?.[normalized]) return normalized
   }
-  if (process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY) return "openrouter"
-  if (process.env.OPENAI_API_KEY) return "openai"
-  if (process.env.VERCEL_AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_KEY) return "vercel_gateway"
+  for (const [providerAlias, providerConfig] of providerEntries) {
+    if (readFirstEnv(envCandidates(providerConfig.apiKeyEnv)).length > 0) {
+      return providerAlias
+    }
+  }
   return null
 }
 
-const providerApiKeys = (): Record<string, string> => ({
-  openai: process.env.OPENAI_API_KEY ?? "",
-  openrouter: process.env.OPENROUTER_KEY ?? process.env.OPENROUTER_API_KEY ?? "",
-  "vercel-ai-gateway": process.env.VERCEL_AI_GATEWAY_API_KEY ?? process.env.VERCEL_AI_GATEWAY_KEY ?? "",
-})
+const providerApiKeys = (): Record<string, string> => {
+  const result: Record<string, string> = {}
+  for (const [providerAlias, providerConfig] of providerEntries) {
+    const key = readFirstEnv(envCandidates(providerConfig.apiKeyEnv))
+    result[providerAlias] = key
+    result[providerConfig.type] = key
+  }
+  return result
+}
 
 const chooseModelCandidates = (models: string[]): string[] => {
   const forced = process.env.SMOKE_LLM_MODEL

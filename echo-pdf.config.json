@@ -16,7 +16,11 @@
   },
   "agent": {
     "defaultProvider": "openai",
-    "defaultModel": "",
+    "defaultModels": {
+      "openai": "",
+      "vercel_gateway": "",
+      "openrouter": ""
+    },
     "ocrPrompt": "Extract readable text from this PDF page image. Preserve line breaks and section structure.",
     "tablePrompt": "Detect all tabular structures from this PDF page image and output valid LaTeX tabular environments only."
   },

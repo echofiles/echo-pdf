@@ -1,6 +1,6 @@
 import type { Env } from "./types"
 import type { EchoPdfConfig, EchoPdfProviderConfig } from "./pdf-types"
-import { readRequiredEnv } from "./pdf-config"
+import { resolveProviderApiKey } from "./provider-keys"
 
 const defaultBaseUrl = (provider: EchoPdfProviderConfig): string => {
   if (provider.baseUrl) return provider.baseUrl
@@ -31,14 +31,19 @@ const resolveEndpoint = (
 }
 
 const toAuthHeader = (
+  config: EchoPdfConfig,
+  providerAlias: string,
   provider: EchoPdfProviderConfig,
   env: Env,
   runtimeApiKeys?: Record<string, string>
 ): Record<string, string> => {
-  const runtimeKey = runtimeApiKeys?.[provider.type]
-  const token = runtimeKey && runtimeKey.trim().length > 0
-    ? runtimeKey.trim()
-    : readRequiredEnv(env, provider.apiKeyEnv)
+  const token = resolveProviderApiKey({
+    config,
+    env,
+    providerAlias,
+    provider,
+    runtimeApiKeys,
+  })
   return { Authorization: `Bearer ${token}` }
 }
 
@@ -95,7 +100,7 @@ export const listProviderModels = async (
       method: "GET",
       headers: {
         Accept: "application/json",
-        ...toAuthHeader(provider, env, runtimeApiKeys),
+        ...toAuthHeader(config, alias, provider, env, runtimeApiKeys),
         ...(provider.headers ?? {}),
       },
     },
@@ -132,7 +137,7 @@ export const visionRecognize = async (input: {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...toAuthHeader(provider, input.env, input.runtimeApiKeys),
+        ...toAuthHeader(input.config, input.providerAlias, provider, input.env, input.runtimeApiKeys),
         ...(provider.headers ?? {}),
       },
       body: JSON.stringify({

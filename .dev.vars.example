@@ -1,3 +1,4 @@
+# openai / vercel_gateway / openrouter
 OPENAI_API_KEY=
 VERCEL_AI_GATEWAY_API_KEY=
 OPENROUTER_KEY=
@@ -10,8 +11,14 @@ OPENROUTER_KEY=
 ECHO_PDF_MCP_KEY=
 
 # Optional: runtime default route/model when request does not pass provider/model.
+# openai / vercel_gateway / openrouter
 ECHO_PDF_DEFAULT_PROVIDER=openai
 ECHO_PDF_DEFAULT_MODEL=
 
+# Optional: provider-specific default models (recommended)
+ECHO_PDF_MODEL_OPENAI=
+ECHO_PDF_MODEL_VERCEL_GATEWAY=
+ECHO_PDF_MODEL_OPENROUTER=
+
 # Optional full override for echo-pdf.config.json
-# ECHO_PDF_CONFIG_JSON={"service":{"name":"echo-pdf","maxPdfBytes":31457280,"maxPagesPerRequest":10,"defaultRenderScale":2},"pdfium":{"wasmUrl":"https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"},"agent":{"defaultProvider":"openai","defaultModel":"","ocrPrompt":"...","tablePrompt":"..."},"providers":{"openai":{"type":"openai","apiKeyEnv":"OPENAI_API_KEY"}},"mcp":{"serverName":"echo-pdf-mcp","version":"0.1.0"}}
+# ECHO_PDF_CONFIG_JSON={"service":{"name":"echo-pdf","maxPdfBytes":31457280,"maxPagesPerRequest":10,"defaultRenderScale":2},"pdfium":{"wasmUrl":"https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"},"agent":{"defaultProvider":"openai","defaultModels":{"openai":"","vercel_gateway":"","openrouter":""},"ocrPrompt":"...","tablePrompt":"..."},"providers":{"openai":{"type":"openai","apiKeyEnv":"OPENAI_API_KEY"}},"mcp":{"serverName":"echo-pdf-mcp","version":"0.1.0"}}

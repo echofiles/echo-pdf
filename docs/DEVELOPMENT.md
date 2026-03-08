@@ -28,7 +28,7 @@ Notes:
 - Integration tests read `../.env.local` automatically
 - Integration/Smoke sample PDF priority:
   1. `TESTCASE_DIR` (default `../testcase/eda`) first PDF
-  2. `scripts/fixtures/smoke.pdf`
+  2. `fixtures/smoke.pdf`
 
 Useful env vars:
 

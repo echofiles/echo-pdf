@@ -1,5 +1,6 @@
 import { normalizeReturnMode } from "./file-utils"
 import { FileStoreDO } from "./file-store-do"
+import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults"
 import { handleMcpRequest } from "./mcp-server"
 import { loadEchoPdfConfig } from "./pdf-config"
 import { getRuntimeFileStore } from "./pdf-storage"
@@ -133,8 +134,15 @@ export default {
       if (!name) return json({ error: "Missing required field: name" }, 400)
       try {
         const args = asObj(body.arguments)
-        const preferredProvider = typeof body.provider === "string" ? body.provider : config.agent.defaultProvider
-        const preferredModel = typeof body.model === "string" ? body.model : config.agent.defaultModel
+        const preferredProvider = resolveProviderAlias(
+          config,
+          typeof body.provider === "string" ? body.provider : undefined
+        )
+        const preferredModel = resolveModelForProvider(
+          config,
+          preferredProvider,
+          typeof body.model === "string" ? body.model : undefined
+        )
         if (name.startsWith("pdf_")) {
           if (typeof args.provider !== "string" || args.provider.length === 0) {
             args.provider = preferredProvider
@@ -160,7 +168,7 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/providers/models") {
       const body = await readJson(request)
-      const provider = typeof body.provider === "string" ? body.provider : config.agent.defaultProvider
+      const provider = resolveProviderAlias(config, typeof body.provider === "string" ? body.provider : undefined)
       const runtimeKeys = typeof body.providerApiKeys === "object" && body.providerApiKeys !== null
         ? (body.providerApiKeys as Record<string, string>)
         : undefined

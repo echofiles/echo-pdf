@@ -2,25 +2,60 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "echo-pdf-cli")
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
-const DEFAULT_SERVICE_URL = process.env.ECHO_PDF_SERVICE_URL || "https://xx.echofilesai.workers.dev"
-const PROVIDER_KEY_NAMES = ["openai", "openrouter", "vercel-ai-gateway"]
-const PROVIDER_ALIASES = ["openai", "openrouter", "vercel_gateway"]
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const PROJECT_CONFIG_FILE = path.resolve(__dirname, "../echo-pdf.config.json")
+const PROJECT_CONFIG = JSON.parse(fs.readFileSync(PROJECT_CONFIG_FILE, "utf-8"))
+const PROVIDER_ENTRIES = Object.entries(PROJECT_CONFIG.providers || {})
+const PROVIDER_ALIASES = PROVIDER_ENTRIES.map(([alias]) => alias)
+const PROVIDER_ALIAS_BY_TYPE = new Map(
+  PROVIDER_ENTRIES.map(([alias, provider]) => [provider.type, alias])
+)
+const PROVIDER_SET_NAMES = Array.from(
+  new Set(PROVIDER_ENTRIES.flatMap(([alias, provider]) => [alias, provider.type]))
+)
+const PROJECT_DEFAULT_MODELS = Object.fromEntries(
+  PROVIDER_ALIASES.map((alias) => [alias, String(PROJECT_CONFIG.agent?.defaultModels?.[alias] || "").trim()])
+)
+const DEFAULT_WORKER_NAME = process.env.ECHO_PDF_WORKER_NAME || PROJECT_CONFIG.service?.name || "echo-pdf"
+const DEFAULT_SERVICE_URL = process.env.ECHO_PDF_SERVICE_URL || `https://${DEFAULT_WORKER_NAME}.echofilesai.workers.dev`
+const DEFAULT_MCP_HEADER = process.env.ECHO_PDF_MCP_HEADER?.trim() || PROJECT_CONFIG.mcp?.authHeader || "x-mcp-key"
+
+const emptyProviders = () =>
+  Object.fromEntries(PROVIDER_ALIASES.map((providerAlias) => [providerAlias, { apiKey: "" }]))
+
+const resolveProviderAliasInput = (input) => {
+  if (typeof input !== "string" || input.trim().length === 0) {
+    throw new Error("provider is required")
+  }
+  const raw = input.trim()
+  if (PROVIDER_ALIASES.includes(raw)) return raw
+  const fromType = PROVIDER_ALIAS_BY_TYPE.get(raw)
+  if (fromType) return fromType
+  throw new Error(`provider must be one of: ${PROVIDER_SET_NAMES.join(", ")}`)
+}
+
+function resolveDefaultProviderAlias() {
+  const configured = PROJECT_CONFIG.agent?.defaultProvider
+  if (typeof configured === "string" && configured.trim().length > 0) {
+    return resolveProviderAliasInput(configured.trim())
+  }
+  return PROVIDER_ALIASES[0] || "openai"
+}
+
+const DEFAULT_PROVIDER_ALIAS = resolveDefaultProviderAlias()
 
 const defaultConfig = () => ({
   serviceUrl: DEFAULT_SERVICE_URL,
   profile: "default",
   profiles: {
     default: {
-      defaultProvider: "openai",
+      defaultProvider: DEFAULT_PROVIDER_ALIAS,
       models: {},
-      providers: {
-        openai: { apiKey: "" },
-        openrouter: { apiKey: "" },
-        "vercel-ai-gateway": { apiKey: "" },
-      },
+      providers: emptyProviders(),
     },
   },
 })
@@ -43,7 +78,15 @@ const loadConfig = () => {
   }
   const profile = getProfile(config, config.profile)
   if (typeof profile.defaultProvider !== "string" || !profile.defaultProvider) {
-    profile.defaultProvider = "openai"
+    profile.defaultProvider = DEFAULT_PROVIDER_ALIAS
+  }
+  if (!profile.providers || typeof profile.providers !== "object") {
+    profile.providers = emptyProviders()
+  }
+  for (const providerAlias of PROVIDER_ALIASES) {
+    if (!profile.providers[providerAlias] || typeof profile.providers[providerAlias] !== "object") {
+      profile.providers[providerAlias] = { apiKey: "" }
+    }
   }
   if (!profile.models || typeof profile.models !== "object") {
     profile.models = {}
@@ -78,16 +121,21 @@ const getProfile = (config, name) => {
   const profileName = name || config.profile || "default"
   if (!config.profiles[profileName]) {
     config.profiles[profileName] = {
-      defaultProvider: "openai",
+      defaultProvider: DEFAULT_PROVIDER_ALIAS,
       models: {},
       providers: {},
     }
   }
   const profile = config.profiles[profileName]
   if (!profile.providers || typeof profile.providers !== "object") profile.providers = {}
+  for (const providerAlias of PROVIDER_ALIASES) {
+    if (!profile.providers[providerAlias] || typeof profile.providers[providerAlias] !== "object") {
+      profile.providers[providerAlias] = { apiKey: "" }
+    }
+  }
   if (!profile.models || typeof profile.models !== "object") profile.models = {}
   if (typeof profile.defaultProvider !== "string" || !profile.defaultProvider) {
-    profile.defaultProvider = "openai"
+    profile.defaultProvider = DEFAULT_PROVIDER_ALIAS
   }
   return profile
 }
@@ -96,27 +144,30 @@ const getProfileName = (config, profileName) => profileName || config.profile ||
 
 const resolveProviderAlias = (profile, explicitProvider) =>
   typeof explicitProvider === "string" && explicitProvider.length > 0
-    ? explicitProvider
-    : profile.defaultProvider || "openai"
+    ? resolveProviderAliasInput(explicitProvider)
+    : resolveProviderAliasInput(profile.defaultProvider || DEFAULT_PROVIDER_ALIAS)
 
 const resolveDefaultModel = (profile, providerAlias) => {
   const model = profile.models?.[providerAlias]
-  return typeof model === "string" ? model : ""
+  if (typeof model === "string" && model.trim().length > 0) return model.trim()
+  return PROJECT_DEFAULT_MODELS[providerAlias] || ""
 }
 
 const buildProviderApiKeys = (config, profileName) => {
   const profile = getProfile(config, profileName)
-  return {
-    openai: profile.providers?.openai?.apiKey || "",
-    openrouter: profile.providers?.openrouter?.apiKey || "",
-    "vercel-ai-gateway": profile.providers?.["vercel-ai-gateway"]?.apiKey || "",
+  const providerApiKeys = {}
+  for (const [providerAlias, providerConfig] of PROVIDER_ENTRIES) {
+    const apiKey = profile.providers?.[providerAlias]?.apiKey || profile.providers?.[providerConfig.type]?.apiKey || ""
+    providerApiKeys[providerAlias] = apiKey
+    providerApiKeys[providerConfig.type] = apiKey
   }
+  return providerApiKeys
 }
 
-const postJson = async (url, payload) => {
+const postJson = async (url, payload, extraHeaders = {}) => {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
     body: JSON.stringify(payload),
   })
   const text = await response.text()
@@ -136,12 +187,35 @@ const print = (data) => {
   process.stdout.write(`${JSON.stringify(data, null, 2)}\n`)
 }
 
+const buildMcpHeaders = () => {
+  const token = process.env.ECHO_PDF_MCP_KEY?.trim()
+  if (!token) return {}
+  return { [DEFAULT_MCP_HEADER]: token }
+}
+
+const buildModelsRequest = (provider, providerApiKeys) => ({ provider, providerApiKeys })
+
+const buildToolCallRequest = (input) => ({
+  name: input.tool,
+  arguments: input.args,
+  provider: input.provider,
+  model: input.model,
+  providerApiKeys: input.providerApiKeys,
+})
+
+const buildMcpRequest = (id, method, params = {}) => ({
+  jsonrpc: "2.0",
+  id,
+  method,
+  params,
+})
+
 const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
   process.stdout.write(`Commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
-  process.stdout.write(`  provider set --provider <openai|openrouter|vercel-ai-gateway> --api-key <KEY> [--profile name]\n`)
-  process.stdout.write(`  provider use --provider <openai|openrouter|vercel_gateway> [--profile name]\n`)
+  process.stdout.write(`  provider set --provider <${PROVIDER_SET_NAMES.join("|")}> --api-key <KEY> [--profile name]\n`)
+  process.stdout.write(`  provider use --provider <${PROVIDER_ALIASES.join("|")}> [--profile name]\n`)
   process.stdout.write(`  provider list [--profile name]\n`)
   process.stdout.write(`  models [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model set --model <model-id> [--provider alias] [--profile name]\n`)
@@ -223,7 +297,13 @@ const main = async () => {
     return
   }
 
-  const [command, subcommand, ...rest] = argv
+  const [command, ...raw] = argv
+  let subcommand = ""
+  let rest = raw
+  if (["provider", "mcp", "setup", "model"].includes(command)) {
+    subcommand = raw[0] || ""
+    rest = raw.slice(1)
+  }
   const flags = parseFlags(rest)
 
   if (command === "init") {
@@ -237,32 +317,23 @@ const main = async () => {
   }
 
   if (command === "provider" && subcommand === "set") {
-    const provider = flags.provider
+    const providerAlias = resolveProviderAliasInput(flags.provider)
     const apiKey = flags["api-key"]
-    if (typeof provider !== "string" || typeof apiKey !== "string") {
+    if (typeof apiKey !== "string") {
       throw new Error("provider set requires --provider and --api-key")
-    }
-    if (!PROVIDER_KEY_NAMES.includes(provider)) {
-      throw new Error(`provider must be one of: ${PROVIDER_KEY_NAMES.join(", ")}`)
     }
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
     if (!profile.providers) profile.providers = {}
-    profile.providers[provider] = { apiKey }
+    profile.providers[providerAlias] = { apiKey }
     saveConfig(config)
-    print({ ok: true, provider, profile: profileName, configFile: CONFIG_FILE })
+    print({ ok: true, provider: providerAlias, profile: profileName, configFile: CONFIG_FILE })
     return
   }
 
   if (command === "provider" && subcommand === "use") {
-    const provider = flags.provider
-    if (typeof provider !== "string" || provider.length === 0) {
-      throw new Error("provider use requires --provider")
-    }
-    if (!PROVIDER_ALIASES.includes(provider)) {
-      throw new Error(`provider alias must be one of: ${PROVIDER_ALIASES.join(", ")}`)
-    }
+    const provider = resolveProviderAliasInput(flags.provider)
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
@@ -289,9 +360,9 @@ const main = async () => {
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
-    const provider = resolveProviderAlias(profile, flags.provider)
+    const provider = flags.provider ? resolveProviderAliasInput(flags.provider) : resolveProviderAlias(profile, flags.provider)
     const providerApiKeys = buildProviderApiKeys(config, profileName)
-    const data = await postJson(`${config.serviceUrl}/providers/models`, { provider, providerApiKeys })
+    const data = await postJson(`${config.serviceUrl}/providers/models`, buildModelsRequest(provider, providerApiKeys))
     print(data)
     return
   }
@@ -304,7 +375,7 @@ const main = async () => {
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
-    const provider = resolveProviderAlias(profile, flags.provider)
+    const provider = flags.provider ? resolveProviderAliasInput(flags.provider) : resolveProviderAlias(profile, flags.provider)
     profile.models[provider] = model
     saveConfig(config)
     print({ ok: true, profile: profileName, provider, model, configFile: CONFIG_FILE })
@@ -315,7 +386,7 @@ const main = async () => {
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
-    const provider = resolveProviderAlias(profile, flags.provider)
+    const provider = flags.provider ? resolveProviderAliasInput(flags.provider) : resolveProviderAlias(profile, flags.provider)
     const model = resolveDefaultModel(profile, provider)
     print({ profile: profileName, provider, model })
     return
@@ -325,7 +396,12 @@ const main = async () => {
     const config = loadConfig()
     const profileName = getProfileName(config, flags.profile)
     const profile = getProfile(config, profileName)
-    print({ profile: profileName, defaultProvider: profile.defaultProvider, models: profile.models || {} })
+    print({
+      profile: profileName,
+      defaultProvider: profile.defaultProvider,
+      models: profile.models || {},
+      projectDefaults: PROJECT_DEFAULT_MODELS,
+    })
     return
   }
 
@@ -348,13 +424,7 @@ const main = async () => {
     const provider = resolveProviderAlias(profile, flags.provider)
     const model = typeof flags.model === "string" ? flags.model : resolveDefaultModel(profile, provider)
     const providerApiKeys = buildProviderApiKeys(config, profileName)
-    const payload = {
-      name: tool,
-      arguments: args,
-      provider,
-      model,
-      providerApiKeys,
-    }
+    const payload = buildToolCallRequest({ tool, args, provider, model, providerApiKeys })
     const data = await postJson(`${config.serviceUrl}/tools/call`, payload)
     print(data)
     return
@@ -362,24 +432,14 @@ const main = async () => {
 
   if (command === "mcp" && subcommand === "initialize") {
     const config = loadConfig()
-    const data = await postJson(`${config.serviceUrl}/mcp`, {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "initialize",
-      params: {},
-    })
+    const data = await postJson(`${config.serviceUrl}/mcp`, buildMcpRequest(1, "initialize"), buildMcpHeaders())
     print(data)
     return
   }
 
   if (command === "mcp" && subcommand === "tools") {
     const config = loadConfig()
-    const data = await postJson(`${config.serviceUrl}/mcp`, {
-      jsonrpc: "2.0",
-      id: 2,
-      method: "tools/list",
-      params: {},
-    })
+    const data = await postJson(`${config.serviceUrl}/mcp`, buildMcpRequest(2, "tools/list"), buildMcpHeaders())
     print(data)
     return
   }
@@ -389,15 +449,11 @@ const main = async () => {
     const tool = flags.tool
     if (typeof tool !== "string") throw new Error("mcp call requires --tool")
     const args = typeof flags.args === "string" ? JSON.parse(flags.args) : {}
-    const data = await postJson(`${config.serviceUrl}/mcp`, {
-      jsonrpc: "2.0",
-      id: 3,
-      method: "tools/call",
-      params: {
-        name: tool,
-        arguments: args,
-      },
-    })
+    const data = await postJson(
+      `${config.serviceUrl}/mcp`,
+      buildMcpRequest(3, "tools/call", { name: tool, arguments: args }),
+      buildMcpHeaders()
+    )
     print(data)
     return
   }

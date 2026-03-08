@@ -2,6 +2,9 @@ const els = {
   statusText: document.getElementById("statusText"),
   providerSelect: document.getElementById("providerSelect"),
   modelSelect: document.getElementById("modelSelect"),
+  openaiModelInput: document.getElementById("openaiModelInput"),
+  vercelModelInput: document.getElementById("vercelModelInput"),
+  openrouterModelInput: document.getElementById("openrouterModelInput"),
   openaiKeyInput: document.getElementById("openaiKeyInput"),
   vercelKeyInput: document.getElementById("vercelKeyInput"),
   openrouterKeyInput: document.getElementById("openrouterKeyInput"),
@@ -24,6 +27,63 @@ const state = {
   config: null,
   tools: [],
   uploadedFileId: "",
+  providerModels: {},
+}
+
+const MODEL_SETTINGS_KEY = "echo_pdf_provider_models"
+
+const normalizeProviderModelMap = (input) => {
+  const providers = state.config?.providers || []
+  const validAliases = new Set(providers.map((p) => p.alias))
+  const map = {}
+  if (input && typeof input === "object") {
+    for (const [k, v] of Object.entries(input)) {
+      if (!validAliases.has(k)) continue
+      if (typeof v !== "string") continue
+      map[k] = v.trim()
+    }
+  }
+  return map
+}
+
+const loadProviderModelsFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(MODEL_SETTINGS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return normalizeProviderModelMap(parsed)
+  } catch {
+    return {}
+  }
+}
+
+const configProviderModels = () => {
+  const defaults = state.config?.agent?.defaultModels
+  if (!defaults || typeof defaults !== "object") return {}
+  return normalizeProviderModelMap(defaults)
+}
+
+const persistProviderModels = () => {
+  localStorage.setItem(MODEL_SETTINGS_KEY, JSON.stringify(state.providerModels))
+}
+
+const setProviderModel = (provider, model) => {
+  if (!provider) return
+  state.providerModels[provider] = (model || "").trim()
+  persistProviderModels()
+}
+
+const modelInputByProvider = (provider) => {
+  if (provider === "openai") return els.openaiModelInput
+  if (provider === "vercel_gateway") return els.vercelModelInput
+  if (provider === "openrouter") return els.openrouterModelInput
+  return null
+}
+
+const providerModelFromInput = (provider) => {
+  const input = modelInputByProvider(provider)
+  if (!input) return ""
+  return input.value.trim()
 }
 
 const setStatus = (text) => {
@@ -102,6 +162,17 @@ const loadModels = async () => {
     option.value = model
     option.textContent = model
     els.modelSelect.appendChild(option)
+  }
+  const preferredModel = providerModelFromInput(provider)
+  if (preferredModel) {
+    const exists = Array.from(els.modelSelect.options).some((o) => o.value === preferredModel)
+    if (!exists) {
+      const option = document.createElement("option")
+      option.value = preferredModel
+      option.textContent = `${preferredModel} (manual)`
+      els.modelSelect.prepend(option)
+    }
+    els.modelSelect.value = preferredModel
   }
   setStatus(`Loaded ${data.models.length} models`)
 }
@@ -249,14 +320,16 @@ const uploadPdf = async () => {
 const runTool = async () => {
   const name = els.toolSelect.value
   const argumentsPayload = readToolArguments()
+  const provider = els.providerSelect.value
+  const model = els.modelSelect.value || providerModelFromInput(provider)
   const res = await fetch("/tools/call", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name,
       arguments: argumentsPayload,
-      provider: els.providerSelect.value,
-      model: els.modelSelect.value,
+      provider,
+      model,
       providerApiKeys: collectApiKeys(),
     }),
   })
@@ -278,11 +351,13 @@ const runStream = async () => {
   const op = operationMap[name]
   if (!op) throw new Error("stream mode supports only pdf_* tools")
 
+  const provider = els.providerSelect.value
+  const model = els.modelSelect.value || providerModelFromInput(provider)
   const payload = {
     operation: op,
     ...args,
-    provider: els.providerSelect.value,
-    model: els.modelSelect.value,
+    provider,
+    model,
     providerApiKeys: collectApiKeys(),
   }
 
@@ -343,6 +418,10 @@ const init = async () => {
 
   if (providers.length > 0) {
     els.providerSelect.value = state.config.agent.defaultProvider || providers[0].alias
+    state.providerModels = { ...configProviderModels(), ...loadProviderModelsFromStorage() }
+    els.openaiModelInput.value = state.providerModels.openai || ""
+    els.vercelModelInput.value = state.providerModels.vercel_gateway || ""
+    els.openrouterModelInput.value = state.providerModels.openrouter || ""
     await loadModels()
   }
 
@@ -352,6 +431,34 @@ const init = async () => {
 }
 
 els.providerSelect.addEventListener("change", () => void loadModels())
+els.modelSelect.addEventListener("change", () => {
+  const provider = els.providerSelect.value
+  const model = els.modelSelect.value.trim()
+  setProviderModel(provider, model)
+  const input = modelInputByProvider(provider)
+  if (input) input.value = model
+})
+els.openaiModelInput.addEventListener("change", () => {
+  const model = els.openaiModelInput.value.trim()
+  setProviderModel("openai", model)
+  if (els.providerSelect.value === "openai") {
+    void loadModels().catch(() => undefined)
+  }
+})
+els.vercelModelInput.addEventListener("change", () => {
+  const model = els.vercelModelInput.value.trim()
+  setProviderModel("vercel_gateway", model)
+  if (els.providerSelect.value === "vercel_gateway") {
+    void loadModels().catch(() => undefined)
+  }
+})
+els.openrouterModelInput.addEventListener("change", () => {
+  const model = els.openrouterModelInput.value.trim()
+  setProviderModel("openrouter", model)
+  if (els.providerSelect.value === "openrouter") {
+    void loadModels().catch(() => undefined)
+  }
+})
 els.testModelsBtn.addEventListener("click", async () => {
   try {
     await loadModels()
