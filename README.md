@@ -88,6 +88,33 @@ echo-pdf mcp tools
 echo-pdf mcp call --tool file_ops --args '{"op":"list"}'
 ```
 
+### 3.1.1 纯 MCP 场景推荐流程（本地 PDF）
+
+远端 MCP server 无法直接读取你本机文件路径。推荐两步：
+
+1. 先通过 HTTP 上传本地 PDF，拿到 `fileId`
+2. 再用 MCP 工具传 `fileId` 调用
+
+示例：
+
+```bash
+curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/api/files/upload \
+  -F 'file=@./input.pdf'
+
+echo-pdf mcp call --tool pdf_extract_pages --args '{"fileId":"<FILE_ID>","pages":[1]}'
+```
+
+### 3.1.2 不上传文件的 URL ingest 流程
+
+如果 PDF 已经在公网可访问，直接传 `url`：
+
+```bash
+echo-pdf mcp call --tool pdf_extract_pages --args '{
+  "url":"https://example.com/sample.pdf",
+  "pages":[1]
+}'
+```
+
 ### 3.2 给客户端生成 MCP 配置片段
 
 ```bash
@@ -106,6 +133,12 @@ echo-pdf setup add json
 - `pdf_ocr_pages`
 - `pdf_tables_to_latex`
 - `file_ops`
+
+MCP 输出策略：
+
+- `pdf_extract_pages` 在 MCP 下默认 `returnMode=url`（不传 `returnMode` 时生效）
+- MCP `text` 会对大字段做去二进制/截断，避免把大段 base64 塞进上下文
+- 二进制结果请优先使用 `resource_link` 中的下载地址
 
 ## 4. Web UI 使用
 

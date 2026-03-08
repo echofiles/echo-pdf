@@ -15,6 +15,10 @@ export interface ToolOutputEnvelope {
   readonly artifacts: ToolArtifact[]
 }
 
+const MAX_TEXT_STRING = 1200
+const MAX_TEXT_ARRAY = 40
+const MAX_TEXT_DEPTH = 8
+
 const asObj = (value: unknown): JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as JsonObject)
@@ -113,6 +117,38 @@ const summarizeData = (data: unknown): string => {
   return "Tool executed successfully."
 }
 
+const sanitizeString = (value: string): string => {
+  if (value.startsWith("data:")) {
+    const [head] = value.split(",", 1)
+    return `${head},<omitted>`
+  }
+  if (/^[A-Za-z0-9+/=]{300,}$/.test(value)) {
+    return `<base64 omitted len=${value.length}>`
+  }
+  if (value.length > MAX_TEXT_STRING) {
+    return `${value.slice(0, MAX_TEXT_STRING)}...(truncated ${value.length - MAX_TEXT_STRING} chars)`
+  }
+  return value
+}
+
+const sanitizeForText = (value: unknown, depth = 0): unknown => {
+  if (depth >= MAX_TEXT_DEPTH) return "<max-depth>"
+  if (typeof value === "string") return sanitizeString(value)
+  if (typeof value !== "object" || value === null) return value
+  if (Array.isArray(value)) {
+    const items = value.slice(0, MAX_TEXT_ARRAY).map((item) => sanitizeForText(item, depth + 1))
+    if (value.length > MAX_TEXT_ARRAY) {
+      items.push(`<truncated ${value.length - MAX_TEXT_ARRAY} items>`)
+    }
+    return items
+  }
+  const out: Record<string, unknown> = {}
+  for (const [key, nested] of Object.entries(value)) {
+    out[key] = sanitizeForText(nested, depth + 1)
+  }
+  return out
+}
+
 export const buildMcpContent = (envelope: ToolOutputEnvelope): Array<Record<string, unknown>> => {
   const lines: string[] = [summarizeData(envelope.data)]
   if (envelope.artifacts.length > 0) {
@@ -130,7 +166,7 @@ export const buildMcpContent = (envelope: ToolOutputEnvelope): Array<Record<stri
     }
   }
   lines.push("")
-  lines.push(JSON.stringify(envelope, null, 2))
+  lines.push(JSON.stringify(sanitizeForText(envelope), null, 2))
 
   const content: Array<Record<string, unknown>> = [{ type: "text", text: lines.join("\n") }]
   for (const artifact of envelope.artifacts) {

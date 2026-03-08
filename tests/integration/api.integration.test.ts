@@ -383,6 +383,25 @@ describe("echo-pdf integration", () => {
     expect(callData.result?.content?.some((item) => item.type === "resource_link")).toBe(false)
   })
 
+  it("uses url mode by default for mcp extract and avoids inline data-url in text", async () => {
+    const uploaded = await uploadPdf(defaultFixturePdf)
+    const fileId = uploaded.fileId
+    const callData = await postJson("/mcp", {
+      jsonrpc: "2.0",
+      id: 10,
+      method: "tools/call",
+      params: { name: "pdf_extract_pages", arguments: { fileId, pages: [1] } },
+    }) as {
+      result?: { content?: Array<{ type?: string; text?: string; uri?: string }> }
+    }
+    const content = callData.result?.content ?? []
+    const text = String(content.find((item) => item.type === "text")?.text ?? "")
+    expect(text.includes("data:image/png;base64,")).toBe(false)
+    expect(content.some((item) => item.type === "resource_link")).toBe(true)
+
+    await postJson("/api/files/op", { op: "delete", fileId })
+  })
+
   it("returns -32602 for invalid mcp tool params", async () => {
     const response = await fetch(`${baseUrl}/mcp`, {
       method: "POST",

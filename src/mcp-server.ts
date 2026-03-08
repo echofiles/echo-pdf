@@ -48,6 +48,16 @@ const maybeAuthorized = (request: Request, env: Env, config: EchoPdfConfig): boo
 const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
   typeof configured === "string" && configured.length > 0 ? configured : request.url
 
+const prepareMcpToolArgs = (toolName: string, args: Record<string, unknown>): Record<string, unknown> => {
+  if (toolName === "pdf_extract_pages") {
+    const mode = typeof args.returnMode === "string" ? args.returnMode : ""
+    if (!mode) {
+      return { ...args, returnMode: "url" }
+    }
+  }
+  return args
+}
+
 export const handleMcpRequest = async (
   request: Request,
   env: Env,
@@ -103,7 +113,7 @@ export const handleMcpRequest = async (
   }
 
   const toolName = typeof params.name === "string" ? params.name : ""
-  const args = asObj(params.arguments)
+  const args = prepareMcpToolArgs(toolName, asObj(params.arguments))
   if (!toolName) {
     return err(id, -32602, "Invalid params: name is required", {
       code: "INVALID_PARAMS",
