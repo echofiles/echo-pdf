@@ -69,11 +69,25 @@ const sanitizeDownloadFilename = (filename: string): string => {
   return cleaned.length > 0 ? cleaned : "download.bin"
 }
 
-const isFileGetAuthorized = (request: Request, env: Env, config: { authHeader?: string; authEnv?: string }): boolean => {
-  if (!config.authHeader || !config.authEnv) return true
+const fileGetAuthState = (
+  request: Request,
+  env: Env,
+  config: { authHeader?: string; authEnv?: string }
+): { ok: true } | { ok: false; status: number; code: string; message: string } => {
+  if (!config.authHeader || !config.authEnv) return { ok: true }
   const required = env[config.authEnv]
-  if (typeof required !== "string" || required.length === 0) return true
-  return request.headers.get(config.authHeader) === required
+  if (typeof required !== "string" || required.length === 0) {
+    return {
+      ok: false,
+      status: 500,
+      code: "AUTH_MISCONFIGURED",
+      message: `file get auth is configured but env "${config.authEnv}" is missing`,
+    }
+  }
+  if (request.headers.get(config.authHeader) !== required) {
+    return { ok: false, status: 401, code: "UNAUTHORIZED", message: "Unauthorized" }
+  }
+  return { ok: true }
 }
 
 const sseResponse = (stream: ReadableStream<Uint8Array>): Response =>
@@ -188,7 +202,7 @@ export default {
           preferredProvider,
           typeof body.model === "string" ? body.model : undefined
         )
-        if (name.startsWith("pdf_")) {
+        if (name === "pdf_ocr_pages" || name === "pdf_tables_to_latex") {
           if (typeof args.provider !== "string" || args.provider.length === 0) {
             args.provider = preferredProvider
           }
@@ -221,7 +235,7 @@ export default {
         const models = await listProviderModels(config, env, provider, runtimeKeys)
         return json({ provider, models })
       } catch (error) {
-        return json({ error: toError(error) }, 500)
+        return jsonError(error, 500)
       }
     }
 
@@ -324,8 +338,9 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/files/get") {
       const fileGetConfig = config.service.fileGet ?? {}
-      if (!isFileGetAuthorized(request, env, fileGetConfig)) {
-        return json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401)
+      const auth = fileGetAuthState(request, env, fileGetConfig)
+      if (!auth.ok) {
+        return json({ error: auth.message, code: auth.code }, auth.status)
       }
       const fileId = url.searchParams.get("fileId") || ""
       if (!fileId) return json({ error: "Missing fileId" }, 400)

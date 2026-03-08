@@ -144,6 +144,7 @@ echo-pdf setup add cursor
 echo-pdf setup add cline
 echo-pdf setup add windsurf
 echo-pdf setup add json
+echo-pdf setup add claude-desktop --mode stdio
 ```
 
 `setup add` 输出的是配置片段，把它合并到对应客户端的 MCP 配置文件。
@@ -282,6 +283,10 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 - `ECHO_PDF_FILE_GET_AUTH_HEADER` + `ECHO_PDF_FILE_GET_AUTH_ENV`（可选，启用下载端点 header 鉴权）
 - `ECHO_PDF_MCP_KEY`（可选，启用 MCP 鉴权）
 - `ECHO_PDF_WORKER_NAME`（CLI 默认 URL 推导）
+
+鉴权注意：
+
+- 如果配置了 `authHeader/authEnv` 但未注入对应 secret，服务会返回配置错误（fail-closed），不会默认放行。
 
 ## 7. 本地开发与测试
 

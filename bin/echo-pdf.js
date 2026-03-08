@@ -4,6 +4,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { downloadFile, postJson, uploadFile, withUploadedLocalFile } from "./lib/http.js"
+import { runMcpStdio } from "./lib/mcp-stdio.js"
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "echo-pdf-cli")
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
@@ -163,25 +165,6 @@ const buildProviderApiKeys = (config, profileName) => {
   return providerApiKeys
 }
 
-const postJson = async (url, payload, extraHeaders = {}) => {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-    body: JSON.stringify(payload),
-  })
-  const text = await response.text()
-  let data
-  try {
-    data = JSON.parse(text)
-  } catch {
-    data = { raw: text }
-  }
-  if (!response.ok) {
-    throw new Error(`${response.status} ${JSON.stringify(data)}`)
-  }
-  return data
-}
-
 const print = (data) => {
   process.stdout.write(`${JSON.stringify(data, null, 2)}\n`)
 }
@@ -209,57 +192,6 @@ const buildMcpRequest = (id, method, params = {}) => ({
   params,
 })
 
-const uploadFile = async (serviceUrl, filePath) => {
-  const absPath = path.resolve(process.cwd(), filePath)
-  const bytes = fs.readFileSync(absPath)
-  const filename = path.basename(absPath)
-  const form = new FormData()
-  form.append("file", new Blob([bytes]), filename)
-  const response = await fetch(`${serviceUrl}/api/files/upload`, { method: "POST", body: form })
-  const text = await response.text()
-  let data
-  try {
-    data = JSON.parse(text)
-  } catch {
-    data = { raw: text }
-  }
-  if (!response.ok) {
-    throw new Error(`${response.status} ${JSON.stringify(data)}`)
-  }
-  return data
-}
-
-const downloadFile = async (serviceUrl, fileId, outputPath) => {
-  const response = await fetch(`${serviceUrl}/api/files/get?fileId=${encodeURIComponent(fileId)}&download=1`)
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`${response.status} ${text}`)
-  }
-  const bytes = Buffer.from(await response.arrayBuffer())
-  const absOut = path.resolve(process.cwd(), outputPath)
-  fs.mkdirSync(path.dirname(absOut), { recursive: true })
-  fs.writeFileSync(absOut, bytes)
-  return absOut
-}
-
-const withUploadedLocalFile = async (serviceUrl, tool, args) => {
-  const nextArgs = { ...(args || {}) }
-  if (tool.startsWith("pdf_")) {
-    const localPath = typeof nextArgs.path === "string"
-      ? nextArgs.path
-      : (typeof nextArgs.filePath === "string" ? nextArgs.filePath : "")
-    if (localPath && !nextArgs.fileId && !nextArgs.url && !nextArgs.base64) {
-      const upload = await uploadFile(serviceUrl, localPath)
-      const fileId = upload?.file?.id
-      if (!fileId) throw new Error(`upload failed for local path: ${localPath}`)
-      nextArgs.fileId = fileId
-      delete nextArgs.path
-      delete nextArgs.filePath
-    }
-  }
-  return nextArgs
-}
-
 const runDevServer = (port, host) => {
   const wranglerBin = path.resolve(__dirname, "../node_modules/.bin/wrangler")
   const wranglerArgs = ["dev", "--port", String(port), "--ip", host]
@@ -276,100 +208,13 @@ const runDevServer = (port, host) => {
   })
 }
 
-const mcpReadLoop = (onMessage, onError) => {
-  let buffer = Buffer.alloc(0)
-  let expectedLength = null
-  process.stdin.on("data", (chunk) => {
-    buffer = Buffer.concat([buffer, chunk])
-    while (true) {
-      if (expectedLength === null) {
-        const headerEnd = buffer.indexOf("\r\n\r\n")
-        if (headerEnd === -1) break
-        const headerRaw = buffer.slice(0, headerEnd).toString("utf-8")
-        const lines = headerRaw.split("\r\n")
-        const cl = lines.find((line) => line.toLowerCase().startsWith("content-length:"))
-        if (!cl) {
-          onError(new Error("Missing Content-Length"))
-          buffer = buffer.slice(headerEnd + 4)
-          continue
-        }
-        expectedLength = Number(cl.split(":")[1]?.trim() || "0")
-        buffer = buffer.slice(headerEnd + 4)
-      }
-      if (!Number.isFinite(expectedLength) || expectedLength < 0) {
-        onError(new Error("Invalid Content-Length"))
-        expectedLength = null
-        continue
-      }
-      if (buffer.length < expectedLength) break
-      const body = buffer.slice(0, expectedLength).toString("utf-8")
-      buffer = buffer.slice(expectedLength)
-      expectedLength = null
-      try {
-        const maybePromise = onMessage(JSON.parse(body))
-        if (maybePromise && typeof maybePromise.then === "function") {
-          maybePromise.catch(onError)
-        }
-      } catch (error) {
-        onError(error)
-      }
-    }
-  })
-}
-
-const mcpWrite = (obj) => {
-  const body = Buffer.from(JSON.stringify(obj))
-  const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`)
-  process.stdout.write(header)
-  process.stdout.write(body)
-}
-
-const runMcpStdio = async () => {
+const runMcpStdioCommand = async () => {
   const config = loadConfig()
-  const serviceUrl = config.serviceUrl
-  const headers = buildMcpHeaders()
-  mcpReadLoop(async (msg) => {
-    const method = msg?.method
-    const id = Object.hasOwn(msg || {}, "id") ? msg.id : null
-    if (msg?.jsonrpc !== "2.0" || typeof method !== "string") {
-      mcpWrite({ jsonrpc: "2.0", id, error: { code: -32600, message: "Invalid Request" } })
-      return
-    }
-    if (method === "notifications/initialized") return
-    if (method === "initialize" || method === "tools/list") {
-      const data = await postJson(`${serviceUrl}/mcp`, msg, headers)
-      mcpWrite(data)
-      return
-    }
-    if (method === "tools/call") {
-      try {
-        const tool = String(msg?.params?.name || "")
-        const args = (msg?.params?.arguments && typeof msg.params.arguments === "object")
-          ? msg.params.arguments
-          : {}
-        const preparedArgs = await withUploadedLocalFile(serviceUrl, tool, args)
-        const payload = {
-          ...msg,
-          params: {
-            ...(msg.params || {}),
-            arguments: preparedArgs,
-          },
-        }
-        const data = await postJson(`${serviceUrl}/mcp`, payload, headers)
-        mcpWrite(data)
-      } catch (error) {
-        mcpWrite({
-          jsonrpc: "2.0",
-          id,
-          error: { code: -32603, message: error instanceof Error ? error.message : String(error) },
-        })
-      }
-      return
-    }
-    const data = await postJson(`${serviceUrl}/mcp`, msg, headers)
-    mcpWrite(data)
-  }, (error) => {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  await runMcpStdio({
+    serviceUrl: config.serviceUrl,
+    headers: buildMcpHeaders(),
+    postJson,
+    withUploadedLocalFile,
   })
 }
 
@@ -793,7 +638,7 @@ const main = async () => {
   }
 
   if (command === "mcp" && subcommand === "stdio") {
-    await runMcpStdio()
+    await runMcpStdioCommand()
     return
   }
 

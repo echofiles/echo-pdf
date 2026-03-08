@@ -187,6 +187,11 @@ describe("echo-pdf integration", () => {
       // Pass a minimal config via `--var` to Wrangler.
       const testConfig = {
         ...configJson,
+        mcp: {
+          ...configJson.mcp,
+          authHeader: "",
+          authEnv: "",
+        },
         service: {
           ...configJson.service,
           maxPdfBytes: 900000,
@@ -422,6 +427,17 @@ describe("echo-pdf integration", () => {
     const payload = await response.json() as { error?: { code?: number } }
     expect(response.status).toBe(400)
     expect(payload.error?.code).toBe(-32700)
+  })
+
+  it("accepts mcp notifications without unsupported-method error", async () => {
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }),
+    })
+    expect(response.status).toBe(204)
+    const text = await response.text()
+    expect(text.length).toBe(0)
   })
 
   it("runs real provider model list + ocr + tables when key is configured", async () => {

@@ -38,11 +38,20 @@ const err = (
 const asObj = (v: unknown): Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
 
-const maybeAuthorized = (request: Request, env: Env, config: EchoPdfConfig): boolean => {
-  if (!config.mcp.authHeader || !config.mcp.authEnv) return true
+const authState = (
+  request: Request,
+  env: Env,
+  config: EchoPdfConfig
+): { ok: true } | { ok: false; status: number; message: string } => {
+  if (!config.mcp.authHeader || !config.mcp.authEnv) return { ok: true }
   const required = env[config.mcp.authEnv]
-  if (typeof required !== "string" || required.length === 0) return true
-  return request.headers.get(config.mcp.authHeader) === required
+  if (typeof required !== "string" || required.length === 0) {
+    return { ok: false, status: 500, message: `MCP auth is configured but env "${config.mcp.authEnv}" is missing` }
+  }
+  if (request.headers.get(config.mcp.authHeader) !== required) {
+    return { ok: false, status: 401, message: "Unauthorized" }
+  }
+  return { ok: true }
 }
 
 const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
@@ -64,8 +73,9 @@ export const handleMcpRequest = async (
   config: EchoPdfConfig,
   fileStore: FileStore
 ): Promise<Response> => {
-  if (!maybeAuthorized(request, env, config)) {
-    return new Response("Unauthorized", { status: 401 })
+  const auth = authState(request, env, config)
+  if (!auth.ok) {
+    return new Response(auth.message, { status: auth.status })
   }
 
   let body: JsonRpcRequest
@@ -84,6 +94,9 @@ export const handleMcpRequest = async (
   const id = body.id ?? null
   if (typeof method !== "string" || method.length === 0) {
     return err(id, -32600, "Invalid Request: method is required")
+  }
+  if (method.startsWith("notifications/")) {
+    return new Response(null, { status: 204 })
   }
   const params = asObj(body.params)
 
