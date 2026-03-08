@@ -14,6 +14,7 @@ ECHO_PDF_MCP_KEY=
 # openai / vercel_gateway / openrouter
 ECHO_PDF_DEFAULT_PROVIDER=vercel_gateway
 ECHO_PDF_DEFAULT_MODEL=google/gemini-3-flash
+ECHO_PDF_PUBLIC_BASE_URL=https://echo-pdf-agent.echofilesai.workers.dev
 
-# Optional full override for echo-pdf.config.json2
-# ECHO_PDF_CONFIG_JSON={"service":{"name":"echo-pdf","maxPdfBytes":100000000,"maxPagesPerRequest":10,"defaultRenderScale":},"pdfium":{"wasmUrl":"https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"},"agent":{"defaultProvider":"openai","defaultModel":"","ocrPrompt":"...","tablePrompt":"..."},"providers":{"openai":{"type":"openai","apiKeyEnv":"OPENAI_API_KEY"}},"mcp":{"serverName":"echo-pdf-mcp","version":"0.1.0"}}
+# Optional full override for echo-pdf.config.json
+# ECHO_PDF_CONFIG_JSON={"service":{"name":"echo-pdf","publicBaseUrl":"https://echo-pdf-agent.echofilesai.workers.dev","maxPdfBytes":10000000,"maxPagesPerRequest":20,"defaultRenderScale":2,"storage":{"maxFileBytes":10000000,"maxTotalBytes":52428800,"ttlHours":24,"cleanupBatchSize":50}},"pdfium":{"wasmUrl":"https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"},"agent":{"defaultProvider":"openai","defaultModel":"","ocrPrompt":"...","tablePrompt":"..."},"providers":{"openai":{"type":"openai","apiKeyEnv":"OPENAI_API_KEY"}},"mcp":{"serverName":"echo-pdf-mcp","version":"0.1.0"}}

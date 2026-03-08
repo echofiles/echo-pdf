@@ -276,7 +276,16 @@ export class DurableObjectFileStore {
     })
     const payload = (await response.json()) as { file?: StoredFileMeta; error?: string }
     if (!response.ok || !payload.file) {
-      throw new Error(payload.error ?? "DO put failed")
+      const details = payload as { error?: string; code?: string; policy?: unknown; stats?: unknown }
+      const error = new Error(payload.error ?? "DO put failed") as Error & {
+        status?: number
+        code?: string
+        details?: unknown
+      }
+      error.status = response.status
+      error.code = typeof details.code === "string" ? details.code : undefined
+      error.details = { policy: details.policy, stats: details.stats }
+      throw error
     }
     return payload.file
   }

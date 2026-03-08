@@ -1,6 +1,7 @@
 {
   "service": {
     "name": "echo-pdf",
+    "publicBaseUrl": "https://echo-pdf-agent.echofilesai.workers.dev",
     "maxPdfBytes": 10000000,
     "maxPagesPerRequest": 20,
     "defaultRenderScale": 2,

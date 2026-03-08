@@ -29,9 +29,9 @@ const inferKind = (mimeType?: string): ToolArtifact["kind"] => {
   return "file"
 }
 
-const toAbsoluteUrl = (value: string, requestUrl: string): string => {
+const toAbsoluteUrl = (value: string, baseUrl: string): string => {
   try {
-    return new URL(value, requestUrl).toString()
+    return new URL(value, baseUrl).toString()
   } catch {
     return value
   }
@@ -44,7 +44,7 @@ const addArtifact = (artifacts: ToolArtifact[], artifact: ToolArtifact): void =>
 
 export const buildToolOutputEnvelope = (
   result: unknown,
-  requestUrl: string
+  baseUrl: string
 ): ToolOutputEnvelope => {
   const root = asObj(result)
   const artifacts: ToolArtifact[] = []
@@ -57,7 +57,7 @@ export const buildToolOutputEnvelope = (
       mimeType: typeof fileMeta.mimeType === "string" ? fileMeta.mimeType : undefined,
       filename: typeof fileMeta.filename === "string" ? fileMeta.filename : undefined,
       sizeBytes: typeof fileMeta.sizeBytes === "number" ? fileMeta.sizeBytes : undefined,
-      url: typeof root.url === "string" ? toAbsoluteUrl(root.url, requestUrl) : undefined,
+      url: typeof root.url === "string" ? toAbsoluteUrl(root.url, baseUrl) : undefined,
     })
   }
 
@@ -72,7 +72,7 @@ export const buildToolOutputEnvelope = (
       kind: "image",
       mimeType: typeof image.mimeType === "string" ? image.mimeType : "image/png",
       filename: fileId ? `artifact-${fileId}.png` : undefined,
-      url: rawUrl ? toAbsoluteUrl(rawUrl, requestUrl) : undefined,
+      url: rawUrl ? toAbsoluteUrl(rawUrl, baseUrl) : undefined,
     })
   }
 

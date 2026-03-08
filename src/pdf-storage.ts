@@ -48,6 +48,7 @@ class InMemoryFileStore implements FileStore {
 }
 
 const fallbackStore = new InMemoryFileStore()
+const DO_SAFE_MAX_FILE_BYTES = 1_200_000
 
 export interface RuntimeFileStoreBundle {
   readonly store: FileStore
@@ -65,6 +66,11 @@ export const getRuntimeFileStore = (env: Env, config: EchoPdfConfig): RuntimeFil
     }
   }
   if (env.FILE_STORE_DO) {
+    if (config.service.storage.maxFileBytes > DO_SAFE_MAX_FILE_BYTES) {
+      throw new Error(
+        `service.storage.maxFileBytes=${config.service.storage.maxFileBytes} exceeds DO backend limit ${DO_SAFE_MAX_FILE_BYTES}; bind FILE_STORE_BUCKET (R2) or reduce maxFileBytes`
+      )
+    }
     const store = new DurableObjectFileStore(env.FILE_STORE_DO, config.service.storage)
     return {
       store,

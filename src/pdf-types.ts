@@ -22,6 +22,7 @@ export interface StoragePolicy {
 export interface EchoPdfConfig {
   readonly service: {
     readonly name: string
+    readonly publicBaseUrl?: string
     readonly maxPdfBytes: number
     readonly maxPagesPerRequest: number
     readonly defaultRenderScale: number

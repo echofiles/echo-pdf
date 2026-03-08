@@ -30,6 +30,13 @@ const validateConfig = (config: EchoPdfConfig): EchoPdfConfig => {
   if (!config.service?.name) throw new Error("service.name is required")
   if (!config.pdfium?.wasmUrl) throw new Error("pdfium.wasmUrl is required")
   if (!config.service?.storage) throw new Error("service.storage is required")
+  if (
+    typeof config.service.publicBaseUrl === "string" &&
+    config.service.publicBaseUrl.length > 0 &&
+    !/^https?:\/\//.test(config.service.publicBaseUrl)
+  ) {
+    throw new Error("service.publicBaseUrl must start with http:// or https://")
+  }
   if (!Number.isFinite(config.service.storage.maxFileBytes) || config.service.storage.maxFileBytes <= 0) {
     throw new Error("service.storage.maxFileBytes must be positive")
   }
@@ -65,8 +72,16 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
 
   const providerOverride = env.ECHO_PDF_DEFAULT_PROVIDER
   const modelOverride = env.ECHO_PDF_DEFAULT_MODEL
+  const publicBaseUrlOverride = env.ECHO_PDF_PUBLIC_BASE_URL
   const withOverrides: EchoPdfConfig = {
     ...resolved,
+    service: {
+      ...resolved.service,
+      publicBaseUrl:
+        typeof publicBaseUrlOverride === "string" && publicBaseUrlOverride.trim().length > 0
+          ? publicBaseUrlOverride.trim()
+          : resolved.service.publicBaseUrl,
+    },
     agent: {
       ...resolved.agent,
       defaultProvider:

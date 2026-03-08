@@ -45,6 +45,9 @@ const maybeAuthorized = (request: Request, env: Env, config: EchoPdfConfig): boo
   return request.headers.get(config.mcp.authHeader) === required
 }
 
+const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
+  typeof configured === "string" && configured.length > 0 ? configured : request.url
+
 export const handleMcpRequest = async (
   request: Request,
   env: Env,
@@ -114,7 +117,7 @@ export const handleMcpRequest = async (
       env,
       fileStore,
     })
-    const envelope = buildToolOutputEnvelope(result, request.url)
+    const envelope = buildToolOutputEnvelope(result, resolvePublicBaseUrl(request, config.service.publicBaseUrl))
     return ok(id, { content: buildMcpContent(envelope) })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

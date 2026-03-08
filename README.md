@@ -27,6 +27,13 @@
 - MCP: `https://echo-pdf-agent.echofilesai.workers.dev/mcp`
 - HTTP API 根路径: `https://echo-pdf-agent.echofilesai.workers.dev`
 
+## 1.1 API 兼容性说明
+
+- 从 `v0.3.0` 开始，`POST /tools/call` 返回结构改为：
+  - `{"ok": true, "data": ..., "artifacts": [...]}`
+- 老格式 `{"name":"...","output":...}` 已移除。
+- MCP `tools/call` 仍保留 `type:"text"`，并新增 `type:"resource_link"` 供下载二进制结果。
+
 ## 2. 快速开始（CLI）
 
 安装：
@@ -175,6 +182,7 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
 
 - `agent.defaultProvider`
 - `agent.defaultModel`
+- `service.publicBaseUrl`
 - `service.maxPdfBytes`
 - `service.storage.maxFileBytes`
 - `service.storage.maxTotalBytes`
@@ -185,7 +193,9 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
 - `service.maxPdfBytes`：允许处理的 PDF 最大字节数。
 - `service.storage.maxFileBytes`：文件存储单文件上限（上传 PDF、`url/base64` ingest、以及 `file_id` 结果都会落到存储层）。
 - 当前项目要求 `service.storage.maxFileBytes >= service.maxPdfBytes`，否则配置无效并在启动时报错。
-- 默认配置下两者都是 `1200000`（约 1.2MB）。
+- 当前默认配置下两者都是 `10000000`（10MB）。
+- 当未绑定 R2、使用 DO 存储时，`service.storage.maxFileBytes` 必须 `<= 1200000`，否则启动会报错。
+- 生产建议始终绑定 R2，并让 DO 只负责协调/元数据，不承载大文件数据。
 
 常用环境变量：
 
@@ -194,6 +204,7 @@ curl -sS -X POST https://echo-pdf-agent.echofilesai.workers.dev/tools/call \
 - `VERCEL_AI_GATEWAY_API_KEY` / `VERCEL_AI_GATEWAY_KEY`
 - `ECHO_PDF_DEFAULT_PROVIDER`
 - `ECHO_PDF_DEFAULT_MODEL`
+- `ECHO_PDF_PUBLIC_BASE_URL`（可选，强制 artifacts 生成外部可访问绝对 URL）
 - `ECHO_PDF_MCP_KEY`（可选，启用 MCP 鉴权）
 - `ECHO_PDF_WORKER_NAME`（CLI 默认 URL 推导）
 

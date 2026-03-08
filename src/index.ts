@@ -58,6 +58,9 @@ const asObj = (value: unknown): JsonObject =>
     ? (value as JsonObject)
     : {}
 
+const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
+  typeof configured === "string" && configured.length > 0 ? configured : request.url
+
 const sseResponse = (stream: ReadableStream<Uint8Array>): Response =>
   new Response(stream, {
     headers: {
@@ -183,7 +186,7 @@ export default {
             ? (body.providerApiKeys as Record<string, string>)
             : undefined,
         })
-        return json(buildToolOutputEnvelope(result, request.url))
+        return json(buildToolOutputEnvelope(result, resolvePublicBaseUrl(request, config.service.publicBaseUrl)))
       } catch (error) {
         return jsonError(error, 500)
       }
