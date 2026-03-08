@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const defaultFixturePdf = path.join(rootDir, "scripts/fixtures/smoke.pdf")
+const bundledFixtureDir = path.join(rootDir, "scripts/fixtures")
+const defaultFixturePdf = path.join(bundledFixtureDir, "smoke.pdf")
 const testcaseDir = process.env.TESTCASE_DIR ?? path.resolve(rootDir, "..", "testcase/eda")
 const port = process.env.PORT ?? "8788"
 const baseUrl = process.env.SMOKE_BASE_URL ?? `http://127.0.0.1:${port}`
@@ -15,6 +16,7 @@ const logPath = path.join(rootDir, ".integration-dev.log")
 let devProcess: ChildProcess | null = null
 let devLogs = ""
 let fixturePdf = defaultFixturePdf
+let fallbackFixturePdf = defaultFixturePdf
 let maxFileBytes = 0
 
 const readEnvLocal = async (): Promise<void> => {
@@ -57,6 +59,10 @@ const postJson = async (pathname: string, payload: unknown): Promise<unknown> =>
 }
 
 const detectLlmProvider = (): "openrouter" | "openai" | "vercel_gateway" | null => {
+  const forced = process.env.SMOKE_LLM_PROVIDER
+  if (forced === "openrouter" || forced === "openai" || forced === "vercel_gateway") {
+    return forced
+  }
   if (process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY) return "openrouter"
   if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.VERCEL_AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_KEY) return "vercel_gateway"
@@ -69,6 +75,23 @@ const providerApiKeys = (): Record<string, string> => ({
   "vercel-ai-gateway": process.env.VERCEL_AI_GATEWAY_API_KEY ?? process.env.VERCEL_AI_GATEWAY_KEY ?? "",
 })
 
+const chooseModelCandidates = (models: string[]): string[] => {
+  const forced = process.env.SMOKE_LLM_MODEL
+  if (forced && forced.trim().length > 0) return [forced.trim(), ...models.filter((m) => m !== forced.trim())]
+
+  const preferredPatterns = [
+    /gpt-4o/i,
+    /gpt-4\.1/i,
+    /claude-3\.[57]/i,
+    /gemini-2\./i,
+    /gemini-1\.5/i,
+  ]
+
+  const preferred = models.filter((model) => preferredPatterns.some((re) => re.test(model)))
+  const fallback = models.filter((model) => !preferred.includes(model))
+  return [...preferred, ...fallback]
+}
+
 const resolveFixturePdf = async (): Promise<string> => {
   try {
     const dirStat = await stat(testcaseDir)
@@ -79,6 +102,19 @@ const resolveFixturePdf = async (): Promise<string> => {
         return path.join(testcaseDir, candidate)
       }
     }
+  } catch {
+    // ignore
+  }
+  return defaultFixturePdf
+}
+
+const resolveBundledFixturePdf = async (): Promise<string> => {
+  try {
+    const files = await readdir(bundledFixtureDir)
+    const candidate = files
+      .filter((file) => file.toLowerCase().endsWith(".pdf"))
+      .sort((a, b) => a.localeCompare(b))[0]
+    if (candidate) return path.join(bundledFixtureDir, candidate)
   } catch {
     // ignore
   }
@@ -117,6 +153,7 @@ const uploadPdf = async (candidatePath: string): Promise<{ fileId: string }> => 
 describe("echo-pdf integration", () => {
   beforeAll(async () => {
     await readEnvLocal()
+    fallbackFixturePdf = await resolveBundledFixturePdf()
     fixturePdf = await resolveFixturePdf()
 
     const requireLlm = process.env.SMOKE_REQUIRE_LLM === "1"
@@ -181,7 +218,7 @@ describe("echo-pdf integration", () => {
     if (maxFileBytes > 0) {
       const s = await stat(uploadPath)
       if (s.size > maxFileBytes) {
-        uploadPath = defaultFixturePdf
+        uploadPath = fallbackFixturePdf
       }
     }
     const primary = await uploadPdf(uploadPath)
@@ -247,38 +284,54 @@ describe("echo-pdf integration", () => {
     }
     expect(Array.isArray(modelsData.models)).toBe(true)
     expect((modelsData.models?.length ?? 0) > 0).toBe(true)
-    const model = modelsData.models?.[0]
-    expect(typeof model).toBe("string")
+    const models = modelsData.models ?? []
+    const modelCandidates = chooseModelCandidates(models).slice(0, 8)
+    expect(modelCandidates.length > 0).toBe(true)
 
     let uploadPath = fixturePdf
     if (maxFileBytes > 0) {
       const s = await stat(uploadPath)
       if (s.size > maxFileBytes) {
-        uploadPath = defaultFixturePdf
+        uploadPath = fallbackFixturePdf
       }
     }
     const uploaded = await uploadPdf(uploadPath)
     const fileId = uploaded.fileId
     expect(fileId).toBeTruthy()
 
-    const ocrData = await postJson("/tools/call", {
-      name: "pdf_ocr_pages",
-      arguments: {
-        fileId,
-        pages: [1],
-        provider,
-        model,
-      },
-      provider,
-      model,
-      providerApiKeys: providerApiKeys(),
-    }) as {
-      output?: {
-        pages?: Array<{ text?: string }>
+    let ocrOutput: { pages?: Array<{ text?: string }> } | null = null
+    let lastError: Error | null = null
+
+    for (const model of modelCandidates) {
+      try {
+        const ocrData = await postJson("/tools/call", {
+          name: "pdf_ocr_pages",
+          arguments: {
+            fileId,
+            pages: [1],
+            provider,
+            model,
+          },
+          provider,
+          model,
+          providerApiKeys: providerApiKeys(),
+        }) as {
+          output?: {
+            pages?: Array<{ text?: string }>
+          }
+        }
+        ocrOutput = ocrData.output ?? null
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
       }
     }
-    expect(Array.isArray(ocrData.output?.pages)).toBe(true)
-    expect(typeof ocrData.output?.pages?.[0]?.text).toBe("string")
+    if (!ocrOutput) {
+      throw lastError ?? new Error("ocr call failed for all candidate models")
+    }
+
+    expect(Array.isArray(ocrOutput.pages)).toBe(true)
+    expect(typeof ocrOutput.pages?.[0]?.text).toBe("string")
 
     await postJson("/api/files/op", { op: "delete", fileId })
   })

@@ -135,6 +135,11 @@ npm run test
 npm run smoke
 ```
 
+命令关系：
+
+- `npm run test` = `unit + integration`（完整测试入口）
+- `npm run smoke` = `integration` 的兼容别名（用于部署后快速验收，不再维护独立断言逻辑）
+
 `unit` 覆盖：
 
 - `file-utils` 编解码与 returnMode 归一化
@@ -156,14 +161,15 @@ npm run smoke
 
 - `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run test:integration`（直接测已部署服务）
 - `SMOKE_REQUIRE_LLM=1 npm run test:integration`（强制要求存在 provider key）
+- `SMOKE_LLM_PROVIDER=vercel_gateway npm run test:integration`（强制走指定 provider 做真实 LLM 调用）
+- `SMOKE_LLM_MODEL=openai/gpt-4o-mini npm run test:integration`（强制指定 LLM 模型）
 - `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run smoke`（快速脚本模式）
 - `TESTCASE_DIR=/Users/huangjinfeng/workspace/echofiles/testcase/eda npm run test:integration`（指定测试样例目录）
 
 测试 PDF 选择顺序：
 
-1. `FIXTURE_PDF` 指定文件（smoke）
-2. `TESTCASE_DIR` 目录下首个 PDF（默认 `../testcase/eda`）
-3. 回退到 `scripts/fixtures/smoke.pdf`
+1. `TESTCASE_DIR` 目录下首个 PDF（默认 `../testcase/eda`）
+2. 回退到 `scripts/fixtures/smoke.pdf`
 
 ## 7. 部署
 
