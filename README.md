@@ -126,7 +126,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/mcp \
 - `ECHO_PDF_MODEL_OPENAI`
 - `ECHO_PDF_MODEL_VERCEL_GATEWAY`
 - `ECHO_PDF_MODEL_OPENROUTER`
-- `ECHO_PDF_WORKER_NAME`（CLI 默认服务地址推导）
+- `ECHO_PDF_WORKER_NAME`
 - `ECHO_PDF_MCP_KEY`（可选，用于保护 `/mcp`）
 
 ---

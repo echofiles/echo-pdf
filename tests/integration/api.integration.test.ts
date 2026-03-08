@@ -295,7 +295,7 @@ describe("echo-pdf integration", () => {
     expect(Array.isArray(callData.result?.content)).toBe(true)
   })
 
-  it("runs real provider model list + ocr when key is configured", async () => {
+  it("runs real provider model list + ocr + tables when key is configured", async () => {
     const provider = detectLlmProvider()
     if (!provider) {
       return
@@ -326,6 +326,7 @@ describe("echo-pdf integration", () => {
 
     let ocrOutput: { pages?: Array<{ text?: string }> } | null = null
     let lastError: Error | null = null
+    let selectedModel = ""
 
     for (const model of modelCandidates) {
       try {
@@ -345,7 +346,12 @@ describe("echo-pdf integration", () => {
             pages?: Array<{ text?: string }>
           }
         }
-        ocrOutput = ocrData.output ?? null
+        const output = ocrData.output ?? null
+        if (!Array.isArray(output?.pages) || typeof output?.pages?.[0]?.text !== "string" || output.pages[0].text.trim().length === 0) {
+          continue
+        }
+        selectedModel = model
+        ocrOutput = output
         break
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error))
@@ -357,6 +363,42 @@ describe("echo-pdf integration", () => {
 
     expect(Array.isArray(ocrOutput.pages)).toBe(true)
     expect(typeof ocrOutput.pages?.[0]?.text).toBe("string")
+    expect(selectedModel.length > 0).toBe(true)
+
+    let tableOutput: { pages?: Array<{ latex?: string }> } | null = null
+    for (const model of [selectedModel, ...modelCandidates.filter((m) => m !== selectedModel)]) {
+      try {
+        const tableData = await postJson("/tools/call", {
+          name: "pdf_tables_to_latex",
+          arguments: {
+            fileId,
+            pages: [1],
+            provider,
+            model,
+          },
+          provider,
+          model,
+          providerApiKeys: providerApiKeys(),
+        }) as {
+          output?: {
+            pages?: Array<{ latex?: string }>
+          }
+        }
+        const output = tableData.output ?? null
+        if (!Array.isArray(output?.pages) || typeof output?.pages?.[0]?.latex !== "string" || output.pages[0].latex.trim().length === 0) {
+          continue
+        }
+        tableOutput = output
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+      }
+    }
+    if (!tableOutput) {
+      throw lastError ?? new Error("tables call failed for all candidate models")
+    }
+    expect(Array.isArray(tableOutput.pages)).toBe(true)
+    expect(typeof tableOutput.pages?.[0]?.latex).toBe("string")
 
     await postJson("/api/files/op", { op: "delete", fileId })
   })

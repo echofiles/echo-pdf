@@ -7,7 +7,8 @@ EXPORT_PORT="${EXPORT_PORT:-8798}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${EXPORT_PORT}}"
 INPUT_PDF="${INPUT_PDF:-${ROOT_DIR}/fixtures/input.pdf}"
 START_LOCAL_DEV="${START_LOCAL_DEV:-1}"
-RUN_TABLES="${RUN_TABLES:-0}"
+RUN_TABLES="${RUN_TABLES:-1}"
+REQUIRE_LLM_SUCCESS="${REQUIRE_LLM_SUCCESS:-1}"
 
 mkdir -p "$OUT_DIR"
 rm -rf "${OUT_DIR:?}/"*
@@ -36,6 +37,21 @@ run_json() {
   else
     printf '{"ok":false,"error_file":"%s.err"}\n' "$name" > "${OUT_DIR}/${name}.json"
   fi
+}
+
+build_model_candidates() {
+  local models_json="$1"
+  node -e 'const fs=require("fs");const p=process.argv[1];const forced=(process.env.SMOKE_LLM_MODEL||"").trim();const j=JSON.parse(fs.readFileSync(p,"utf8"));const models=Array.isArray(j.models)?j.models:[];const pick=(re)=>models.filter((m)=>re.test(String(m)));const preferred=[];if(forced)preferred.push(forced);const patterns=[/gpt-4o/i,/gpt-4\.1/i,/gpt-5/i,/claude-3\.[57]|claude-sonnet-4|claude-opus-4/i,/gemini-2\.5|gemini-3/i,/grok-2-vision|vision|vl/i,/pixtral/i,/qwen.*vl/i];for(const re of patterns){for(const m of pick(re)){if(!preferred.includes(m))preferred.push(m);}}for(const m of models){if(!preferred.includes(m))preferred.push(m);}process.stdout.write(JSON.stringify(preferred.slice(0,24)));' "$models_json"
+}
+
+validate_ocr_json() {
+  local json_file="$1"
+  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.output?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.text||"").trim();if(t.length===0)process.exit(1);' "$json_file"
+}
+
+validate_tables_json() {
+  local json_file="$1"
+  node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.output?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.latex||"").trim();if(t.length===0)process.exit(1);' "$json_file"
 }
 
 # 1) Save test logs locally (do not block artifact export on transient network failure)
@@ -104,6 +120,7 @@ else
   echo '{"warning":"No provider selected, skip model list"}' > "${OUT_DIR}/models.json"
 fi
 MODEL="$(node -e 'const fs=require("fs");const p=process.argv[1];try{const j=JSON.parse(fs.readFileSync(p,"utf8"));const m=Array.isArray(j.models)&&j.models[0]?j.models[0]:"";process.stdout.write(m)}catch{process.stdout.write("")}' "${OUT_DIR}/models.json")"
+build_model_candidates "${OUT_DIR}/models.json" > "${OUT_DIR}/model-candidates.json"
 if [[ -n "$MODEL" ]] && [[ -n "${PROVIDER}" ]]; then
   cli model set --provider "${PROVIDER}" --model "$MODEL" > "${OUT_DIR}/model-set.json"
 else
@@ -134,19 +151,54 @@ run_json "mcp-call-fileops" cli mcp call --tool file_ops --args '{"op":"list"}'
 run_json "mcp-extract-pages" cli mcp call --tool pdf_extract_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"returnMode\":\"inline\"}"
 
 # 7) LLM tool calls
+OCR_OK=0
+TABLES_OK=0
 if [[ -n "${PROVIDER}" ]]; then
-  run_json "cli-ocr-pages" cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" --provider "${PROVIDER}" --model "${MODEL:-}"
+  : > "${OUT_DIR}/llm-attempts.log"
+  while IFS= read -r CANDIDATE; do
+    [[ -z "${CANDIDATE}" ]] && continue
+    echo "[ocr] trying model=${CANDIDATE}" >> "${OUT_DIR}/llm-attempts.log"
+    if cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" --provider "${PROVIDER}" --model "${CANDIDATE}" > "${OUT_DIR}/cli-ocr-pages.json" 2> "${OUT_DIR}/cli-ocr-pages.err"; then
+      if validate_ocr_json "${OUT_DIR}/cli-ocr-pages.json"; then
+        OCR_OK=1
+        echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" > "${OUT_DIR}/ocr-selected-model.json"
+        break
+      fi
+    fi
+  done < <(node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));for(const m of (Array.isArray(a)?a:[])){console.log(m)}' "${OUT_DIR}/model-candidates.json")
 else
   run_json "cli-ocr-pages" cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1]}"
 fi
+
 if [[ "${RUN_TABLES}" == "1" ]]; then
   if [[ -n "${PROVIDER}" ]]; then
-    run_json "cli-tables-to-latex" cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" --provider "${PROVIDER}" --model "${MODEL:-}"
+    while IFS= read -r CANDIDATE; do
+      [[ -z "${CANDIDATE}" ]] && continue
+      echo "[tables] trying model=${CANDIDATE}" >> "${OUT_DIR}/llm-attempts.log"
+      if cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" --provider "${PROVIDER}" --model "${CANDIDATE}" > "${OUT_DIR}/cli-tables-to-latex.json" 2> "${OUT_DIR}/cli-tables-to-latex.err"; then
+        if validate_tables_json "${OUT_DIR}/cli-tables-to-latex.json"; then
+          TABLES_OK=1
+          echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" > "${OUT_DIR}/tables-selected-model.json"
+          break
+        fi
+      fi
+    done < <(node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));for(const m of (Array.isArray(a)?a:[])){console.log(m)}' "${OUT_DIR}/model-candidates.json")
   else
     run_json "cli-tables-to-latex" cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1]}"
   fi
 else
   echo '{"skipped":true,"reason":"Set RUN_TABLES=1 to enable table-latex call"}' > "${OUT_DIR}/cli-tables-to-latex.json"
+fi
+
+if [[ "${REQUIRE_LLM_SUCCESS}" == "1" ]]; then
+  if [[ "${OCR_OK}" != "1" ]]; then
+    echo "OCR failed for all candidate models. See ${OUT_DIR}/cli-ocr-pages.err and llm-attempts.log" >&2
+    exit 1
+  fi
+  if [[ "${RUN_TABLES}" == "1" ]] && [[ "${TABLES_OK}" != "1" ]]; then
+    echo "Tables failed for all candidate models. See ${OUT_DIR}/cli-tables-to-latex.err and llm-attempts.log" >&2
+    exit 1
+  fi
 fi
 
 cat > "${OUT_DIR}/summary.txt" <<TXT
