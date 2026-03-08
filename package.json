@@ -40,7 +40,7 @@
     "deploy": "wrangler deploy",
     "typecheck": "npm run check:runtime && tsc --noEmit",
     "test:unit": "npm run check:runtime && vitest run tests/unit",
-    "test:integration": "npm run check:runtime && vitest run tests/integration",
+    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration",
     "test": "npm run test:unit && npm run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
     "prepublishOnly": "npm run build && npm run typecheck && npm run test"
