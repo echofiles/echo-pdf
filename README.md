@@ -63,6 +63,14 @@ echo-pdf model list
 echo-pdf models --provider vercel_gateway
 ```
 
+修改运行时配置（写入 `.dev.vars` 的 `ECHO_PDF_CONFIG_JSON`）：
+
+```bash
+echo-pdf config set --key service.maxPdfBytes --value 10000000
+echo-pdf config set --key service.storage.maxFileBytes --value 10000000
+echo-pdf config set --key service.maxPagesPerRequest --value 20
+```
+
 ## 3. MCP 使用（推荐）
 
 ### 3.1 检查 MCP 服务可用

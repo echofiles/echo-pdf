@@ -208,6 +208,96 @@ const buildMcpRequest = (id, method, params = {}) => ({
   params,
 })
 
+const parseConfigValue = (raw, type = "auto") => {
+  if (type === "string") return String(raw)
+  if (type === "number") {
+    const n = Number(raw)
+    if (!Number.isFinite(n)) throw new Error(`Invalid number: ${raw}`)
+    return n
+  }
+  if (type === "boolean") {
+    if (raw === "true") return true
+    if (raw === "false") return false
+    throw new Error(`Invalid boolean: ${raw}`)
+  }
+  if (type === "json") {
+    return JSON.parse(raw)
+  }
+  if (raw === "true") return true
+  if (raw === "false") return false
+  if (raw === "null") return null
+  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw)
+  if ((raw.startsWith("{") && raw.endsWith("}")) || (raw.startsWith("[") && raw.endsWith("]"))) {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return raw
+    }
+  }
+  return raw
+}
+
+const hasPath = (obj, dottedPath) => {
+  const parts = dottedPath.split(".").filter(Boolean)
+  let cur = obj
+  for (const part of parts) {
+    if (!cur || typeof cur !== "object" || !(part in cur)) return false
+    cur = cur[part]
+  }
+  return true
+}
+
+const setPath = (obj, dottedPath, value) => {
+  const parts = dottedPath.split(".").filter(Boolean)
+  if (parts.length === 0) throw new Error("config key is required")
+  let cur = obj
+  for (let i = 0; i < parts.length - 1; i += 1) {
+    const part = parts[i]
+    if (!cur[part] || typeof cur[part] !== "object" || Array.isArray(cur[part])) {
+      cur[part] = {}
+    }
+    cur = cur[part]
+  }
+  cur[parts[parts.length - 1]] = value
+}
+
+const readDevVarsConfigJson = (devVarsPath) => {
+  if (!fs.existsSync(devVarsPath)) return null
+  const lines = fs.readFileSync(devVarsPath, "utf-8").split(/\r?\n/)
+  for (const line of lines) {
+    if (line.startsWith("ECHO_PDF_CONFIG_JSON=")) {
+      const raw = line.slice("ECHO_PDF_CONFIG_JSON=".length).trim()
+      if (!raw) return null
+      return JSON.parse(raw)
+    }
+  }
+  return null
+}
+
+const writeDevVarsConfigJson = (devVarsPath, configJson) => {
+  const serialized = JSON.stringify(configJson)
+  const nextLine = `ECHO_PDF_CONFIG_JSON=${serialized}`
+  let lines = []
+  if (fs.existsSync(devVarsPath)) {
+    lines = fs.readFileSync(devVarsPath, "utf-8").split(/\r?\n/)
+    let replaced = false
+    lines = lines.map((line) => {
+      if (line.startsWith("ECHO_PDF_CONFIG_JSON=")) {
+        replaced = true
+        return nextLine
+      }
+      return line
+    })
+    if (!replaced) {
+      if (lines.length > 0 && lines[lines.length - 1].trim().length !== 0) lines.push("")
+      lines.push(nextLine)
+    }
+  } else {
+    lines = [nextLine]
+  }
+  fs.writeFileSync(devVarsPath, lines.join("\n"))
+}
+
 const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
   process.stdout.write(`Commands:\n`)
@@ -216,6 +306,7 @@ const usage = () => {
   process.stdout.write(`  provider use --provider <${PROVIDER_ALIASES.join("|")}> [--profile name]\n`)
   process.stdout.write(`  provider list [--profile name]\n`)
   process.stdout.write(`  models [--provider alias] [--profile name]\n`)
+  process.stdout.write(`  config set --key <dotted.path> --value <value> [--type auto|string|number|boolean|json] [--dev-vars .dev.vars]\n`)
   process.stdout.write(`  model set --model <model-id> [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model get [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model list [--profile name]\n`)
@@ -298,7 +389,7 @@ const main = async () => {
   const [command, ...raw] = argv
   let subcommand = ""
   let rest = raw
-  if (["provider", "mcp", "setup", "model"].includes(command)) {
+  if (["provider", "mcp", "setup", "model", "config"].includes(command)) {
     subcommand = raw[0] || ""
     rest = raw.slice(1)
   }
@@ -362,6 +453,34 @@ const main = async () => {
     const providerApiKeys = buildProviderApiKeys(config, profileName)
     const data = await postJson(`${config.serviceUrl}/providers/models`, buildModelsRequest(provider, providerApiKeys))
     print(data)
+    return
+  }
+
+  if (command === "config" && subcommand === "set") {
+    const key = flags.key
+    const rawValue = flags.value
+    if (typeof key !== "string" || key.trim().length === 0) {
+      throw new Error("config set requires --key")
+    }
+    if (typeof rawValue !== "string") {
+      throw new Error("config set requires --value")
+    }
+    const type = typeof flags.type === "string" ? flags.type : "auto"
+    if (!["auto", "string", "number", "boolean", "json"].includes(type)) {
+      throw new Error("config set --type must be one of auto|string|number|boolean|json")
+    }
+    const devVarsPath = typeof flags["dev-vars"] === "string"
+      ? path.resolve(process.cwd(), flags["dev-vars"])
+      : path.resolve(process.cwd(), ".dev.vars")
+
+    const baseConfig = readDevVarsConfigJson(devVarsPath) || JSON.parse(JSON.stringify(PROJECT_CONFIG))
+    if (!hasPath(PROJECT_CONFIG, key)) {
+      throw new Error(`Unknown config key: ${key}`)
+    }
+    const value = parseConfigValue(rawValue, type)
+    setPath(baseConfig, key, value)
+    writeDevVarsConfigJson(devVarsPath, baseConfig)
+    print({ ok: true, key, value, devVarsPath })
     return
   }
 

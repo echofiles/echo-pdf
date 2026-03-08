@@ -1,11 +1,11 @@
 {
   "service": {
     "name": "echo-pdf",
-    "maxPdfBytes": 1200000,
-    "maxPagesPerRequest": 10,
+    "maxPdfBytes": 10000000,
+    "maxPagesPerRequest": 20,
     "defaultRenderScale": 2,
     "storage": {
-      "maxFileBytes": 1200000,
+      "maxFileBytes": 10000000,
       "maxTotalBytes": 52428800,
       "ttlHours": 24,
       "cleanupBatchSize": 50
