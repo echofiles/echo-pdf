@@ -1,0 +1,51 @@
+name: codex-fix
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: codex-fix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  notify:
+    if: github.event.label.name == 'codex-fix'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if webhook not configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.CODEX_WEBHOOK_URL }}" ]; then
+            echo "CODEX_WEBHOOK_URL not set; skipping."
+            exit 0
+          fi
+
+      - name: Notify Codex fixer webhook
+        env:
+          CODEX_WEBHOOK_URL: ${{ secrets.CODEX_WEBHOOK_URL }}
+          CODEX_WEBHOOK_TOKEN: ${{ secrets.CODEX_WEBHOOK_TOKEN }}
+        run: |
+          payload="$(jq -n \
+            --arg mode "fix" \
+            --arg event "${GITHUB_EVENT_NAME}" \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg prNumber "${{ github.event.pull_request.number }}" \
+            --arg prUrl "${{ github.event.pull_request.html_url }}" \
+            --arg sha "${{ github.event.pull_request.head.sha }}" \
+            '{mode:$mode,event:$event,repo:$repo,prNumber:($prNumber|tonumber),prUrl:$prUrl,sha:$sha}')"
+
+          auth_header=""
+          if [ -n "${CODEX_WEBHOOK_TOKEN}" ]; then
+            auth_header="Authorization: Bearer ${CODEX_WEBHOOK_TOKEN}"
+          fi
+
+          curl -fsS -X POST "${CODEX_WEBHOOK_URL}" \
+            -H "Content-Type: application/json" \
+            ${auth_header:+-H "$auth_header"} \
+            -d "${payload}"
+
