@@ -1,4 +1,5 @@
 import { DurableObjectFileStore } from "./file-store-do"
+import { R2FileStore } from "./r2-file-store"
 import type { EchoPdfConfig } from "./pdf-types"
 import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "./types"
 
@@ -55,6 +56,14 @@ export interface RuntimeFileStoreBundle {
 }
 
 export const getRuntimeFileStore = (env: Env, config: EchoPdfConfig): RuntimeFileStoreBundle => {
+  if (env.FILE_STORE_BUCKET) {
+    const store = new R2FileStore(env.FILE_STORE_BUCKET, config.service.storage)
+    return {
+      store,
+      stats: async () => store.stats(),
+      cleanup: async () => store.cleanup(),
+    }
+  }
   if (env.FILE_STORE_DO) {
     const store = new DurableObjectFileStore(env.FILE_STORE_DO, config.service.storage)
     return {

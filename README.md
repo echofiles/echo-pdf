@@ -32,7 +32,7 @@
 安装：
 
 ```bash
-npm i -g echo-pdf
+npm i -g @echofiles/echo-pdf
 ```
 
 初始化服务地址：
@@ -235,6 +235,19 @@ INPUT_PDF=./fixtures/input.pdf ./scripts/export-fixtures.sh
 
 当前实现要求模型输出中必须包含合法 `\\begin{tabular}...\\end{tabular}`。如果模型返回解释性文本或超时，会直接报错。
 
-### 8.3 `returnMode=url` 为什么不可用
+### 8.3 `returnMode=url` 如何使用
 
-当前版本没有对外文件下载路由或签名 URL 能力，因此 `url` 模式未实现。请使用 `inline` 或 `file_id`。
+`url` 模式会把结果落到存储层，并返回一个可直接 `GET` 的下载地址：
+
+- `GET /api/files/get?fileId=<id>`
+
+示例（提取页面并返回 URL）：
+
+```bash
+curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
+  -H 'content-type: application/json' \
+  -d '{
+    "name":"pdf_extract_pages",
+    "arguments":{"fileId":"<FILE_ID>","pages":[1],"returnMode":"url"}
+  }'
+```

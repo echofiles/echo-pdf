@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
 const bundledFixtureDir = path.join(rootDir, "fixtures")
 const defaultFixturePdf = path.join(bundledFixtureDir, "smoke.pdf")
-const testcaseDir = process.env.TESTCASE_DIR ?? path.resolve(rootDir, "..", "testcase/eda")
+const defaultTestcaseDir = path.join(rootDir, "fixtures")
 const port = process.env.PORT ?? "8788"
 const baseUrl = process.env.SMOKE_BASE_URL ?? `http://127.0.0.1:${port}`
 const logPath = path.join(rootDir, ".integration-dev.log")
@@ -110,6 +110,7 @@ const resolveLlmModel = (): string => {
 }
 
 const resolveFixturePdf = async (): Promise<string> => {
+  const testcaseDir = process.env.TESTCASE_DIR ?? defaultTestcaseDir
   try {
     const dirStat = await stat(testcaseDir)
     if (dirStat.isDirectory()) {
@@ -170,6 +171,9 @@ const uploadPdf = async (candidatePath: string): Promise<{ fileId: string }> => 
 describe("echo-pdf integration", () => {
   beforeAll(async () => {
     await readEnvLocal()
+    if (!process.env.TESTCASE_DIR) {
+      process.env.TESTCASE_DIR = defaultTestcaseDir
+    }
     fallbackFixturePdf = await resolveBundledFixturePdf()
     fixturePdf = await resolveFixturePdf()
 
@@ -179,7 +183,31 @@ describe("echo-pdf integration", () => {
     }
 
     if (!process.env.SMOKE_BASE_URL) {
-      devProcess = spawn("npm", ["run", "dev", "--", "--ip", "127.0.0.1", "--port", port, "--inspector-port", "0"], {
+      // Make integration tests deterministic: do not rely on local `.dev.vars`.
+      // Pass a minimal config via `--var` to Wrangler.
+      const testConfig = {
+        ...configJson,
+        service: {
+          ...configJson.service,
+          maxPdfBytes: 900000,
+          storage: {
+            ...configJson.service.storage,
+            maxFileBytes: 900000,
+          },
+        },
+      }
+      devProcess = spawn("npx", [
+        "wrangler",
+        "dev",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        port,
+        "--inspector-port",
+        "0",
+        "--var",
+        `ECHO_PDF_CONFIG_JSON:${JSON.stringify(testConfig)}`,
+      ], {
         cwd: rootDir,
         env: process.env,
         stdio: ["ignore", "pipe", "pipe"],
@@ -261,6 +289,27 @@ describe("echo-pdf integration", () => {
     expect(streamText).toContain("event: result")
     expect(streamText).toContain("event: done")
     expect(streamText).toContain("\"ok\":true")
+
+    await postJson("/api/files/op", { op: "delete", fileId })
+  })
+
+  it("supports returnMode=url for extracted pages", async () => {
+    const primary = await uploadPdf(defaultFixturePdf)
+    const fileId = primary.fileId
+
+    const extractData = await postJson("/tools/call", {
+      name: "pdf_extract_pages",
+      arguments: { fileId, pages: [1], returnMode: "url" },
+    }) as {
+      output?: { images?: Array<{ url?: string; fileId?: string }> }
+    }
+    const url = extractData.output?.images?.[0]?.url ?? ""
+    expect(typeof url).toBe("string")
+    expect(url.startsWith("/api/files/get?fileId=")).toBe(true)
+
+    const imgRes = await fetch(`${baseUrl}${url}`)
+    expect(imgRes.ok).toBe(true)
+    expect(String(imgRes.headers.get("content-type") || "")).toContain("image/png")
 
     await postJson("/api/files/op", { op: "delete", fileId })
   })

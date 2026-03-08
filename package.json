@@ -1,8 +1,11 @@
 {
-  "name": "echo-pdf",
+  "name": "@echofiles/echo-pdf",
   "description": "MCP-first PDF agent on Cloudflare Workers with CLI and web demo.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "echo-pdf": "./bin/echo-pdf.js"
   },

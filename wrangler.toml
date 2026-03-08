@@ -6,6 +6,10 @@ compatibility_date = "2026-03-06"
 directory = "./assets"
 binding = "ASSETS"
 
+[[r2_buckets]]
+binding = "FILE_STORE_BUCKET"
+bucket_name = "echo-pdf-files"
+
 [[durable_objects.bindings]]
 name = "FILE_STORE_DO"
 class_name = "FileStoreDO"

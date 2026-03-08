@@ -11,8 +11,9 @@ export type ReturnMode = "inline" | "file_id" | "url"
 export interface Env {
   readonly ECHO_PDF_CONFIG_JSON?: string
   readonly ASSETS?: Fetcher
+  readonly FILE_STORE_BUCKET?: R2Bucket
   readonly FILE_STORE_DO?: DurableObjectNamespace
-  readonly [key: string]: string | Fetcher | DurableObjectNamespace | undefined
+  readonly [key: string]: string | Fetcher | DurableObjectNamespace | R2Bucket | undefined
 }
 
 export interface StoredFileMeta {

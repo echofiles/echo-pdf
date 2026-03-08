@@ -122,9 +122,6 @@ export const runPdfAgent = async (
   const pages = ensurePages(request.pages, pageCount, config.service.maxPagesPerRequest)
   const scale = request.renderScale ?? config.service.defaultRenderScale
   const returnMode = resolveReturnMode(request.returnMode)
-  if (returnMode === "url") {
-    throw new Error("returnMode=url is not implemented; use inline or file_id")
-  }
 
   if (request.operation === "extract_pages") {
     const images: Array<{ page: number; mimeType: string; data?: string; fileId?: string; url?: string | null }> = []
@@ -138,6 +135,18 @@ export const runPdfAgent = async (
           bytes: rendered.png,
         })
         images.push({ page, mimeType: "image/png", fileId: stored.id })
+      } else if (returnMode === "url") {
+        const stored = await opts.fileStore.put({
+          filename: `${file.filename}-p${page}.png`,
+          mimeType: "image/png",
+          bytes: rendered.png,
+        })
+        images.push({
+          page,
+          mimeType: "image/png",
+          fileId: stored.id,
+          url: `/api/files/get?fileId=${encodeURIComponent(stored.id)}`,
+        })
       } else {
         images.push({
           page,

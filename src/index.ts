@@ -21,6 +21,25 @@ const json = (data: unknown, status = 200): Response =>
 const toError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
 
+const errorStatus = (error: unknown): number | null => {
+  const status = (error as { status?: unknown })?.status
+  return typeof status === "number" && Number.isFinite(status) ? status : null
+}
+
+const errorCode = (error: unknown): string | null => {
+  const code = (error as { code?: unknown })?.code
+  return typeof code === "string" && code.length > 0 ? code : null
+}
+
+const errorDetails = (error: unknown): unknown => (error as { details?: unknown })?.details
+
+const jsonError = (error: unknown, fallbackStatus = 500): Response => {
+  const status = errorStatus(error) ?? fallbackStatus
+  const code = errorCode(error)
+  const details = errorDetails(error)
+  return json({ error: toError(error), code, details }, status)
+}
+
 const readJson = async (request: Request): Promise<Record<string, unknown>> => {
   try {
     const body = await request.json()
@@ -117,7 +136,7 @@ export default {
           fileUploadEndpoint: "/api/files/upload",
           fileStatsEndpoint: "/api/files/stats",
           fileCleanupEndpoint: "/api/files/cleanup",
-          supportedReturnModes: ["inline", "file_id"],
+          supportedReturnModes: ["inline", "file_id", "url"],
         },
         mcp: {
           serverName: config.mcp.serverName,
@@ -165,7 +184,7 @@ export default {
         })
         return json({ name, output: result })
       } catch (error) {
-        return json({ error: toError(error) }, 500)
+        return jsonError(error, 500)
       }
     }
 
@@ -198,7 +217,7 @@ export default {
         })
         return json(result)
       } catch (error) {
-        return json({ error: toError(error) }, 500)
+        return jsonError(error, 500)
       }
     }
 
@@ -253,7 +272,7 @@ export default {
         })
         return json(result)
       } catch (error) {
-        return json({ error: toError(error) }, 500)
+        return jsonError(error, 500)
       }
     }
 
@@ -276,8 +295,23 @@ export default {
         })
         return json({ file: stored }, 200)
       } catch (error) {
-        return json({ error: toError(error) }, 500)
+        return jsonError(error, 500)
       }
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/files/get") {
+      const fileId = url.searchParams.get("fileId") || ""
+      if (!fileId) return json({ error: "Missing fileId" }, 400)
+      const file = await fileStore.get(fileId)
+      if (!file) return json({ error: "File not found" }, 404)
+      const download = url.searchParams.get("download") === "1"
+      const headers = new Headers()
+      headers.set("Content-Type", file.mimeType)
+      headers.set("Cache-Control", "no-store")
+      if (download) {
+        headers.set("Content-Disposition", `attachment; filename=\"${file.filename.replace(/\"/g, "")}\"`)
+      }
+      return new Response(file.bytes, { status: 200, headers })
     }
 
     if (request.method === "GET" && url.pathname === "/api/files/stats") {
@@ -321,6 +355,7 @@ export default {
           stream: "POST /api/agent/stream",
           files: "POST /api/files/op",
           fileUpload: "POST /api/files/upload",
+          fileGet: "GET /api/files/get?fileId=<id>",
           fileStats: "GET /api/files/stats",
           fileCleanup: "POST /api/files/cleanup",
           mcp: "POST /mcp",
