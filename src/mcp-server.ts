@@ -1,5 +1,6 @@
 import type { Env, FileStore } from "./types"
 import type { EchoPdfConfig } from "./pdf-types"
+import { checkHeaderAuth } from "./auth"
 import { buildMcpContent, buildToolOutputEnvelope } from "./response-schema"
 import { callTool, listToolSchemas } from "./tool-registry"
 
@@ -38,24 +39,6 @@ const err = (
 const asObj = (v: unknown): Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
 
-const authState = (
-  request: Request,
-  env: Env,
-  config: EchoPdfConfig
-): { ok: true } | { ok: false; status: number; message: string } => {
-  if (!config.mcp.authHeader || !config.mcp.authEnv) return { ok: true }
-  const required = env[config.mcp.authEnv]
-  const allowMissing = env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1"
-  if (typeof required !== "string" || required.length === 0) {
-    if (allowMissing) return { ok: true }
-    return { ok: false, status: 500, message: `MCP auth is configured but env "${config.mcp.authEnv}" is missing` }
-  }
-  if (request.headers.get(config.mcp.authHeader) !== required) {
-    return { ok: false, status: 401, message: "Unauthorized" }
-  }
-  return { ok: true }
-}
-
 const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
   typeof configured === "string" && configured.length > 0 ? configured : request.url
 
@@ -75,9 +58,19 @@ export const handleMcpRequest = async (
   config: EchoPdfConfig,
   fileStore: FileStore
 ): Promise<Response> => {
-  const auth = authState(request, env, config)
+  const auth = checkHeaderAuth(request, env, {
+    authHeader: config.mcp.authHeader,
+    authEnv: config.mcp.authEnv,
+    allowMissingSecret: env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1",
+    misconfiguredCode: "AUTH_MISCONFIGURED",
+    unauthorizedCode: "UNAUTHORIZED",
+    contextName: "MCP",
+  })
   if (!auth.ok) {
-    return new Response(auth.message, { status: auth.status })
+    return new Response(JSON.stringify({ error: auth.message, code: auth.code }), {
+      status: auth.status,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 
   let body: JsonRpcRequest

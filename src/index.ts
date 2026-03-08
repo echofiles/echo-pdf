@@ -1,6 +1,7 @@
 import { normalizeReturnMode } from "./file-utils"
 import { FileStoreDO } from "./file-store-do"
 import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults"
+import { checkHeaderAuth } from "./auth"
 import { handleMcpRequest } from "./mcp-server"
 import { loadEchoPdfConfig } from "./pdf-config"
 import { getRuntimeFileStore } from "./pdf-storage"
@@ -67,29 +68,6 @@ const sanitizeDownloadFilename = (filename: string): string => {
     .replace(/[^\x20-\x7E]+/g, "")
     .trim()
   return cleaned.length > 0 ? cleaned : "download.bin"
-}
-
-const fileGetAuthState = (
-  request: Request,
-  env: Env,
-  config: { authHeader?: string; authEnv?: string }
-): { ok: true } | { ok: false; status: number; code: string; message: string } => {
-  if (!config.authHeader || !config.authEnv) return { ok: true }
-  const required = env[config.authEnv]
-  const allowMissing = env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1"
-  if (typeof required !== "string" || required.length === 0) {
-    if (allowMissing) return { ok: true }
-    return {
-      ok: false,
-      status: 500,
-      code: "AUTH_MISCONFIGURED",
-      message: `file get auth is configured but env "${config.authEnv}" is missing`,
-    }
-  }
-  if (request.headers.get(config.authHeader) !== required) {
-    return { ok: false, status: 401, code: "UNAUTHORIZED", message: "Unauthorized" }
-  }
-  return { ok: true }
 }
 
 const sseResponse = (stream: ReadableStream<Uint8Array>): Response =>
@@ -340,7 +318,14 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/files/get") {
       const fileGetConfig = config.service.fileGet ?? {}
-      const auth = fileGetAuthState(request, env, fileGetConfig)
+      const auth = checkHeaderAuth(request, env, {
+        authHeader: fileGetConfig.authHeader,
+        authEnv: fileGetConfig.authEnv,
+        allowMissingSecret: env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1",
+        misconfiguredCode: "AUTH_MISCONFIGURED",
+        unauthorizedCode: "UNAUTHORIZED",
+        contextName: "file get",
+      })
       if (!auth.ok) {
         return json({ error: auth.message, code: auth.code }, auth.status)
       }
