@@ -26,8 +26,10 @@ export const runFileOp = async (
       bytes,
     })
     const returnMode = normalizeReturnMode(input.returnMode)
+    if (returnMode === "url") {
+      throw new Error("returnMode=url is not implemented; use inline or file_id")
+    }
     if (returnMode === "file_id") return { returnMode, file: meta }
-    if (returnMode === "url") return { returnMode, file: meta, url: null }
     const stored = await fileStore.get(meta.id)
     if (!stored) throw new Error(`File not found after put: ${meta.id}`)
     return {

@@ -17,9 +17,7 @@ const PROVIDER_ALIAS_BY_TYPE = new Map(
 const PROVIDER_SET_NAMES = Array.from(
   new Set(PROVIDER_ENTRIES.flatMap(([alias, provider]) => [alias, provider.type]))
 )
-const PROJECT_DEFAULT_MODELS = Object.fromEntries(
-  PROVIDER_ALIASES.map((alias) => [alias, String(PROJECT_CONFIG.agent?.defaultModels?.[alias] || "").trim()])
-)
+const PROJECT_DEFAULT_MODEL = String(PROJECT_CONFIG.agent?.defaultModel || "").trim()
 const DEFAULT_WORKER_NAME = process.env.ECHO_PDF_WORKER_NAME || PROJECT_CONFIG.service?.name || "echo-pdf"
 const DEFAULT_SERVICE_URL = process.env.ECHO_PDF_SERVICE_URL || `https://${DEFAULT_WORKER_NAME}.echofilesai.workers.dev`
 const DEFAULT_MCP_HEADER = process.env.ECHO_PDF_MCP_HEADER?.trim() || PROJECT_CONFIG.mcp?.authHeader || "x-mcp-key"
@@ -150,7 +148,7 @@ const resolveProviderAlias = (profile, explicitProvider) =>
 const resolveDefaultModel = (profile, providerAlias) => {
   const model = profile.models?.[providerAlias]
   if (typeof model === "string" && model.trim().length > 0) return model.trim()
-  return PROJECT_DEFAULT_MODELS[providerAlias] || ""
+  return PROJECT_DEFAULT_MODEL
 }
 
 const buildProviderApiKeys = (config, profileName) => {
@@ -400,7 +398,7 @@ const main = async () => {
       profile: profileName,
       defaultProvider: profile.defaultProvider,
       models: profile.models || {},
-      projectDefaults: PROJECT_DEFAULT_MODELS,
+      projectDefaultModel: PROJECT_DEFAULT_MODEL,
     })
     return
   }

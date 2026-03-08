@@ -1,7 +1,7 @@
 {
   "service": {
     "name": "echo-pdf",
-    "maxPdfBytes": 31457280,
+    "maxPdfBytes": 1200000,
     "maxPagesPerRequest": 10,
     "defaultRenderScale": 2,
     "storage": {
@@ -16,13 +16,9 @@
   },
   "agent": {
     "defaultProvider": "openai",
-    "defaultModels": {
-      "openai": "",
-      "vercel_gateway": "",
-      "openrouter": ""
-    },
+    "defaultModel": "",
     "ocrPrompt": "Extract readable text from this PDF page image. Preserve line breaks and section structure.",
-    "tablePrompt": "Detect all tabular structures from this PDF page image and output valid LaTeX tabular environments only."
+    "tablePrompt": "Detect all tabular structures from this PDF page image. Output only valid LaTeX tabular environments, no explanations, no markdown fences."
   },
   "providers": {
     "openai": {

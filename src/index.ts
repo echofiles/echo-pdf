@@ -52,8 +52,11 @@ const encodeSse = (event: string, data: unknown): Uint8Array => {
   return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
 }
 
+const isValidOperation = (value: unknown): value is PdfOperationRequest["operation"] =>
+  value === "extract_pages" || value === "ocr_pages" || value === "tables_to_latex"
+
 const toPdfOperation = (input: Record<string, unknown>, defaultProvider: string): PdfOperationRequest => ({
-  operation: (input.operation as "extract_pages" | "ocr_pages" | "tables_to_latex") ?? "extract_pages",
+  operation: isValidOperation(input.operation) ? input.operation : "extract_pages",
   fileId: typeof input.fileId === "string" ? input.fileId : undefined,
   url: typeof input.url === "string" ? input.url : undefined,
   base64: typeof input.base64 === "string" ? input.base64 : undefined,
@@ -114,7 +117,7 @@ export default {
           fileUploadEndpoint: "/api/files/upload",
           fileStatsEndpoint: "/api/files/stats",
           fileCleanupEndpoint: "/api/files/cleanup",
-          supportedReturnModes: ["inline", "file_id", "url"],
+          supportedReturnModes: ["inline", "file_id"],
         },
         mcp: {
           serverName: config.mcp.serverName,
@@ -182,6 +185,9 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/api/agent/run") {
       const body = await readJson(request)
+      if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
+        return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)
+      }
       const requestPayload = toPdfOperation(body, config.agent.defaultProvider)
       try {
         const result = await callTool(toolNameByOperation[requestPayload.operation], operationArgsFromRequest(requestPayload), {
@@ -198,6 +204,9 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/api/agent/stream") {
       const body = await readJson(request)
+      if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
+        return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)
+      }
       const requestPayload = toPdfOperation(body, config.agent.defaultProvider)
       const stream = new TransformStream<Uint8Array, Uint8Array>()
       const writer = stream.writable.getWriter()
@@ -288,11 +297,7 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/mcp") {
-      try {
-        return await handleMcpRequest(request, env, config, fileStore)
-      } catch (error) {
-        return json({ error: toError(error) }, 500)
-      }
+      return await handleMcpRequest(request, env, config, fileStore)
     }
 
     if (request.method === "GET" && env.ASSETS) {

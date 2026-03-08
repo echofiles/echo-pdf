@@ -49,9 +49,23 @@ export const handleMcpRequest = async (
     return new Response("Unauthorized", { status: 401 })
   }
 
-  const body = (await request.json()) as JsonRpcRequest
+  let body: JsonRpcRequest
+  try {
+    body = (await request.json()) as JsonRpcRequest
+  } catch {
+    return err(null, -32700, "Parse error")
+  }
+  if (typeof body !== "object" || body === null) {
+    return err(null, -32600, "Invalid Request")
+  }
+  if (body.jsonrpc !== "2.0") {
+    return err(body.id ?? null, -32600, "Invalid Request: jsonrpc must be '2.0'")
+  }
   const method = body.method ?? ""
   const id = body.id ?? null
+  if (typeof method !== "string" || method.length === 0) {
+    return err(id, -32600, "Invalid Request: method is required")
+  }
   const params = asObj(body.params)
 
   if (method === "initialize") {

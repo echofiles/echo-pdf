@@ -39,11 +39,6 @@ run_json() {
   fi
 }
 
-build_model_candidates() {
-  local models_json="$1"
-  node -e 'const fs=require("fs");const p=process.argv[1];const forced=(process.env.SMOKE_LLM_MODEL||"").trim();const j=JSON.parse(fs.readFileSync(p,"utf8"));const models=Array.isArray(j.models)?j.models:[];const pick=(re)=>models.filter((m)=>re.test(String(m)));const preferred=[];if(forced)preferred.push(forced);const patterns=[/gpt-4o/i,/gpt-4\.1/i,/gpt-5/i,/claude-3\.[57]|claude-sonnet-4|claude-opus-4/i,/gemini-2\.5|gemini-3/i,/grok-2-vision|vision|vl/i,/pixtral/i,/qwen.*vl/i];for(const re of patterns){for(const m of pick(re)){if(!preferred.includes(m))preferred.push(m);}}for(const m of models){if(!preferred.includes(m))preferred.push(m);}process.stdout.write(JSON.stringify(preferred.slice(0,24)));' "$models_json"
-}
-
 validate_ocr_json() {
   local json_file="$1"
   node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const pages=j?.output?.pages;if(!Array.isArray(pages)||pages.length===0)process.exit(1);const t=String(pages[0]?.text||"").trim();if(t.length===0)process.exit(1);' "$json_file"
@@ -106,6 +101,7 @@ cli init --service-url "$BASE_URL" > "${OUT_DIR}/cli-init.json"
 node -e 'const fs=require("fs");const cfg=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const entries=Object.entries(cfg.providers||{});const pick=(key)=>{const keys=[key];if(key.endsWith("_API_KEY"))keys.push(key.replace(/_API_KEY$/,"_KEY"));if(key.endsWith("_KEY"))keys.push(key.replace(/_KEY$/,"_API_KEY"));for(const k of keys){const v=process.env[k];if(typeof v==="string"&&v.trim())return {k,v:v.trim()};}return null;};const forced=String(process.env.SMOKE_LLM_PROVIDER||"").trim();if(forced&&cfg.providers?.[forced]){const found=pick(String(cfg.providers[forced].apiKeyEnv||""));if(found){process.stdout.write(JSON.stringify({provider:forced,apiKey:found.v,env:found.k,forced:true}));process.exit(0);}}const preferred=String(cfg.agent?.defaultProvider||"");const ordered=entries.sort((a,b)=>a[0]===preferred?-1:b[0]===preferred?1:0);for(const [alias,p] of ordered){const found=pick(String(p.apiKeyEnv||""));if(found){process.stdout.write(JSON.stringify({provider:alias,apiKey:found.v,env:found.k,forced:false}));process.exit(0);}}process.stdout.write(JSON.stringify({provider:preferred||"",apiKey:"",env:"",forced:false}));' "${ROOT_DIR}/echo-pdf.config.json" > "${OUT_DIR}/provider-selection.json"
 PROVIDER="$(node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(j.provider||""))' "${OUT_DIR}/provider-selection.json")"
 PROVIDER_KEY="$(node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(j.apiKey||""))' "${OUT_DIR}/provider-selection.json")"
+PREFERRED_MODEL="${SMOKE_LLM_MODEL:-${ECHO_PDF_DEFAULT_MODEL:-}}"
 if [[ -n "${PROVIDER}" ]] && [[ -n "${PROVIDER_KEY}" ]]; then
   cli provider set --provider "${PROVIDER}" --api-key "${PROVIDER_KEY}" > "${OUT_DIR}/provider-set.json"
   cli provider use --provider "${PROVIDER}" > "${OUT_DIR}/provider-use.json"
@@ -119,12 +115,16 @@ if [[ -n "${PROVIDER}" ]]; then
 else
   echo '{"warning":"No provider selected, skip model list"}' > "${OUT_DIR}/models.json"
 fi
-MODEL="$(node -e 'const fs=require("fs");const p=process.argv[1];try{const j=JSON.parse(fs.readFileSync(p,"utf8"));const m=Array.isArray(j.models)&&j.models[0]?j.models[0]:"";process.stdout.write(m)}catch{process.stdout.write("")}' "${OUT_DIR}/models.json")"
-build_model_candidates "${OUT_DIR}/models.json" > "${OUT_DIR}/model-candidates.json"
+MODEL="${PREFERRED_MODEL}"
 if [[ -n "$MODEL" ]] && [[ -n "${PROVIDER}" ]]; then
+  if ! node -e 'const fs=require("fs");const file=process.argv[1];const model=process.argv[2];const j=JSON.parse(fs.readFileSync(file,"utf8"));const models=Array.isArray(j.models)?j.models:[];process.exit(models.includes(model)?0:1)' "${OUT_DIR}/models.json" "$MODEL"; then
+    echo "Configured model not found in provider model list: ${MODEL}" >&2
+    exit 1
+  fi
   cli model set --provider "${PROVIDER}" --model "$MODEL" > "${OUT_DIR}/model-set.json"
 else
-  echo '{"warning":"No model available from selected provider"}' > "${OUT_DIR}/model-warning.json"
+  echo '{"warning":"Missing ECHO_PDF_DEFAULT_MODEL / SMOKE_LLM_MODEL"}' > "${OUT_DIR}/model-warning.json"
+  exit 1
 fi
 
 # 4) Upload the exact local fixture for subsequent CLI/MCP calls
@@ -155,34 +155,26 @@ OCR_OK=0
 TABLES_OK=0
 if [[ -n "${PROVIDER}" ]]; then
   : > "${OUT_DIR}/llm-attempts.log"
-  while IFS= read -r CANDIDATE; do
-    [[ -z "${CANDIDATE}" ]] && continue
-    echo "[ocr] trying model=${CANDIDATE}" >> "${OUT_DIR}/llm-attempts.log"
-    if cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" --provider "${PROVIDER}" --model "${CANDIDATE}" > "${OUT_DIR}/cli-ocr-pages.json" 2> "${OUT_DIR}/cli-ocr-pages.err"; then
-      if validate_ocr_json "${OUT_DIR}/cli-ocr-pages.json"; then
-        OCR_OK=1
-        echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" > "${OUT_DIR}/ocr-selected-model.json"
-        break
-      fi
+  echo "[ocr] using provider=${PROVIDER} model=${MODEL}" >> "${OUT_DIR}/llm-attempts.log"
+  if cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" --provider "${PROVIDER}" --model "${MODEL}" > "${OUT_DIR}/cli-ocr-pages.json" 2> "${OUT_DIR}/cli-ocr-pages.err"; then
+    if validate_ocr_json "${OUT_DIR}/cli-ocr-pages.json"; then
+      OCR_OK=1
+      echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" > "${OUT_DIR}/ocr-selected-model.json"
     fi
-  done < <(node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));for(const m of (Array.isArray(a)?a:[])){console.log(m)}' "${OUT_DIR}/model-candidates.json")
+  fi
 else
   run_json "cli-ocr-pages" cli call --tool pdf_ocr_pages --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1]}"
 fi
 
 if [[ "${RUN_TABLES}" == "1" ]]; then
   if [[ -n "${PROVIDER}" ]]; then
-    while IFS= read -r CANDIDATE; do
-      [[ -z "${CANDIDATE}" ]] && continue
-      echo "[tables] trying model=${CANDIDATE}" >> "${OUT_DIR}/llm-attempts.log"
-      if cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" --provider "${PROVIDER}" --model "${CANDIDATE}" > "${OUT_DIR}/cli-tables-to-latex.json" 2> "${OUT_DIR}/cli-tables-to-latex.err"; then
-        if validate_tables_json "${OUT_DIR}/cli-tables-to-latex.json"; then
-          TABLES_OK=1
-          echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${CANDIDATE}\"}" > "${OUT_DIR}/tables-selected-model.json"
-          break
-        fi
+    echo "[tables] using provider=${PROVIDER} model=${MODEL}" >> "${OUT_DIR}/llm-attempts.log"
+    if cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1],\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" --provider "${PROVIDER}" --model "${MODEL}" > "${OUT_DIR}/cli-tables-to-latex.json" 2> "${OUT_DIR}/cli-tables-to-latex.err"; then
+      if validate_tables_json "${OUT_DIR}/cli-tables-to-latex.json"; then
+        TABLES_OK=1
+        echo "{\"provider\":\"${PROVIDER}\",\"model\":\"${MODEL}\"}" > "${OUT_DIR}/tables-selected-model.json"
       fi
-    done < <(node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));for(const m of (Array.isArray(a)?a:[])){console.log(m)}' "${OUT_DIR}/model-candidates.json")
+    fi
   else
     run_json "cli-tables-to-latex" cli call --tool pdf_tables_to_latex --args "{\"fileId\":\"${FILE_ID}\",\"pages\":[1]}"
   fi
@@ -192,11 +184,11 @@ fi
 
 if [[ "${REQUIRE_LLM_SUCCESS}" == "1" ]]; then
   if [[ "${OCR_OK}" != "1" ]]; then
-    echo "OCR failed for all candidate models. See ${OUT_DIR}/cli-ocr-pages.err and llm-attempts.log" >&2
+    echo "OCR failed for configured model. See ${OUT_DIR}/cli-ocr-pages.err and llm-attempts.log" >&2
     exit 1
   fi
   if [[ "${RUN_TABLES}" == "1" ]] && [[ "${TABLES_OK}" != "1" ]]; then
-    echo "Tables failed for all candidate models. See ${OUT_DIR}/cli-tables-to-latex.err and llm-attempts.log" >&2
+    echo "Tables failed for configured model. See ${OUT_DIR}/cli-tables-to-latex.err and llm-attempts.log" >&2
     exit 1
   fi
 fi

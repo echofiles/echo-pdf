@@ -32,8 +32,7 @@ export interface EchoPdfConfig {
   }
   readonly agent: {
     readonly defaultProvider: string
-    readonly defaultModel?: string
-    readonly defaultModels?: Record<string, string>
+    readonly defaultModel: string
     readonly ocrPrompt: string
     readonly tablePrompt: string
   }

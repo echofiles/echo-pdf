@@ -95,6 +95,19 @@ export const ingestPdfFromPayload = async (
 
 const resolveReturnMode = (value: ReturnMode | undefined): ReturnMode => normalizeReturnMode(value)
 
+const stripCodeFences = (value: string): string => {
+  const text = value.trim()
+  const fenced = text.match(/^```[a-zA-Z0-9_-]*\n([\s\S]*?)\n```$/)
+  return typeof fenced?.[1] === "string" ? fenced[1].trim() : text
+}
+
+const extractTabularLatex = (value: string): string => {
+  const text = stripCodeFences(value)
+  const blocks = text.match(/\\begin\{tabular\}[\s\S]*?\\end\{tabular\}/g)
+  if (!blocks || blocks.length === 0) return ""
+  return blocks.map((b) => b.trim()).join("\n\n")
+}
+
 export const runPdfAgent = async (
   config: EchoPdfConfig,
   env: Env,
@@ -109,6 +122,9 @@ export const runPdfAgent = async (
   const pages = ensurePages(request.pages, pageCount, config.service.maxPagesPerRequest)
   const scale = request.renderScale ?? config.service.defaultRenderScale
   const returnMode = resolveReturnMode(request.returnMode)
+  if (returnMode === "url") {
+    throw new Error("returnMode=url is not implemented; use inline or file_id")
+  }
 
   if (request.operation === "extract_pages") {
     const images: Array<{ page: number; mimeType: string; data?: string; fileId?: string; url?: string | null }> = []
@@ -122,13 +138,6 @@ export const runPdfAgent = async (
           bytes: rendered.png,
         })
         images.push({ page, mimeType: "image/png", fileId: stored.id })
-      } else if (returnMode === "url") {
-        const stored = await opts.fileStore.put({
-          filename: `${file.filename}-p${page}.png`,
-          mimeType: "image/png",
-          bytes: rendered.png,
-        })
-        images.push({ page, mimeType: "image/png", fileId: stored.id, url: null })
       } else {
         images.push({
           page,
@@ -146,7 +155,7 @@ export const runPdfAgent = async (
   const providerAlias = resolveProviderAlias(config, request.provider)
   const model = resolveModelForProvider(config, providerAlias, request.model)
   if (!model) {
-    throw new Error(`model is required for OCR or table extraction; set agent.defaultModels.${providerAlias}`)
+    throw new Error("model is required for OCR or table extraction; set agent.defaultModel")
   }
 
   if (request.operation === "ocr_pages") {
@@ -166,7 +175,7 @@ export const runPdfAgent = async (
         imageDataUrl,
         runtimeApiKeys: request.providerApiKeys,
       })
-      const text = (llmText || fallbackText || "").trim()
+      const text = stripCodeFences(llmText || fallbackText || "")
       results.push({ page, text })
       traceStep(opts, "end", "ocr.page", { page, chars: text.length })
     }
@@ -187,7 +196,7 @@ export const runPdfAgent = async (
     const rendered = await renderPdfPageToPng(config, file.bytes, page - 1, scale)
     const imageDataUrl = toDataUrl(rendered.png, "image/png")
     const prompt = request.prompt?.trim() || config.agent.tablePrompt
-    const latex = await visionRecognize({
+    const rawLatex = await visionRecognize({
       config,
       env,
       providerAlias,
@@ -196,7 +205,11 @@ export const runPdfAgent = async (
       imageDataUrl,
       runtimeApiKeys: request.providerApiKeys,
     })
-    tables.push({ page, latex: latex.trim() })
+    const latex = extractTabularLatex(rawLatex)
+    if (!latex) {
+      throw new Error(`table extraction did not return valid LaTeX tabular for page ${page}`)
+    }
+    tables.push({ page, latex })
     traceStep(opts, "end", "table.page", { page, chars: latex.length })
   }
   const result = {

@@ -109,6 +109,7 @@ echo-pdf setup add json
 说明：
 
 - UI 中输入的 key 属于当前会话，不落库到服务端。
+- `returnMode` 目前仅支持 `inline` 和 `file_id`（`url` 尚未实现）。
 - 表格工具返回值会校验并要求包含合法 `tabular`，否则报错。
 
 ## 5. HTTP API 使用
@@ -170,6 +171,13 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 - `service.storage.maxTotalBytes`
 - `service.storage.ttlHours`
 
+限制关系说明：
+
+- `service.maxPdfBytes`：允许处理的 PDF 最大字节数。
+- `service.storage.maxFileBytes`：文件存储单文件上限（上传 PDF、`url/base64` ingest、以及 `file_id` 结果都会落到存储层）。
+- 当前项目要求 `service.storage.maxFileBytes >= service.maxPdfBytes`，否则配置无效并在启动时报错。
+- 默认配置下两者都是 `1200000`（约 1.2MB）。
+
 常用环境变量：
 
 - `OPENAI_API_KEY`
@@ -219,3 +227,6 @@ INPUT_PDF=./fixtures/input.pdf ./scripts/export-fixtures.sh
 
 当前实现要求模型输出中必须包含合法 `\\begin{tabular}...\\end{tabular}`。如果模型返回解释性文本或超时，会直接报错。
 
+### 8.3 `returnMode=url` 为什么不可用
+
+当前版本没有对外文件下载路由或签名 URL 能力，因此 `url` 模式未实现。请使用 `inline` 或 `file_id`。

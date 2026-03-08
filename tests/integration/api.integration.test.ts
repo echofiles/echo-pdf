@@ -100,21 +100,13 @@ const providerApiKeys = (): Record<string, string> => {
   return result
 }
 
-const chooseModelCandidates = (models: string[]): string[] => {
-  const forced = process.env.SMOKE_LLM_MODEL
-  if (forced && forced.trim().length > 0) return [forced.trim(), ...models.filter((m) => m !== forced.trim())]
-
-  const preferredPatterns = [
-    /gpt-4o/i,
-    /gpt-4\.1/i,
-    /claude-3\.[57]/i,
-    /gemini-2\./i,
-    /gemini-1\.5/i,
-  ]
-
-  const preferred = models.filter((model) => preferredPatterns.some((re) => re.test(model)))
-  const fallback = models.filter((model) => !preferred.includes(model))
-  return [...preferred, ...fallback]
+const resolveLlmModel = (): string => {
+  const fromSmoke = process.env.SMOKE_LLM_MODEL?.trim()
+  if (fromSmoke) return fromSmoke
+  const fromEnv = process.env.ECHO_PDF_DEFAULT_MODEL?.trim()
+  if (fromEnv) return fromEnv
+  const fromConfig = configJson.agent?.defaultModel?.trim()
+  return fromConfig || ""
 }
 
 const resolveFixturePdf = async (): Promise<string> => {
@@ -273,6 +265,17 @@ describe("echo-pdf integration", () => {
     await postJson("/api/files/op", { op: "delete", fileId })
   })
 
+  it("returns 400 for invalid agent operation", async () => {
+    const response = await fetch(`${baseUrl}/api/agent/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ operation: "invalid_op", pages: [1] }),
+    })
+    const payload = await response.json() as { error?: string }
+    expect(response.status).toBe(400)
+    expect(typeof payload.error).toBe("string")
+  })
+
   it("supports mcp initialize/list/call", async () => {
     const initData = await postJson("/mcp", { jsonrpc: "2.0", id: 1, method: "initialize", params: {} }) as {
       result?: { serverInfo?: { name?: string } }
@@ -295,9 +298,27 @@ describe("echo-pdf integration", () => {
     expect(Array.isArray(callData.result?.content)).toBe(true)
   })
 
+  it("returns json-rpc parse error for invalid mcp payload", async () => {
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not-json",
+    })
+    const payload = await response.json() as { error?: { code?: number } }
+    expect(response.status).toBe(400)
+    expect(payload.error?.code).toBe(-32700)
+  })
+
   it("runs real provider model list + ocr + tables when key is configured", async () => {
     const provider = detectLlmProvider()
     if (!provider) {
+      return
+    }
+    const model = resolveLlmModel()
+    if (!model) {
+      if (process.env.SMOKE_REQUIRE_LLM === "1") {
+        throw new Error("Missing model for LLM integration test. Set SMOKE_LLM_MODEL or ECHO_PDF_DEFAULT_MODEL.")
+      }
       return
     }
 
@@ -310,8 +331,7 @@ describe("echo-pdf integration", () => {
     expect(Array.isArray(modelsData.models)).toBe(true)
     expect((modelsData.models?.length ?? 0) > 0).toBe(true)
     const models = modelsData.models ?? []
-    const modelCandidates = chooseModelCandidates(models).slice(0, 8)
-    expect(modelCandidates.length > 0).toBe(true)
+    expect(models.includes(model)).toBe(true)
 
     let uploadPath = fixturePdf
     if (maxFileBytes > 0) {
@@ -324,81 +344,48 @@ describe("echo-pdf integration", () => {
     const fileId = uploaded.fileId
     expect(fileId).toBeTruthy()
 
-    let ocrOutput: { pages?: Array<{ text?: string }> } | null = null
-    let lastError: Error | null = null
-    let selectedModel = ""
-
-    for (const model of modelCandidates) {
-      try {
-        const ocrData = await postJson("/tools/call", {
-          name: "pdf_ocr_pages",
-          arguments: {
-            fileId,
-            pages: [1],
-            provider,
-            model,
-          },
-          provider,
-          model,
-          providerApiKeys: providerApiKeys(),
-        }) as {
-          output?: {
-            pages?: Array<{ text?: string }>
-          }
-        }
-        const output = ocrData.output ?? null
-        if (!Array.isArray(output?.pages) || typeof output?.pages?.[0]?.text !== "string" || output.pages[0].text.trim().length === 0) {
-          continue
-        }
-        selectedModel = model
-        ocrOutput = output
-        break
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
+    const ocrData = await postJson("/tools/call", {
+      name: "pdf_ocr_pages",
+      arguments: {
+        fileId,
+        pages: [1],
+        provider,
+        model,
+      },
+      provider,
+      model,
+      providerApiKeys: providerApiKeys(),
+    }) as {
+      output?: {
+        pages?: Array<{ text?: string }>
       }
     }
-    if (!ocrOutput) {
-      throw lastError ?? new Error("ocr call failed for all candidate models")
-    }
+    const ocrOutput = ocrData.output ?? null
 
     expect(Array.isArray(ocrOutput.pages)).toBe(true)
     expect(typeof ocrOutput.pages?.[0]?.text).toBe("string")
-    expect(selectedModel.length > 0).toBe(true)
+    expect(ocrOutput.pages?.[0]?.text?.trim().length).toBeGreaterThan(0)
 
-    let tableOutput: { pages?: Array<{ latex?: string }> } | null = null
-    for (const model of [selectedModel, ...modelCandidates.filter((m) => m !== selectedModel)]) {
-      try {
-        const tableData = await postJson("/tools/call", {
-          name: "pdf_tables_to_latex",
-          arguments: {
-            fileId,
-            pages: [1],
-            provider,
-            model,
-          },
-          provider,
-          model,
-          providerApiKeys: providerApiKeys(),
-        }) as {
-          output?: {
-            pages?: Array<{ latex?: string }>
-          }
-        }
-        const output = tableData.output ?? null
-        if (!Array.isArray(output?.pages) || typeof output?.pages?.[0]?.latex !== "string" || output.pages[0].latex.trim().length === 0) {
-          continue
-        }
-        tableOutput = output
-        break
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
+    const tableData = await postJson("/tools/call", {
+      name: "pdf_tables_to_latex",
+      arguments: {
+        fileId,
+        pages: [1],
+        provider,
+        model,
+      },
+      provider,
+      model,
+      providerApiKeys: providerApiKeys(),
+    }) as {
+      output?: {
+        pages?: Array<{ latex?: string }>
       }
     }
-    if (!tableOutput) {
-      throw lastError ?? new Error("tables call failed for all candidate models")
-    }
+    const tableOutput = tableData.output ?? null
     expect(Array.isArray(tableOutput.pages)).toBe(true)
     expect(typeof tableOutput.pages?.[0]?.latex).toBe("string")
+    expect(tableOutput.pages?.[0]?.latex?.includes("\\begin{tabular}")).toBe(true)
 
     await postJson("/api/files/op", { op: "delete", fileId })
   })

@@ -16,12 +16,10 @@ export const resolveProviderAlias = (
 
 export const resolveModelForProvider = (
   config: EchoPdfConfig,
-  providerAlias: string,
+  _providerAlias: string,
   requestedModel?: string
 ): string => {
   const explicit = normalize(requestedModel ?? "")
   if (explicit.length > 0) return explicit
-  const fromMap = normalize(config.agent.defaultModels?.[providerAlias] ?? "")
-  if (fromMap.length > 0) return fromMap
   return normalize(config.agent.defaultModel ?? "")
 }
