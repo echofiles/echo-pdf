@@ -13,6 +13,67 @@
 - CLI
 - HTTP API
 
+## Using echo-pdf as a library
+
+`@echofiles/echo-pdf` 支持直接作为库导入，面向下游复用 `pdf_extract_pages / pdf_ocr_pages / pdf_tables_to_latex / file_ops` 工具实现。
+
+### Public entrypoints（semver 稳定）
+
+- `@echofiles/echo-pdf`：core API（推荐）
+- `@echofiles/echo-pdf/core`：与根入口等价的 core API
+- `@echofiles/echo-pdf/worker`：Worker 路由入口（给 Wrangler/Worker 集成用）
+
+仅以上 `exports` 子路径视为公开 API。`src/*`、`dist/*` 等深路径导入不受兼容性承诺保护，可能在次版本中变动。
+
+### Runtime expectations
+
+- Node.js: `>=20`（与 `package.json#engines` 一致）
+- 需要 ESM `import` 能力与标准 `fetch`（Node 20+ 原生支持）
+- 建议使用支持 package `exports` 的现代 bundler/runtime（Vite、Webpack 5、Rspack、esbuild、Wrangler 等）
+
+### Example
+
+```ts
+import { callTool, listToolSchemas } from "@echofiles/echo-pdf"
+import configJson from "./echo-pdf.config.json" with { type: "json" }
+
+const fileStore = {
+  async put(input) {
+    const id = crypto.randomUUID()
+    const record = { ...input, id, sizeBytes: input.bytes.byteLength, createdAt: new Date().toISOString() }
+    memory.set(id, record)
+    return record
+  },
+  async get(id) {
+    return memory.get(id) ?? null
+  },
+  async list() {
+    return [...memory.values()]
+  },
+  async delete(id) {
+    return memory.delete(id)
+  },
+}
+
+const memory = new Map()
+const env = {}
+
+console.log(listToolSchemas().map((tool) => tool.name))
+
+const result = await callTool(
+  "pdf_extract_pages",
+  { fileId: "<FILE_ID>", pages: [1], returnMode: "inline" },
+  { config: configJson, env, fileStore }
+)
+console.log(result)
+```
+
+版本策略：
+
+- `exports` 列出的入口及其导出符号按 semver 管理
+- 对公开 API 的破坏性变更只会在 major 版本发布
+- 新增导出、参数扩展（向后兼容）会在 minor/patch 发布
+
 ## 1. 服务地址
 
 请先确定你的线上地址（Worker 域名）。文档里用：
