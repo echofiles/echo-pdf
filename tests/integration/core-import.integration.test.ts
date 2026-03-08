@@ -9,6 +9,7 @@ import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "../../src
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
 const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
+const localPdfiumWasm = path.join(rootDir, "node_modules", "@embedpdf", "pdfium", "dist", "pdfium.wasm")
 
 class InMemoryFileStore implements FileStore {
   private readonly records = new Map<string, StoredFileRecord>()
@@ -68,10 +69,19 @@ describe("core import integration", () => {
       bytes,
     })
 
+    const wasmBytes = await readFile(localPdfiumWasm)
+    const config = {
+      ...configJson,
+      pdfium: {
+        ...configJson.pdfium,
+        wasmUrl: `data:application/wasm;base64,${wasmBytes.toString("base64")}`,
+      },
+    } as EchoPdfConfig
+
     const result = await pdfExtractPages(
       { fileId: stored.id, pages: [1], returnMode: "inline" },
       {
-        config: configJson as EchoPdfConfig,
+        config,
         env: {} as Env,
         fileStore,
       }
