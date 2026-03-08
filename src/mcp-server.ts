@@ -45,7 +45,9 @@ const authState = (
 ): { ok: true } | { ok: false; status: number; message: string } => {
   if (!config.mcp.authHeader || !config.mcp.authEnv) return { ok: true }
   const required = env[config.mcp.authEnv]
+  const allowMissing = env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1"
   if (typeof required !== "string" || required.length === 0) {
+    if (allowMissing) return { ok: true }
     return { ok: false, status: 500, message: `MCP auth is configured but env "${config.mcp.authEnv}" is missing` }
   }
   if (request.headers.get(config.mcp.authHeader) !== required) {

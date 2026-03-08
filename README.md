@@ -287,6 +287,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 鉴权注意：
 
 - 如果配置了 `authHeader/authEnv` 但未注入对应 secret，服务会返回配置错误（fail-closed），不会默认放行。
+- 仅开发调试场景可显式设置 `ECHO_PDF_ALLOW_MISSING_AUTH_SECRET=1` 临时放行“缺 secret”的请求。
 
 ## 7. 本地开发与测试
 

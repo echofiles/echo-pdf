@@ -76,7 +76,9 @@ const fileGetAuthState = (
 ): { ok: true } | { ok: false; status: number; code: string; message: string } => {
   if (!config.authHeader || !config.authEnv) return { ok: true }
   const required = env[config.authEnv]
+  const allowMissing = env.ECHO_PDF_ALLOW_MISSING_AUTH_SECRET === "1"
   if (typeof required !== "string" || required.length === 0) {
+    if (allowMissing) return { ok: true }
     return {
       ok: false,
       status: 500,
