@@ -183,6 +183,7 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 - `agent.defaultProvider`
 - `agent.defaultModel`
 - `service.publicBaseUrl`
+- `service.fileGet.cacheTtlSeconds`
 - `service.maxPdfBytes`
 - `service.storage.maxFileBytes`
 - `service.storage.maxTotalBytes`
@@ -205,6 +206,8 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
 - `ECHO_PDF_DEFAULT_PROVIDER`
 - `ECHO_PDF_DEFAULT_MODEL`
 - `ECHO_PDF_PUBLIC_BASE_URL`（可选，强制 artifacts 生成外部可访问绝对 URL）
+- `ECHO_PDF_FILE_GET_CACHE_TTL_SECONDS`（可选，`/api/files/get` 缓存秒数，`0` 表示 `no-store`）
+- `ECHO_PDF_FILE_GET_AUTH_HEADER` + `ECHO_PDF_FILE_GET_AUTH_ENV`（可选，启用下载端点 header 鉴权）
 - `ECHO_PDF_MCP_KEY`（可选，启用 MCP 鉴权）
 - `ECHO_PDF_WORKER_NAME`（CLI 默认 URL 推导）
 
@@ -263,3 +266,12 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
     "arguments":{"fileId":"<FILE_ID>","pages":[1],"returnMode":"url"}
   }'
 ```
+
+### 8.4 错误码语义
+
+- 客户端输入错误返回稳定 `4xx + code`，例如：
+  - `PAGES_REQUIRED`（400）
+  - `PAGE_OUT_OF_RANGE`（400）
+  - `MISSING_FILE_INPUT`（400）
+  - `FILE_NOT_FOUND`（404）
+- 服务端故障返回 `5xx`。

@@ -61,6 +61,21 @@ const asObj = (value: unknown): JsonObject =>
 const resolvePublicBaseUrl = (request: Request, configured?: string): string =>
   typeof configured === "string" && configured.length > 0 ? configured : request.url
 
+const sanitizeDownloadFilename = (filename: string): string => {
+  const cleaned = filename
+    .replace(/[\r\n"]/g, "")
+    .replace(/[^\x20-\x7E]+/g, "")
+    .trim()
+  return cleaned.length > 0 ? cleaned : "download.bin"
+}
+
+const isFileGetAuthorized = (request: Request, env: Env, config: { authHeader?: string; authEnv?: string }): boolean => {
+  if (!config.authHeader || !config.authEnv) return true
+  const required = env[config.authEnv]
+  if (typeof required !== "string" || required.length === 0) return true
+  return request.headers.get(config.authHeader) === required
+}
+
 const sseResponse = (stream: ReadableStream<Uint8Array>): Response =>
   new Response(stream, {
     headers: {
@@ -146,6 +161,10 @@ export default {
           serverName: config.mcp.serverName,
           version: config.mcp.version,
           authHeader: config.mcp.authHeader ?? null,
+        },
+        fileGet: {
+          authHeader: config.service.fileGet?.authHeader ?? null,
+          cacheTtlSeconds: config.service.fileGet?.cacheTtlSeconds ?? 300,
         },
       })
     }
@@ -304,6 +323,10 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/api/files/get") {
+      const fileGetConfig = config.service.fileGet ?? {}
+      if (!isFileGetAuthorized(request, env, fileGetConfig)) {
+        return json({ error: "Unauthorized", code: "UNAUTHORIZED" }, 401)
+      }
       const fileId = url.searchParams.get("fileId") || ""
       if (!fileId) return json({ error: "Missing fileId" }, 400)
       const file = await fileStore.get(fileId)
@@ -311,9 +334,13 @@ export default {
       const download = url.searchParams.get("download") === "1"
       const headers = new Headers()
       headers.set("Content-Type", file.mimeType)
-      headers.set("Cache-Control", "no-store")
+      const cacheTtl = Number(fileGetConfig.cacheTtlSeconds ?? 300)
+      const cacheControl = cacheTtl > 0
+        ? `public, max-age=${Math.floor(cacheTtl)}, s-maxage=${Math.floor(cacheTtl)}`
+        : "no-store"
+      headers.set("Cache-Control", cacheControl)
       if (download) {
-        headers.set("Content-Disposition", `attachment; filename=\"${file.filename.replace(/\"/g, "")}\"`)
+        headers.set("Content-Disposition", `attachment; filename=\"${sanitizeDownloadFilename(file.filename)}\"`)
       }
       return new Response(file.bytes, { status: 200, headers })
     }

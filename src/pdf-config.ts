@@ -37,6 +37,9 @@ const validateConfig = (config: EchoPdfConfig): EchoPdfConfig => {
   ) {
     throw new Error("service.publicBaseUrl must start with http:// or https://")
   }
+  if (typeof config.service.fileGet?.cacheTtlSeconds === "number" && config.service.fileGet.cacheTtlSeconds < 0) {
+    throw new Error("service.fileGet.cacheTtlSeconds must be >= 0")
+  }
   if (!Number.isFinite(config.service.storage.maxFileBytes) || config.service.storage.maxFileBytes <= 0) {
     throw new Error("service.storage.maxFileBytes must be positive")
   }
@@ -73,6 +76,9 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
   const providerOverride = env.ECHO_PDF_DEFAULT_PROVIDER
   const modelOverride = env.ECHO_PDF_DEFAULT_MODEL
   const publicBaseUrlOverride = env.ECHO_PDF_PUBLIC_BASE_URL
+  const fileGetAuthHeaderOverride = env.ECHO_PDF_FILE_GET_AUTH_HEADER
+  const fileGetAuthEnvOverride = env.ECHO_PDF_FILE_GET_AUTH_ENV
+  const fileGetCacheTtlOverride = env.ECHO_PDF_FILE_GET_CACHE_TTL_SECONDS
   const withOverrides: EchoPdfConfig = {
     ...resolved,
     service: {
@@ -81,6 +87,23 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
         typeof publicBaseUrlOverride === "string" && publicBaseUrlOverride.trim().length > 0
           ? publicBaseUrlOverride.trim()
           : resolved.service.publicBaseUrl,
+      fileGet: {
+        authHeader:
+          typeof fileGetAuthHeaderOverride === "string" && fileGetAuthHeaderOverride.trim().length > 0
+            ? fileGetAuthHeaderOverride.trim()
+            : resolved.service.fileGet?.authHeader,
+        authEnv:
+          typeof fileGetAuthEnvOverride === "string" && fileGetAuthEnvOverride.trim().length > 0
+            ? fileGetAuthEnvOverride.trim()
+            : resolved.service.fileGet?.authEnv,
+        cacheTtlSeconds: (() => {
+          if (typeof fileGetCacheTtlOverride === "string" && fileGetCacheTtlOverride.trim().length > 0) {
+            const value = Number(fileGetCacheTtlOverride)
+            return Number.isFinite(value) && value >= 0 ? Math.floor(value) : resolved.service.fileGet?.cacheTtlSeconds
+          }
+          return resolved.service.fileGet?.cacheTtlSeconds
+        })(),
+      },
     },
     agent: {
       ...resolved.agent,

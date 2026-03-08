@@ -293,6 +293,37 @@ describe("echo-pdf integration", () => {
     await postJson("/api/files/op", { op: "delete", fileId })
   })
 
+  it("returns stable 4xx for client validation errors", async () => {
+    const primary = await uploadPdf(defaultFixturePdf)
+    const fileId = primary.fileId
+
+    const missingPages = await fetch(`${baseUrl}/tools/call`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "pdf_extract_pages",
+        arguments: { fileId, pages: [] },
+      }),
+    })
+    const missingPayload = await missingPages.json() as { code?: string }
+    expect(missingPages.status).toBe(400)
+    expect(missingPayload.code).toBe("PAGES_REQUIRED")
+
+    const notFound = await fetch(`${baseUrl}/tools/call`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "pdf_extract_pages",
+        arguments: { fileId: "missing-file-id", pages: [1] },
+      }),
+    })
+    const notFoundPayload = await notFound.json() as { code?: string }
+    expect(notFound.status).toBe(404)
+    expect(notFoundPayload.code).toBe("FILE_NOT_FOUND")
+
+    await postJson("/api/files/op", { op: "delete", fileId })
+  })
+
   it("supports returnMode=url for extracted pages", async () => {
     const primary = await uploadPdf(defaultFixturePdf)
     const fileId = primary.fileId
@@ -312,6 +343,7 @@ describe("echo-pdf integration", () => {
     const imgRes = await fetch(`${baseUrl}${url}`)
     expect(imgRes.ok).toBe(true)
     expect(String(imgRes.headers.get("content-type") || "")).toContain("image/png")
+    expect(String(imgRes.headers.get("cache-control") || "")).toContain("max-age=")
 
     await postJson("/api/files/op", { op: "delete", fileId })
   })

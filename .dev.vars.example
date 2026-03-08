@@ -15,6 +15,12 @@ ECHO_PDF_MCP_KEY=
 ECHO_PDF_DEFAULT_PROVIDER=vercel_gateway
 ECHO_PDF_DEFAULT_MODEL=google/gemini-3-flash
 ECHO_PDF_PUBLIC_BASE_URL=https://echo-pdf.echofilesai.workers.dev
+ECHO_PDF_FILE_GET_CACHE_TTL_SECONDS=300
+
+# Optional: protect GET /api/files/get when both are set and auth env has value.
+# ECHO_PDF_FILE_GET_AUTH_HEADER=x-file-key
+# ECHO_PDF_FILE_GET_AUTH_ENV=ECHO_PDF_FILE_GET_KEY
+# ECHO_PDF_FILE_GET_KEY=
 
 # Optional full override for echo-pdf.config.json
 # ECHO_PDF_CONFIG_JSON={"service":{"name":"echo-pdf","publicBaseUrl":"https://echo-pdf.echofilesai.workers.dev","maxPdfBytes":10000000,"maxPagesPerRequest":20,"defaultRenderScale":2,"storage":{"maxFileBytes":10000000,"maxTotalBytes":52428800,"ttlHours":24,"cleanupBatchSize":50}},"pdfium":{"wasmUrl":"https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"},"agent":{"defaultProvider":"openai","defaultModel":"","ocrPrompt":"...","tablePrompt":"..."},"providers":{"openai":{"type":"openai","apiKeyEnv":"OPENAI_API_KEY"}},"mcp":{"serverName":"echo-pdf-mcp","version":"0.1.0"}}

@@ -79,20 +79,7 @@ export class R2FileStore implements FileStore {
   }
 
   async list(): Promise<ReadonlyArray<StoredFileMeta>> {
-    const listed = await this.bucket.list({ prefix: PREFIX, limit: 1000 })
-    return listed.objects.map((obj) => {
-      const meta = (obj.customMetadata ?? {}) as MetaFields
-      const createdAt = parseCreatedAt(meta.createdAt, obj.uploaded)
-      const filename = meta.filename ?? toId(obj.key)
-      const mimeType = meta.mimeType ?? obj.httpMetadata?.contentType ?? "application/octet-stream"
-      return {
-        id: toId(obj.key),
-        filename,
-        mimeType,
-        sizeBytes: obj.size,
-        createdAt,
-      }
-    })
+    return await this.listAllFiles()
   }
 
   async delete(fileId: string): Promise<boolean> {
@@ -101,7 +88,7 @@ export class R2FileStore implements FileStore {
   }
 
   async stats(): Promise<unknown> {
-    const files = await this.list()
+    const files = await this.listAllFiles()
     const totalBytes = files.reduce((sum, file) => sum + file.sizeBytes, 0)
     return {
       backend: "r2",
@@ -114,17 +101,24 @@ export class R2FileStore implements FileStore {
   }
 
   async cleanup(): Promise<unknown> {
-    const before = await this.list()
-    const deletedExpired = await this.deleteExpired(before)
-    const afterExpired = await this.list()
-    const deletedEvicted = await this.evictIfNeeded(afterExpired, 0)
-    const after = await this.list()
+    const files = await this.listAllFiles()
+    const expired = files.filter((f) => isExpired(f.createdAt, this.policy.ttlHours))
+    const active = files.filter((f) => !isExpired(f.createdAt, this.policy.ttlHours))
+    if (expired.length > 0) {
+      await this.bucket.delete(expired.map((f) => toKey(f.id)))
+    }
+    const evict = this.pickEvictions(active, 0)
+    if (evict.length > 0) {
+      await this.bucket.delete(evict.map((f) => toKey(f.id)))
+    }
+    const evictIds = new Set(evict.map((f) => f.id))
+    const after = active.filter((f) => !evictIds.has(f.id))
     const totalBytes = after.reduce((sum, file) => sum + file.sizeBytes, 0)
     return {
       backend: "r2",
       policy: this.policy,
-      deletedExpired,
-      deletedEvicted,
+      deletedExpired: expired.length,
+      deletedEvicted: evict.length,
       stats: {
         fileCount: after.length,
         totalBytes,
@@ -133,12 +127,19 @@ export class R2FileStore implements FileStore {
   }
 
   private async cleanupInternal(incomingBytes: number): Promise<void> {
-    const files = await this.list()
-    await this.deleteExpired(files)
-    const afterExpired = await this.list()
-    await this.evictIfNeeded(afterExpired, incomingBytes)
-    const finalFiles = await this.list()
-    const finalTotal = finalFiles.reduce((sum, file) => sum + file.sizeBytes, 0)
+    const files = await this.listAllFiles()
+    const expired = files.filter((f) => isExpired(f.createdAt, this.policy.ttlHours))
+    const active = files.filter((f) => !isExpired(f.createdAt, this.policy.ttlHours))
+    if (expired.length > 0) {
+      await this.bucket.delete(expired.map((f) => toKey(f.id)))
+    }
+    const evict = this.pickEvictions(active, incomingBytes)
+    if (evict.length > 0) {
+      await this.bucket.delete(evict.map((f) => toKey(f.id)))
+    }
+    const evictIds = new Set(evict.map((f) => f.id))
+    const remaining = active.filter((f) => !evictIds.has(f.id))
+    const finalTotal = remaining.reduce((sum, file) => sum + file.sizeBytes, 0)
     if (finalTotal + incomingBytes > this.policy.maxTotalBytes) {
       const err = new Error(
         `storage quota exceeded: total ${finalTotal} + incoming ${incomingBytes} > maxTotalBytes ${this.policy.maxTotalBytes}`
@@ -150,17 +151,10 @@ export class R2FileStore implements FileStore {
     }
   }
 
-  private async deleteExpired(files: ReadonlyArray<StoredFileMeta>): Promise<number> {
-    const expired = files.filter((f) => isExpired(f.createdAt, this.policy.ttlHours))
-    if (expired.length === 0) return 0
-    await this.bucket.delete(expired.map((f) => toKey(f.id)))
-    return expired.length
-  }
-
-  private async evictIfNeeded(files: ReadonlyArray<StoredFileMeta>, incomingBytes: number): Promise<number> {
+  private pickEvictions(files: ReadonlyArray<StoredFileMeta>, incomingBytes: number): StoredFileMeta[] {
     const totalBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0)
     const projected = totalBytes + incomingBytes
-    if (projected <= this.policy.maxTotalBytes) return 0
+    if (projected <= this.policy.maxTotalBytes) return []
 
     const needFree = projected - this.policy.maxTotalBytes
     const candidates = [...files].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
@@ -172,9 +166,30 @@ export class R2FileStore implements FileStore {
       if (freed >= needFree) break
       if (evict.length >= this.policy.cleanupBatchSize) break
     }
-    if (evict.length === 0) return 0
-    await this.bucket.delete(evict.map((f) => toKey(f.id)))
-    return evict.length
+    return evict
+  }
+
+  private async listAllFiles(): Promise<StoredFileMeta[]> {
+    const files: StoredFileMeta[] = []
+    let cursor: string | undefined
+    while (true) {
+      const listed = await this.bucket.list({ prefix: PREFIX, limit: 1000, cursor })
+      for (const obj of listed.objects) {
+        const meta = (obj.customMetadata ?? {}) as MetaFields
+        const createdAt = parseCreatedAt(meta.createdAt, obj.uploaded)
+        const filename = meta.filename ?? toId(obj.key)
+        const mimeType = meta.mimeType ?? obj.httpMetadata?.contentType ?? "application/octet-stream"
+        files.push({
+          id: toId(obj.key),
+          filename,
+          mimeType,
+          sizeBytes: obj.size,
+          createdAt,
+        })
+      }
+      if (listed.truncated !== true || !listed.cursor) break
+      cursor = listed.cursor
+    }
+    return files
   }
 }
-

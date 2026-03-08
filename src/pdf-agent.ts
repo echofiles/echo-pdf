@@ -2,6 +2,7 @@ import type { Env, FileStore, ReturnMode } from "./types"
 import type { AgentTraceEvent, EchoPdfConfig, PdfOperationRequest } from "./pdf-types"
 import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults"
 import { fromBase64, normalizeReturnMode, toDataUrl } from "./file-utils"
+import { badRequest, notFound, unprocessable } from "./http-error"
 import { extractPdfPageText, getPdfPageCount, renderPdfPageToPng, toBytes } from "./pdfium-engine"
 import { visionRecognize } from "./provider-client"
 
@@ -22,11 +23,20 @@ const traceStep = (
 }
 
 const ensurePages = (pages: ReadonlyArray<number>, pageCount: number, maxPages: number): number[] => {
-  if (pages.length === 0) throw new Error("At least one page is required")
-  if (pages.length > maxPages) throw new Error(`Page count exceeds maxPagesPerRequest (${maxPages})`)
+  if (pages.length === 0) throw badRequest("PAGES_REQUIRED", "At least one page is required")
+  if (pages.length > maxPages) {
+    throw badRequest("TOO_MANY_PAGES", `Page count exceeds maxPagesPerRequest (${maxPages})`, {
+      maxPagesPerRequest: maxPages,
+      providedPages: pages.length,
+    })
+  }
   for (const page of pages) {
     if (!Number.isInteger(page) || page < 1 || page > pageCount) {
-      throw new Error(`Page ${page} out of range 1..${pageCount}`)
+      throw badRequest("PAGE_OUT_OF_RANGE", `Page ${page} out of range 1..${pageCount}`, {
+        page,
+        min: 1,
+        max: pageCount,
+      })
     }
   }
   return [...new Set(pages)].sort((a, b) => a - b)
@@ -45,7 +55,7 @@ export const ingestPdfFromPayload = async (
   if (input.fileId) {
     const existing = await opts.fileStore.get(input.fileId)
     if (!existing) {
-      throw new Error(`File not found: ${input.fileId}`)
+      throw notFound("FILE_NOT_FOUND", `File not found: ${input.fileId}`, { fileId: input.fileId })
     }
     return {
       id: existing.id,
@@ -59,7 +69,11 @@ export const ingestPdfFromPayload = async (
 
   if (input.url) {
     traceStep(opts, "start", "file.fetch.url", { url: input.url })
-    bytes = await toBytes(input.url)
+    try {
+      bytes = await toBytes(input.url)
+    } catch (error) {
+      throw badRequest("URL_FETCH_FAILED", `Unable to fetch PDF from url: ${error instanceof Error ? error.message : String(error)}`)
+    }
     try {
       const u = new URL(input.url)
       filename = decodeURIComponent(u.pathname.split("/").pop() || filename)
@@ -74,10 +88,13 @@ export const ingestPdfFromPayload = async (
   }
 
   if (!bytes) {
-    throw new Error("Missing file input. Provide fileId, url or base64")
+    throw badRequest("MISSING_FILE_INPUT", "Missing file input. Provide fileId, url or base64")
   }
   if (bytes.byteLength > config.service.maxPdfBytes) {
-    throw new Error(`PDF exceeds max size (${config.service.maxPdfBytes} bytes)`)
+    throw badRequest("PDF_TOO_LARGE", `PDF exceeds max size (${config.service.maxPdfBytes} bytes)`, {
+      maxPdfBytes: config.service.maxPdfBytes,
+      sizeBytes: bytes.byteLength,
+    })
   }
 
   const meta = await opts.fileStore.put({
@@ -164,7 +181,7 @@ export const runPdfAgent = async (
   const providerAlias = resolveProviderAlias(config, request.provider)
   const model = resolveModelForProvider(config, providerAlias, request.model)
   if (!model) {
-    throw new Error("model is required for OCR or table extraction; set agent.defaultModel")
+    throw badRequest("MODEL_REQUIRED", "model is required for OCR or table extraction; set agent.defaultModel")
   }
 
   if (request.operation === "ocr_pages") {
@@ -216,7 +233,9 @@ export const runPdfAgent = async (
     })
     const latex = extractTabularLatex(rawLatex)
     if (!latex) {
-      throw new Error(`table extraction did not return valid LaTeX tabular for page ${page}`)
+      throw unprocessable("TABLE_LATEX_MISSING", `table extraction did not return valid LaTeX tabular for page ${page}`, {
+        page,
+      })
     }
     tables.push({ page, latex })
     traceStep(opts, "end", "table.page", { page, chars: latex.length })

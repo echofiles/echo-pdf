@@ -23,6 +23,11 @@ export interface EchoPdfConfig {
   readonly service: {
     readonly name: string
     readonly publicBaseUrl?: string
+    readonly fileGet?: {
+      readonly authHeader?: string
+      readonly authEnv?: string
+      readonly cacheTtlSeconds?: number
+    }
     readonly maxPdfBytes: number
     readonly maxPagesPerRequest: number
     readonly defaultRenderScale: number
