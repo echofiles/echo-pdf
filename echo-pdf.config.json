@@ -32,7 +32,7 @@
     },
     "vercel_gateway": {
       "type": "vercel-ai-gateway",
-      "apiKeyEnv": "VERCEL_AI_GATEWAY_KEY",
+      "apiKeyEnv": "VERCEL_AI_GATEWAY_API_KEY",
       "baseUrl": "https://ai-gateway.vercel.sh/v1",
       "endpoints": {
         "chatCompletionsPath": "/chat/completions",

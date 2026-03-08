@@ -8,6 +8,7 @@ PORT="${PORT:-8788}"
 BASE_URL="${SMOKE_BASE_URL:-http://127.0.0.1:${PORT}}"
 LOG_FILE="${LOG_FILE:-.smoke-dev.log}"
 FIXTURE_PDF="${FIXTURE_PDF:-${SCRIPT_DIR}/fixtures/smoke.pdf}"
+TESTCASE_DIR="${TESTCASE_DIR:-${ROOT_DIR}/../testcase/eda}"
 SMOKE_REQUIRE_LLM="${SMOKE_REQUIRE_LLM:-0}"
 START_LOCAL_DEV=1
 [[ -n "${SMOKE_BASE_URL:-}" ]] && START_LOCAL_DEV=0
@@ -22,7 +23,16 @@ fi
 bash "${SCRIPT_DIR}/check-runtime.sh"
 
 if [[ ! -f "${FIXTURE_PDF}" ]]; then
-  echo "missing fixture pdf: ${FIXTURE_PDF}"
+  if [[ -d "${TESTCASE_DIR}" ]]; then
+    CANDIDATE="$(find "${TESTCASE_DIR}" -type f \( -name '*.pdf' -o -name '*.PDF' \) | head -n 1)"
+    if [[ -n "${CANDIDATE}" ]]; then
+      FIXTURE_PDF="${CANDIDATE}"
+    fi
+  fi
+fi
+
+if [[ ! -f "${FIXTURE_PDF}" ]]; then
+  echo "missing fixture pdf: ${FIXTURE_PDF} (and no pdf found under ${TESTCASE_DIR})"
   exit 1
 fi
 
@@ -93,6 +103,19 @@ assert_json_expr "${HEALTH}" "j.ok === true" "health.ok must be true"
 CONFIG="$(curl -sS "${BASE_URL}/config")"
 assert_json_expr "${CONFIG}" "typeof j.agent?.defaultProvider === 'string' && j.agent.defaultProvider.length > 0" "config default provider missing"
 assert_json_expr "${CONFIG}" "Array.isArray(j.providers) && j.providers.length > 0" "config providers should not be empty"
+MAX_FILE_BYTES="$(json_get "${CONFIG}" "Number(j.service?.storage?.maxFileBytes || 0)")"
+
+if [[ -n "${MAX_FILE_BYTES}" ]] && [[ "${MAX_FILE_BYTES}" -gt 0 ]]; then
+  FIXTURE_SIZE="$(wc -c < "${FIXTURE_PDF}" | tr -d ' ')"
+  if [[ "${FIXTURE_SIZE}" -gt "${MAX_FILE_BYTES}" ]]; then
+    if [[ "${SCRIPT_DIR}/fixtures/smoke.pdf" != "${FIXTURE_PDF}" ]] && [[ -f "${SCRIPT_DIR}/fixtures/smoke.pdf" ]]; then
+      FALLBACK_SIZE="$(wc -c < "${SCRIPT_DIR}/fixtures/smoke.pdf" | tr -d ' ')"
+      if [[ "${FALLBACK_SIZE}" -le "${MAX_FILE_BYTES}" ]]; then
+        FIXTURE_PDF="${SCRIPT_DIR}/fixtures/smoke.pdf"
+      fi
+    fi
+  fi
+fi
 
 TOOLS="$(curl -sS "${BASE_URL}/tools/catalog")"
 assert_json_expr "${TOOLS}" "Array.isArray(j.tools) && j.tools.some((t) => t.name === 'pdf_extract_pages')" "missing tool pdf_extract_pages"
@@ -149,15 +172,19 @@ assert_json_expr "${MCP_CALL}" "Array.isArray(j.result?.content)" "mcp tools/cal
 LLM_PROVIDER=""
 if [[ -n "${OPENROUTER_KEY:-}" ]]; then
   LLM_PROVIDER="openrouter"
+elif [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
+  LLM_PROVIDER="openrouter"
 elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
   LLM_PROVIDER="openai"
-elif [[ -n "${VERCEL_AI_GATEWAY_KEY:-}" ]]; then
+elif [[ -n "${VERCEL_AI_GATEWAY_API_KEY:-}" || -n "${VERCEL_AI_GATEWAY_KEY:-}" ]]; then
   LLM_PROVIDER="vercel_gateway"
 fi
 
 if [[ -n "${LLM_PROVIDER}" ]]; then
+  OPENROUTER_RUNTIME_KEY="${OPENROUTER_KEY:-${OPENROUTER_API_KEY:-}}"
+  VERCEL_RUNTIME_KEY="${VERCEL_AI_GATEWAY_API_KEY:-${VERCEL_AI_GATEWAY_KEY:-}}"
   PROVIDER_KEYS_JSON="$(cat <<JSON
-{"openai":"${OPENAI_API_KEY:-}","openrouter":"${OPENROUTER_KEY:-}","vercel-ai-gateway":"${VERCEL_AI_GATEWAY_KEY:-}"}
+{"openai":"${OPENAI_API_KEY:-}","openrouter":"${OPENROUTER_RUNTIME_KEY:-}","vercel-ai-gateway":"${VERCEL_RUNTIME_KEY:-}"}
 JSON
 )"
   MODELS_RESULT="$(curl -sS -X POST "${BASE_URL}/providers/models" \

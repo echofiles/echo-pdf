@@ -39,7 +39,7 @@ CLI 本地配置文件：`~/.config/echo-pdf-cli/config.json`
 ```bash
 echo-pdf provider set --provider openai --api-key <OPENAI_API_KEY>
 echo-pdf provider set --provider openrouter --api-key <OPENROUTER_KEY>
-echo-pdf provider set --provider vercel-ai-gateway --api-key <VERCEL_AI_GATEWAY_KEY>
+echo-pdf provider set --provider vercel-ai-gateway --api-key <VERCEL_AI_GATEWAY_API_KEY>
 ```
 
 ### 3.2 设置默认 provider（用于 call 默认路由）
@@ -157,8 +157,13 @@ npm run smoke
 - `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run test:integration`（直接测已部署服务）
 - `SMOKE_REQUIRE_LLM=1 npm run test:integration`（强制要求存在 provider key）
 - `SMOKE_BASE_URL=https://xx.echofilesai.workers.dev npm run smoke`（快速脚本模式）
+- `TESTCASE_DIR=/Users/huangjinfeng/workspace/echofiles/testcase/eda npm run test:integration`（指定测试样例目录）
 
-测试用 PDF 固定文件：`scripts/fixtures/smoke.pdf`
+测试 PDF 选择顺序：
+
+1. `FIXTURE_PDF` 指定文件（smoke）
+2. `TESTCASE_DIR` 目录下首个 PDF（默认 `../testcase/eda`）
+3. 回退到 `scripts/fixtures/smoke.pdf`
 
 ## 7. 部署
 
@@ -175,7 +180,9 @@ GitHub Actions 必需 secrets：
 
 - `OPENAI_API_KEY`
 - `OPENROUTER_KEY`
-- `VERCEL_AI_GATEWAY_KEY`
+- `OPENROUTER_API_KEY`（兼容别名）
+- `VERCEL_AI_GATEWAY_API_KEY`
+- `VERCEL_AI_GATEWAY_KEY`（兼容别名）
 
 ## 8. 发布到 npm（协助步骤）
 

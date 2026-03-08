@@ -17,8 +17,8 @@ for cmd in npm curl grep sed; do
 done
 
 if [[ "${CHECK_LLM_KEYS:-0}" == "1" ]]; then
-  if [[ -z "${OPENAI_API_KEY:-}" && -z "${OPENROUTER_KEY:-}" && -z "${VERCEL_AI_GATEWAY_KEY:-}" ]]; then
-    echo "CHECK_LLM_KEYS=1 but no provider key found (OPENAI_API_KEY / OPENROUTER_KEY / VERCEL_AI_GATEWAY_KEY)."
+  if [[ -z "${OPENAI_API_KEY:-}" && -z "${OPENROUTER_KEY:-}" && -z "${OPENROUTER_API_KEY:-}" && -z "${VERCEL_AI_GATEWAY_API_KEY:-}" && -z "${VERCEL_AI_GATEWAY_KEY:-}" ]]; then
+    echo "CHECK_LLM_KEYS=1 but no provider key found (OPENAI_API_KEY / OPENROUTER_KEY / OPENROUTER_API_KEY / VERCEL_AI_GATEWAY_API_KEY / VERCEL_AI_GATEWAY_KEY)."
     exit 1
   fi
 fi

@@ -56,13 +56,44 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
   const fromEnv = env.ECHO_PDF_CONFIG_JSON?.trim()
   const configJson = fromEnv ? JSON.parse(fromEnv) : rawConfig
   const resolved = resolveEnvRefs(configJson as unknown as JsonValue, env) as unknown as EchoPdfConfig
-  return validateConfig(resolved)
+
+  const providerOverride = env.ECHO_PDF_DEFAULT_PROVIDER
+  const modelOverride = env.ECHO_PDF_DEFAULT_MODEL
+  const withOverrides: EchoPdfConfig = {
+    ...resolved,
+    agent: {
+      ...resolved.agent,
+      defaultProvider:
+        typeof providerOverride === "string" && providerOverride.trim().length > 0
+          ? providerOverride.trim()
+          : resolved.agent.defaultProvider,
+      defaultModel:
+        typeof modelOverride === "string" && modelOverride.trim().length > 0
+          ? modelOverride.trim()
+          : resolved.agent.defaultModel,
+    },
+  }
+
+  return validateConfig(withOverrides)
 }
 
 export const readRequiredEnv = (env: Env, key: string): string => {
-  const value = env[key]
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value.trim()
+  const read = (name: string): string | null => {
+    const value = env[name]
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
   }
+  const direct = read(key)
+  if (direct) return direct
+
+  // Backward compatibility: allow *_KEY and *_API_KEY aliases.
+  if (key.endsWith("_API_KEY")) {
+    const alt = read(key.replace(/_API_KEY$/, "_KEY"))
+    if (alt) return alt
+  }
+  if (key.endsWith("_KEY")) {
+    const alt = read(key.replace(/_KEY$/, "_API_KEY"))
+    if (alt) return alt
+  }
+
   throw new Error(`Missing required env var "${key}"`)
 }

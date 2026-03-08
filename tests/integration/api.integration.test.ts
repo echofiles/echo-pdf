@@ -1,18 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { spawn, type ChildProcess } from "node:child_process"
-import { readFile, writeFile } from "node:fs/promises"
+import { readdir, readFile, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const fixturePdf = path.join(rootDir, "scripts/fixtures/smoke.pdf")
+const defaultFixturePdf = path.join(rootDir, "scripts/fixtures/smoke.pdf")
+const testcaseDir = process.env.TESTCASE_DIR ?? path.resolve(rootDir, "..", "testcase/eda")
 const port = process.env.PORT ?? "8788"
 const baseUrl = process.env.SMOKE_BASE_URL ?? `http://127.0.0.1:${port}`
 const logPath = path.join(rootDir, ".integration-dev.log")
 
 let devProcess: ChildProcess | null = null
 let devLogs = ""
+let fixturePdf = defaultFixturePdf
+let maxFileBytes = 0
 
 const readEnvLocal = async (): Promise<void> => {
   const envPath = path.resolve(rootDir, "..", ".env.local")
@@ -54,17 +57,33 @@ const postJson = async (pathname: string, payload: unknown): Promise<unknown> =>
 }
 
 const detectLlmProvider = (): "openrouter" | "openai" | "vercel_gateway" | null => {
-  if (process.env.OPENROUTER_KEY) return "openrouter"
+  if (process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY) return "openrouter"
   if (process.env.OPENAI_API_KEY) return "openai"
-  if (process.env.VERCEL_AI_GATEWAY_KEY) return "vercel_gateway"
+  if (process.env.VERCEL_AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_KEY) return "vercel_gateway"
   return null
 }
 
 const providerApiKeys = (): Record<string, string> => ({
   openai: process.env.OPENAI_API_KEY ?? "",
-  openrouter: process.env.OPENROUTER_KEY ?? "",
-  "vercel-ai-gateway": process.env.VERCEL_AI_GATEWAY_KEY ?? "",
+  openrouter: process.env.OPENROUTER_KEY ?? process.env.OPENROUTER_API_KEY ?? "",
+  "vercel-ai-gateway": process.env.VERCEL_AI_GATEWAY_API_KEY ?? process.env.VERCEL_AI_GATEWAY_KEY ?? "",
 })
+
+const resolveFixturePdf = async (): Promise<string> => {
+  try {
+    const dirStat = await stat(testcaseDir)
+    if (dirStat.isDirectory()) {
+      const files = await readdir(testcaseDir)
+      const candidate = files.find((file) => file.toLowerCase().endsWith(".pdf"))
+      if (candidate) {
+        return path.join(testcaseDir, candidate)
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return defaultFixturePdf
+}
 
 const waitForReady = async (): Promise<void> => {
   const deadline = Date.now() + 45000
@@ -80,9 +99,25 @@ const waitForReady = async (): Promise<void> => {
   throw new Error(`integration server not ready: ${baseUrl}\n${devLogs.slice(-2000)}`)
 }
 
+const uploadPdf = async (candidatePath: string): Promise<{ fileId: string }> => {
+  const bytes = await readFile(candidatePath)
+  const form = new FormData()
+  form.set("file", new Blob([bytes], { type: "application/pdf" }), path.basename(candidatePath))
+  const response = await fetch(`${baseUrl}/api/files/upload`, {
+    method: "POST",
+    body: form,
+  })
+  const data = (await response.json()) as { file?: { id?: string }; error?: string }
+  if (!response.ok || !data.file?.id) {
+    throw new Error(data.error || `upload failed (${response.status}) for ${candidatePath}`)
+  }
+  return { fileId: data.file.id }
+}
+
 describe("echo-pdf integration", () => {
   beforeAll(async () => {
     await readEnvLocal()
+    fixturePdf = await resolveFixturePdf()
 
     const requireLlm = process.env.SMOKE_REQUIRE_LLM === "1"
     if (requireLlm && !detectLlmProvider()) {
@@ -104,6 +139,10 @@ describe("echo-pdf integration", () => {
     }
 
     await waitForReady()
+    const config = (await fetch(`${baseUrl}/config`).then((r) => r.json())) as {
+      service?: { storage?: { maxFileBytes?: number } }
+    }
+    maxFileBytes = Number(config.service?.storage?.maxFileBytes ?? 0)
   })
 
   afterAll(async () => {
@@ -138,16 +177,15 @@ describe("echo-pdf integration", () => {
   })
 
   it("uploads pdf and extracts inline image", async () => {
-    const bytes = await readFile(fixturePdf)
-    const form = new FormData()
-    form.set("file", new Blob([bytes], { type: "application/pdf" }), "smoke.pdf")
-    const uploadResponse = await fetch(`${baseUrl}/api/files/upload`, {
-      method: "POST",
-      body: form,
-    })
-    const uploadData = (await uploadResponse.json()) as { file?: { id?: string } }
-    expect(uploadResponse.ok).toBe(true)
-    const fileId = uploadData.file?.id
+    let uploadPath = fixturePdf
+    if (maxFileBytes > 0) {
+      const s = await stat(uploadPath)
+      if (s.size > maxFileBytes) {
+        uploadPath = defaultFixturePdf
+      }
+    }
+    const primary = await uploadPdf(uploadPath)
+    const fileId = primary.fileId
     expect(fileId).toBeTruthy()
 
     const extractData = await postJson("/tools/call", {
@@ -212,12 +250,15 @@ describe("echo-pdf integration", () => {
     const model = modelsData.models?.[0]
     expect(typeof model).toBe("string")
 
-    const bytes = await readFile(fixturePdf)
-    const form = new FormData()
-    form.set("file", new Blob([bytes], { type: "application/pdf" }), "smoke.pdf")
-    const uploadResponse = await fetch(`${baseUrl}/api/files/upload`, { method: "POST", body: form })
-    const uploadData = (await uploadResponse.json()) as { file?: { id?: string } }
-    const fileId = uploadData.file?.id
+    let uploadPath = fixturePdf
+    if (maxFileBytes > 0) {
+      const s = await stat(uploadPath)
+      if (s.size > maxFileBytes) {
+        uploadPath = defaultFixturePdf
+      }
+    }
+    const uploaded = await uploadPdf(uploadPath)
+    const fileId = uploaded.fileId
     expect(fileId).toBeTruthy()
 
     const ocrData = await postJson("/tools/call", {
