@@ -1,177 +1,182 @@
-# Echo PDF Agent (Cloudflare Workers + MCP)
+# echo-pdf (MCP-first PDF Agent)
 
-部署后可直接作为在线 PDF Agent 服务，支持三种使用方式：Web UI、HTTP API、MCP。
+`echo-pdf` 是一个运行在 Cloudflare Workers 的 PDF Agent。  
+主使用方式是 **MCP Server**；Web 页面仅作为线上 Demo。
 
-## 1. 不同用户怎么用
+- MCP endpoint: `https://xx.echofilesai.workers.dev/mcp`
+- Demo UI: `https://xx.echofilesai.workers.dev/`
+- HTTP tools endpoint: `https://xx.echofilesai.workers.dev/tools/call`
 
-### A. 产品/运营用户（Web UI）
+## Why npm CLI
 
-适合：手工上传 PDF、点选工具、查看 trace 与结果。
+是的，打包成 npm package 更方便发布和部署，原因：
 
-1. 打开部署地址根路径：`GET /`
-2. 选择 Provider/Model（或使用默认）
-3. 上传 PDF（自动得到 `fileId`）
-4. 运行 `pdf_extract_pages` / `pdf_ocr_pages` / `pdf_tables_to_latex`
+- 统一安装：`npm i -g echo-pdf-agent`
+- 统一 provider 配置与模型发现
+- 统一输出不同 MCP 客户端的配置片段
+- 方便在 CI/CD 或脚本里直接调用
 
-### B. 后端/数据工程（HTTP API）
-
-适合：服务端自动化调用，和你现有系统对接。
-
-1. `POST /api/files/upload` 上传文件
-2. `POST /tools/call` 执行工具
-3. `POST /api/agent/stream` 获取流式 step/io/result
-
-### C. Agent 平台开发者（MCP Client）
-
-适合：把 echo-pdf 当外部 MCP 工具服务接入 Agent。
-
-1. `POST /mcp` 调 `initialize`
-2. `POST /mcp` 调 `tools/list`
-3. `POST /mcp` 调 `tools/call`
-
-## 2. 部署后的服务地址
+## 1. 安装 CLI
 
 ```bash
-export BASE_URL="https://echo-pdf-agent.<your-subdomain>.workers.dev"
+npm i -g echo-pdf-agent
 ```
 
-## 3. HTTP API 快速示例
-
-### 3.1 Health / Config / Catalog
+或在仓库内直接运行：
 
 ```bash
-curl -sS "$BASE_URL/health"
-curl -sS "$BASE_URL/config"
-curl -sS "$BASE_URL/tools/catalog"
-curl -sS "$BASE_URL/api/files/stats"
+node ./bin/echo-pdf.js --help
 ```
 
-### 3.2 上传 PDF
+## 2. 初始化 CLI（服务地址）
 
 ```bash
-curl -sS -X POST "$BASE_URL/api/files/upload" \
-  -F "file=@./sample.pdf"
+echo-pdf init --service-url https://xx.echofilesai.workers.dev
 ```
 
-### 3.3 调工具
+说明：也支持环境变量 `ECHO_PDF_SERVICE_URL` 作为默认值。
+
+## 3. Provider 配置（本地不落库到服务端）
+
+CLI 会把 key 保存在本机 `~/.config/echo-pdf-cli/config.json`。
+
+### 3.1 设置 key
 
 ```bash
-curl -sS -X POST "$BASE_URL/tools/call" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name":"pdf_extract_pages",
-    "arguments":{
-      "fileId":"<file_id>",
-      "pages":[1],
-      "returnMode":"file_id"
-    }
-  }'
+echo-pdf provider set --provider openai --api-key <OPENAI_API_KEY>
+echo-pdf provider set --provider openrouter --api-key <OPENROUTER_KEY>
+echo-pdf provider set --provider vercel-ai-gateway --api-key <VERCEL_AI_GATEWAY_KEY>
 ```
 
-### 3.5 存储清理（手动触发）
+### 3.2 查看配置状态
 
 ```bash
-curl -sS -X POST "$BASE_URL/api/files/cleanup"
+echo-pdf provider list
 ```
 
-### 3.4 流式执行
+## 4. 从 API 动态获取模型列表（无硬编码）
 
 ```bash
-curl -sS -N -X POST "$BASE_URL/api/agent/stream" \
-  -H "Content-Type: application/json" \
-  -d '{"operation":"extract_pages","fileId":"<file_id>","pages":[1],"returnMode":"file_id"}'
+echo-pdf models --provider openai
+echo-pdf models --provider openrouter
+echo-pdf models --provider vercel-ai-gateway
 ```
 
-## 4. MCP 使用说明
+## 5. 基础工具调用
 
-端点：`POST /mcp`
-
-### 4.1 initialize
+### 5.1 查看可用工具
 
 ```bash
-curl -sS -X POST "$BASE_URL/mcp" \
-  -H "Content-Type: application/json" \
+echo-pdf tools
+```
+
+### 5.2 直接调用工具
+
+```bash
+echo-pdf call --tool file_ops --args '{"op":"list"}'
+```
+
+```bash
+echo-pdf call --tool pdf_extract_pages --args '{"fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}'
+```
+
+## 6. MCP 使用（主要方式）
+
+### 6.1 快速检查 MCP 可用性
+
+```bash
+echo-pdf mcp initialize
+echo-pdf mcp tools
+echo-pdf mcp call --tool file_ops --args '{"op":"list"}'
+```
+
+### 6.2 手工 JSON-RPC 调用
+
+```bash
+curl -sS -X POST https://xx.echofilesai.workers.dev/mcp \
+  -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
-### 4.2 tools/list
-
 ```bash
-curl -sS -X POST "$BASE_URL/mcp" \
-  -H "Content-Type: application/json" \
+curl -sS -X POST https://xx.echofilesai.workers.dev/mcp \
+  -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 ```
 
-### 4.3 tools/call
-
 ```bash
-curl -sS -X POST "$BASE_URL/mcp" \
-  -H "Content-Type: application/json" \
+curl -sS -X POST https://xx.echofilesai.workers.dev/mcp \
+  -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_ops","arguments":{"op":"list"}}}'
 ```
 
-若配置了 `mcp.authHeader + mcp.authEnv`，调用 MCP 时要带对应请求头。
+## 7. 给不同工具安装 MCP（CLI 输出配置片段）
 
-## 5. 工具列表
+```bash
+echo-pdf setup add claude-desktop
+echo-pdf setup add cursor
+echo-pdf setup add cline
+echo-pdf setup add windsurf
+echo-pdf setup add claude-code
+echo-pdf setup add gemini
+echo-pdf setup add json
+```
+
+说明：
+
+- `claude-desktop/cursor/cline/windsurf`：输出可直接粘贴的 `mcpServers` 配置片段。
+- `claude-code/gemini`：若不直接支持 streamable-http，CLI 会提示使用 HTTP->stdio bridge（如 `mcp-remote`）。
+
+## 8. 线上 Demo / HTTP API（次要）
+
+### 上传 PDF
+
+```bash
+curl -sS -X POST https://xx.echofilesai.workers.dev/api/files/upload \
+  -F 'file=@./sample.pdf'
+```
+
+### 流式 trace
+
+```bash
+curl -sS -N -X POST https://xx.echofilesai.workers.dev/api/agent/stream \
+  -H 'content-type: application/json' \
+  -d '{"operation":"extract_pages","fileId":"<FILE_ID>","pages":[1],"returnMode":"inline"}'
+```
+
+## 9. 现有工具能力
 
 - `pdf_extract_pages`
 - `pdf_ocr_pages`
 - `pdf_tables_to_latex`
 - `file_ops`
 
-说明：`pdf_*` 工具默认继承主 provider/model（可在请求顶层传入覆盖）。
+默认规则：工具会继承主 agent 的 provider/model；需要时可请求级覆盖。
 
-## 6. 测试覆盖（含 MCP）
+## 10. 存储策略（线上必看）
+
+- 单文件限制：`service.storage.maxFileBytes`
+- 总量限制：`service.storage.maxTotalBytes`
+- 过期清理：`service.storage.ttlHours`
+- 批量清理：`service.storage.cleanupBatchSize`
+
+附加接口：
 
 ```bash
-npm run typecheck
-npm run smoke
+curl -sS https://xx.echofilesai.workers.dev/api/files/stats
+curl -sS -X POST https://xx.echofilesai.workers.dev/api/files/cleanup
 ```
 
-当前 smoke 覆盖：
-
-- `health/config/tools/catalog`
-- `file_ops` put/read/delete
-- `pdf_extract_pages`
-- MCP `initialize/tools/list/tools/call`
-
-## 7. 配置与部署
-
-### 配置
-
-- 主配置：`echo-pdf.config.json`
-- 可覆盖：`ECHO_PDF_CONFIG_JSON`
-- 默认 provider env：
-  - `OPENAI_API_KEY`
-  - `OPENROUTER_KEY`
-  - `VERCEL_AI_GATEWAY_KEY`
-
-存储策略（关键）位于 `service.storage`：
-
-- `maxFileBytes`：单文件上限（超过直接拒绝）
-- `maxTotalBytes`：总存储上限（写入前自动清理 + 淘汰最老文件）
-- `ttlHours`：文件存活时间，超时自动清理
-- `cleanupBatchSize`：单次自动淘汰的最大文件数
-
-说明：
-
-- 当前使用 Durable Object 做文件存储，超限不会再返回 SQLite 原生报错，而是返回可读错误：
-  - `FILE_TOO_LARGE`
-  - `STORAGE_QUOTA_EXCEEDED`
-
-### 部署
+## 11. 本地开发与验证
 
 ```bash
 npm install
+npm run typecheck
+npm run smoke
 npm run deploy
 ```
 
-## 8. CI/CD
-
-- CI：`typecheck + smoke`
-- CD：部署前会校验 secrets
-
-GitHub Actions 必需：
+GitHub Actions secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`

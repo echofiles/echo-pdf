@@ -1,8 +1,19 @@
 {
   "name": "echo-pdf-agent",
-  "private": true,
+  "description": "MCP-first PDF agent on Cloudflare Workers with CLI and web demo.",
   "version": "0.2.0",
   "type": "module",
+  "bin": {
+    "echo-pdf": "./bin/echo-pdf.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "README.md",
+    "wrangler.toml",
+    "echo-pdf.config.json"
+  ],
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
