@@ -48,6 +48,13 @@ npm i -g @echofiles/echo-pdf
 echo-pdf init --service-url https://echo-pdf.echofilesai.workers.dev
 ```
 
+本地一键启动服务（daemon）：
+
+```bash
+echo-pdf dev --port 8788
+echo-pdf init --service-url http://127.0.0.1:8788
+```
+
 配置 API Key（仅保存在本机 CLI 配置，不会上报到服务端存储）：
 
 ```bash
@@ -115,6 +122,20 @@ echo-pdf mcp call --tool pdf_extract_pages --args '{
 }'
 ```
 
+### 3.1.3 stdio MCP（支持本地文件路径）
+
+stdio 模式会把本地 `path/filePath` 自动上传为 `fileId` 后再调用远端工具。
+
+```bash
+echo-pdf mcp stdio
+```
+
+生成 Claude Desktop/Cursor 等可用的 stdio 配置片段：
+
+```bash
+echo-pdf setup add claude-desktop --mode stdio
+```
+
 ### 3.2 给客户端生成 MCP 配置片段
 
 ```bash
@@ -172,6 +193,12 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/api/files/upload \
 
 返回中会拿到 `file.id`。
 
+CLI 等价命令：
+
+```bash
+echo-pdf file upload ./sample.pdf
+```
+
 ### 5.2 提取页面图片
 
 ```bash
@@ -183,6 +210,18 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
     "provider":"vercel_gateway",
     "model":"google/gemini-3-flash"
   }'
+```
+
+CLI（支持直接传本地路径）：
+
+```bash
+echo-pdf call --tool pdf_extract_pages --args '{"path":"./sample.pdf","pages":[1],"returnMode":"url"}'
+```
+
+下载产物：
+
+```bash
+echo-pdf file get --file-id <FILE_ID> --out ./output.bin
 ```
 
 ### 5.3 OCR

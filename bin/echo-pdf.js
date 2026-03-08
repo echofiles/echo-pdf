@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { spawn } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -208,6 +209,170 @@ const buildMcpRequest = (id, method, params = {}) => ({
   params,
 })
 
+const uploadFile = async (serviceUrl, filePath) => {
+  const absPath = path.resolve(process.cwd(), filePath)
+  const bytes = fs.readFileSync(absPath)
+  const filename = path.basename(absPath)
+  const form = new FormData()
+  form.append("file", new Blob([bytes]), filename)
+  const response = await fetch(`${serviceUrl}/api/files/upload`, { method: "POST", body: form })
+  const text = await response.text()
+  let data
+  try {
+    data = JSON.parse(text)
+  } catch {
+    data = { raw: text }
+  }
+  if (!response.ok) {
+    throw new Error(`${response.status} ${JSON.stringify(data)}`)
+  }
+  return data
+}
+
+const downloadFile = async (serviceUrl, fileId, outputPath) => {
+  const response = await fetch(`${serviceUrl}/api/files/get?fileId=${encodeURIComponent(fileId)}&download=1`)
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`${response.status} ${text}`)
+  }
+  const bytes = Buffer.from(await response.arrayBuffer())
+  const absOut = path.resolve(process.cwd(), outputPath)
+  fs.mkdirSync(path.dirname(absOut), { recursive: true })
+  fs.writeFileSync(absOut, bytes)
+  return absOut
+}
+
+const withUploadedLocalFile = async (serviceUrl, tool, args) => {
+  const nextArgs = { ...(args || {}) }
+  if (tool.startsWith("pdf_")) {
+    const localPath = typeof nextArgs.path === "string"
+      ? nextArgs.path
+      : (typeof nextArgs.filePath === "string" ? nextArgs.filePath : "")
+    if (localPath && !nextArgs.fileId && !nextArgs.url && !nextArgs.base64) {
+      const upload = await uploadFile(serviceUrl, localPath)
+      const fileId = upload?.file?.id
+      if (!fileId) throw new Error(`upload failed for local path: ${localPath}`)
+      nextArgs.fileId = fileId
+      delete nextArgs.path
+      delete nextArgs.filePath
+    }
+  }
+  return nextArgs
+}
+
+const runDevServer = (port, host) => {
+  const wranglerBin = path.resolve(__dirname, "../node_modules/.bin/wrangler")
+  const wranglerArgs = ["dev", "--port", String(port), "--ip", host]
+  const cmd = fs.existsSync(wranglerBin) ? wranglerBin : "npx"
+  const args = fs.existsSync(wranglerBin) ? wranglerArgs : ["-y", "wrangler", ...wranglerArgs]
+  const child = spawn(cmd, args, {
+    stdio: "inherit",
+    env: process.env,
+    cwd: process.cwd(),
+  })
+  child.on("exit", (code, signal) => {
+    if (signal) process.kill(process.pid, signal)
+    process.exit(code ?? 0)
+  })
+}
+
+const mcpReadLoop = (onMessage, onError) => {
+  let buffer = Buffer.alloc(0)
+  let expectedLength = null
+  process.stdin.on("data", (chunk) => {
+    buffer = Buffer.concat([buffer, chunk])
+    while (true) {
+      if (expectedLength === null) {
+        const headerEnd = buffer.indexOf("\r\n\r\n")
+        if (headerEnd === -1) break
+        const headerRaw = buffer.slice(0, headerEnd).toString("utf-8")
+        const lines = headerRaw.split("\r\n")
+        const cl = lines.find((line) => line.toLowerCase().startsWith("content-length:"))
+        if (!cl) {
+          onError(new Error("Missing Content-Length"))
+          buffer = buffer.slice(headerEnd + 4)
+          continue
+        }
+        expectedLength = Number(cl.split(":")[1]?.trim() || "0")
+        buffer = buffer.slice(headerEnd + 4)
+      }
+      if (!Number.isFinite(expectedLength) || expectedLength < 0) {
+        onError(new Error("Invalid Content-Length"))
+        expectedLength = null
+        continue
+      }
+      if (buffer.length < expectedLength) break
+      const body = buffer.slice(0, expectedLength).toString("utf-8")
+      buffer = buffer.slice(expectedLength)
+      expectedLength = null
+      try {
+        const maybePromise = onMessage(JSON.parse(body))
+        if (maybePromise && typeof maybePromise.then === "function") {
+          maybePromise.catch(onError)
+        }
+      } catch (error) {
+        onError(error)
+      }
+    }
+  })
+}
+
+const mcpWrite = (obj) => {
+  const body = Buffer.from(JSON.stringify(obj))
+  const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`)
+  process.stdout.write(header)
+  process.stdout.write(body)
+}
+
+const runMcpStdio = async () => {
+  const config = loadConfig()
+  const serviceUrl = config.serviceUrl
+  const headers = buildMcpHeaders()
+  mcpReadLoop(async (msg) => {
+    const method = msg?.method
+    const id = Object.hasOwn(msg || {}, "id") ? msg.id : null
+    if (msg?.jsonrpc !== "2.0" || typeof method !== "string") {
+      mcpWrite({ jsonrpc: "2.0", id, error: { code: -32600, message: "Invalid Request" } })
+      return
+    }
+    if (method === "notifications/initialized") return
+    if (method === "initialize" || method === "tools/list") {
+      const data = await postJson(`${serviceUrl}/mcp`, msg, headers)
+      mcpWrite(data)
+      return
+    }
+    if (method === "tools/call") {
+      try {
+        const tool = String(msg?.params?.name || "")
+        const args = (msg?.params?.arguments && typeof msg.params.arguments === "object")
+          ? msg.params.arguments
+          : {}
+        const preparedArgs = await withUploadedLocalFile(serviceUrl, tool, args)
+        const payload = {
+          ...msg,
+          params: {
+            ...(msg.params || {}),
+            arguments: preparedArgs,
+          },
+        }
+        const data = await postJson(`${serviceUrl}/mcp`, payload, headers)
+        mcpWrite(data)
+      } catch (error) {
+        mcpWrite({
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32603, message: error instanceof Error ? error.message : String(error) },
+        })
+      }
+      return
+    }
+    const data = await postJson(`${serviceUrl}/mcp`, msg, headers)
+    mcpWrite(data)
+  }, (error) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  })
+}
+
 const parseConfigValue = (raw, type = "auto") => {
   if (type === "string") return String(raw)
   if (type === "number") {
@@ -302,6 +467,7 @@ const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
   process.stdout.write(`Commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
+  process.stdout.write(`  dev [--port 8788] [--host 127.0.0.1]\n`)
   process.stdout.write(`  provider set --provider <${PROVIDER_SET_NAMES.join("|")}> --api-key <KEY> [--profile name]\n`)
   process.stdout.write(`  provider use --provider <${PROVIDER_ALIASES.join("|")}> [--profile name]\n`)
   process.stdout.write(`  provider list [--profile name]\n`)
@@ -312,13 +478,29 @@ const usage = () => {
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
   process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name]\n`)
+  process.stdout.write(`  file upload <local.pdf>\n`)
+  process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
   process.stdout.write(`  mcp tools\n`)
   process.stdout.write(`  mcp call --tool <name> --args '<json>'\n`)
+  process.stdout.write(`  mcp stdio\n`)
   process.stdout.write(`  setup add <claude-desktop|claude-code|cursor|cline|windsurf|gemini|json>\n`)
 }
 
-const setupSnippet = (tool, serviceUrl) => {
+const setupSnippet = (tool, serviceUrl, mode = "http") => {
+  if (mode === "stdio") {
+    return {
+      mcpServers: {
+        "echo-pdf": {
+          command: "echo-pdf",
+          args: ["mcp", "stdio"],
+          env: {
+            ECHO_PDF_SERVICE_URL: serviceUrl,
+          },
+        },
+      },
+    }
+  }
   const transport = {
     type: "streamable-http",
     url: `${serviceUrl}/mcp`,
@@ -402,6 +584,14 @@ const main = async () => {
       saveConfig(config)
     }
     print({ ok: true, configFile: CONFIG_FILE, serviceUrl: config.serviceUrl })
+    return
+  }
+
+  if (command === "dev") {
+    const port = typeof flags.port === "string" ? Number(flags.port) : 8788
+    const host = typeof flags.host === "string" ? flags.host : "127.0.0.1"
+    if (!Number.isFinite(port) || port <= 0) throw new Error("dev --port must be positive number")
+    runDevServer(Math.floor(port), host)
     return
   }
 
@@ -538,13 +728,40 @@ const main = async () => {
     const tool = flags.tool
     if (typeof tool !== "string") throw new Error("call requires --tool")
     const args = typeof flags.args === "string" ? JSON.parse(flags.args) : {}
+    const preparedArgs = await withUploadedLocalFile(config.serviceUrl, tool, args)
     const provider = resolveProviderAlias(profile, flags.provider)
     const model = typeof flags.model === "string" ? flags.model : resolveDefaultModel(profile, provider)
     const providerApiKeys = buildProviderApiKeys(config, profileName)
-    const payload = buildToolCallRequest({ tool, args, provider, model, providerApiKeys })
+    const payload = buildToolCallRequest({ tool, args: preparedArgs, provider, model, providerApiKeys })
     const data = await postJson(`${config.serviceUrl}/tools/call`, payload)
     print(data)
     return
+  }
+
+  if (command === "file") {
+    const action = rest[0] || ""
+    const config = loadConfig()
+    if (action === "upload") {
+      const filePath = rest[1]
+      if (!filePath) throw new Error("file upload requires a path")
+      const data = await uploadFile(config.serviceUrl, filePath)
+      print({
+        fileId: data?.file?.id || "",
+        filename: data?.file?.filename || path.basename(filePath),
+        sizeBytes: data?.file?.sizeBytes || 0,
+        file: data?.file || null,
+      })
+      return
+    }
+    if (action === "get") {
+      const fileId = typeof flags["file-id"] === "string" ? flags["file-id"] : ""
+      const out = typeof flags.out === "string" ? flags.out : ""
+      if (!fileId || !out) throw new Error("file get requires --file-id and --out")
+      const savedTo = await downloadFile(config.serviceUrl, fileId, out)
+      print({ ok: true, fileId, savedTo })
+      return
+    }
+    throw new Error("file command supports: upload|get")
   }
 
   if (command === "mcp" && subcommand === "initialize") {
@@ -575,11 +792,18 @@ const main = async () => {
     return
   }
 
+  if (command === "mcp" && subcommand === "stdio") {
+    await runMcpStdio()
+    return
+  }
+
   if (command === "setup" && subcommand === "add") {
     const tool = rest[0]
     if (!tool) throw new Error("setup add requires tool name")
     const config = loadConfig()
-    print(setupSnippet(tool, config.serviceUrl))
+    const mode = typeof flags.mode === "string" ? flags.mode : "http"
+    if (!["http", "stdio"].includes(mode)) throw new Error("setup add --mode must be http|stdio")
+    print(setupSnippet(tool, config.serviceUrl, mode))
     return
   }
 
