@@ -32,6 +32,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Import smoke tests (npm package behavior guard)
+        run: npm run test:import-smoke
+
       - name: Integration tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
