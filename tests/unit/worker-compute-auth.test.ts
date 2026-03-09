@@ -65,4 +65,23 @@ describe("worker compute auth gate", () => {
     const payload = (await response.json()) as { code?: string }
     expect(payload.code).toBe("COMPUTE_AUTH_MISCONFIGURED")
   })
+
+  it("fails closed when compute auth is only partially configured", async () => {
+    const response = await worker.fetch(new Request("http://127.0.0.1:8788/api/agent/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ operation: "extract_pages", pages: [1] }),
+    }), buildEnv({
+      ...configJson,
+      service: {
+        ...configJson.service,
+        computeAuth: {
+          authHeader: "x-compute-key",
+        },
+      },
+    }), ctx)
+    expect(response.status).toBe(500)
+    const payload = (await response.json()) as { code?: string }
+    expect(payload.code).toBe("COMPUTE_AUTH_MISCONFIGURED")
+  })
 })
