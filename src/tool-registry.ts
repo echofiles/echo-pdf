@@ -1,8 +1,8 @@
-import { normalizeReturnMode } from "./file-utils"
-import { runFileOp } from "./file-ops"
-import { runPdfAgent } from "./pdf-agent"
-import type { EchoPdfConfig, PdfOperationRequest, ToolSchema } from "./pdf-types"
-import type { Env, FileStore, JsonObject } from "./types"
+import { normalizeReturnMode } from "./file-utils.js"
+import { runFileOp } from "./file-ops.js"
+import { runPdfAgent } from "./pdf-agent.js"
+import type { EchoPdfConfig, PdfOperationRequest, ToolSchema } from "./pdf-types.js"
+import type { Env, FileStore, JsonObject } from "./types.js"
 
 export interface ToolRuntimeContext {
   readonly config: EchoPdfConfig

@@ -1,4 +1,4 @@
-import type { EchoPdfConfig } from "./pdf-types"
+import type { EchoPdfConfig } from "./pdf-types.js"
 
 const normalize = (value: string): string => value.trim()
 

@@ -1,5 +1,5 @@
-import { fromBase64, normalizeReturnMode, toInlineFilePayload } from "./file-utils"
-import type { FileStore, ReturnMode } from "./types"
+import { fromBase64, normalizeReturnMode, toInlineFilePayload } from "./file-utils.js"
+import type { FileStore, ReturnMode } from "./types.js"
 
 export const runFileOp = async (
   fileStore: FileStore,

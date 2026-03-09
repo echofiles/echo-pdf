@@ -1,8 +1,8 @@
 import { init } from "@embedpdf/pdfium"
 import { encode as encodePng } from "@cf-wasm/png"
 import type { WrappedPdfiumModule } from "@embedpdf/pdfium"
-import type { EchoPdfConfig } from "./pdf-types"
-import { toDataUrl } from "./file-utils"
+import type { EchoPdfConfig } from "./pdf-types.js"
+import { toDataUrl } from "./file-utils.js"
 
 let moduleInstance: WrappedPdfiumModule | null = null
 let libraryInitialized = false

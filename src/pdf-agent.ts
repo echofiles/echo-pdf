@@ -1,10 +1,10 @@
-import type { Env, FileStore, ReturnMode } from "./types"
-import type { AgentTraceEvent, EchoPdfConfig, PdfOperationRequest } from "./pdf-types"
-import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults"
-import { fromBase64, normalizeReturnMode, toDataUrl } from "./file-utils"
-import { badRequest, notFound, unprocessable } from "./http-error"
-import { extractPdfPageText, getPdfPageCount, renderPdfPageToPng, toBytes } from "./pdfium-engine"
-import { visionRecognize } from "./provider-client"
+import type { Env, FileStore, ReturnMode } from "./types.js"
+import type { AgentTraceEvent, EchoPdfConfig, PdfOperationRequest } from "./pdf-types.js"
+import { resolveModelForProvider, resolveProviderAlias } from "./agent-defaults.js"
+import { fromBase64, normalizeReturnMode, toDataUrl } from "./file-utils.js"
+import { badRequest, notFound, unprocessable } from "./http-error.js"
+import { extractPdfPageText, getPdfPageCount, renderPdfPageToPng, toBytes } from "./pdfium-engine.js"
+import { visionRecognize } from "./provider-client.js"
 
 interface RuntimeOptions {
   readonly trace?: (event: AgentTraceEvent) => void

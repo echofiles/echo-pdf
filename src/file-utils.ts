@@ -1,4 +1,4 @@
-import type { ReturnMode, StoredFileRecord } from "./types"
+import type { ReturnMode, StoredFileRecord } from "./types.js"
 
 export const fromBase64 = (value: string): Uint8Array => {
   const raw = atob(value.replace(/^data:.*;base64,/, ""))
