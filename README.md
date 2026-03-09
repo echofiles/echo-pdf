@@ -30,6 +30,19 @@
 - Node.js: `>=20`（与 `package.json#engines` 一致）
 - 需要 ESM `import` 能力与标准 `fetch`（Node 20+ 原生支持）
 - 建议使用支持 package `exports` 的现代 bundler/runtime（Vite、Webpack 5、Rspack、esbuild、Wrangler 等）
+- TypeScript 消费方建议：`module=NodeNext` + `moduleResolution=NodeNext`
+
+### Clean project import smoke
+
+下面这段命令与仓库中的集成测试保持一致，可在全新目录验证 npm 包“可直接 import”：
+
+```bash
+tmpdir="$(mktemp -d)"
+cd "$tmpdir"
+npm init -y
+npm i /path/to/echofiles-echo-pdf-<version>.tgz
+node --input-type=module -e "await import('@echofiles/echo-pdf'); await import('@echofiles/echo-pdf/core'); await import('@echofiles/echo-pdf/worker'); console.log('ok')"
+```
 
 ### Example
 
