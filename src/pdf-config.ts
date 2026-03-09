@@ -76,6 +76,8 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
   const providerOverride = env.ECHO_PDF_DEFAULT_PROVIDER
   const modelOverride = env.ECHO_PDF_DEFAULT_MODEL
   const publicBaseUrlOverride = env.ECHO_PDF_PUBLIC_BASE_URL
+  const computeAuthHeaderOverride = env.ECHO_PDF_COMPUTE_AUTH_HEADER
+  const computeAuthEnvOverride = env.ECHO_PDF_COMPUTE_AUTH_ENV
   const fileGetAuthHeaderOverride = env.ECHO_PDF_FILE_GET_AUTH_HEADER
   const fileGetAuthEnvOverride = env.ECHO_PDF_FILE_GET_AUTH_ENV
   const fileGetCacheTtlOverride = env.ECHO_PDF_FILE_GET_CACHE_TTL_SECONDS
@@ -87,6 +89,16 @@ export const loadEchoPdfConfig = (env: Env): EchoPdfConfig => {
         typeof publicBaseUrlOverride === "string" && publicBaseUrlOverride.trim().length > 0
           ? publicBaseUrlOverride.trim()
           : resolved.service.publicBaseUrl,
+      computeAuth: {
+        authHeader:
+          typeof computeAuthHeaderOverride === "string" && computeAuthHeaderOverride.trim().length > 0
+            ? computeAuthHeaderOverride.trim()
+            : resolved.service.computeAuth?.authHeader,
+        authEnv:
+          typeof computeAuthEnvOverride === "string" && computeAuthEnvOverride.trim().length > 0
+            ? computeAuthEnvOverride.trim()
+            : resolved.service.computeAuth?.authEnv,
+      },
       fileGet: {
         authHeader:
           typeof fileGetAuthHeaderOverride === "string" && fileGetAuthHeaderOverride.trim().length > 0
