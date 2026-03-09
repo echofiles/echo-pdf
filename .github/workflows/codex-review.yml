@@ -2,7 +2,7 @@ name: codex-review
 
 on:
   pull_request:
-    types: [ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review]
   check_suite:
     types: [completed]
 
@@ -51,6 +51,12 @@ jobs:
               return;
             }
 
+            // Ignore draft PRs until they are marked ready (or otherwise updated).
+            if (eventName === "pull_request" && pr.draft === true) {
+              core.setOutput("skip", "true");
+              return;
+            }
+
             // Only trigger "final review" when check_suite is successful.
             if (eventName === "check_suite") {
               const conclusion = context.payload.check_suite?.conclusion ?? "";
@@ -89,4 +95,3 @@ jobs:
             -H "Content-Type: application/json" \
             ${auth_header:+-H "$auth_header"} \
             -d "${payload}"
-
