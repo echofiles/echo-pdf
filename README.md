@@ -13,6 +13,59 @@
 - CLI
 - HTTP API
 
+## Use echo-pdf as a component
+
+推荐把 `echo-pdf` 作为一个独立组件服务接入（MCP-first，HTTP fallback），下游系统（如 echo-datasheet）只通过 URL 调用，不直接依赖实现代码。
+
+### Downstream config
+
+下游至少配置以下变量：
+
+```bash
+export ECHO_PDF_BASE_URL="http://127.0.0.1:8787"
+export ECHO_PDF_MCP_URL="${ECHO_PDF_BASE_URL}/mcp"
+# optional
+export ECHO_PDF_MCP_KEY="<your-mcp-key>"
+```
+
+### Local-first quick start
+
+```bash
+npm i -g @echofiles/echo-pdf
+echo-pdf dev --port 8787
+```
+
+健康检查与能力检查：
+
+```bash
+curl -sS "$ECHO_PDF_BASE_URL/health"
+curl -sS "$ECHO_PDF_BASE_URL/tools/catalog"
+```
+
+### Recommended call flow (downstream)
+
+1. 下游先做 ingest（例如 `echo_pdf_ingest`），上传 PDF 到 `POST /api/files/upload`，得到 `echoPdfFileId`。  
+2. 下游通过 MCP/HTTP 调工具，并传 `fileId=echoPdfFileId`：
+  - `pdf_extract_pages`
+  - `pdf_ocr_pages`
+  - `pdf_tables_to_latex`
+
+MCP-first 示例：
+
+```bash
+curl -sS -X POST "$ECHO_PDF_MCP_URL" \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1]}}}'
+```
+
+HTTP fallback 示例：
+
+```bash
+curl -sS -X POST "$ECHO_PDF_BASE_URL/tools/call" \
+  -H 'content-type: application/json' \
+  -d '{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1]}}'
+```
+
 ## Using echo-pdf as a library
 
 `@echofiles/echo-pdf` 支持直接作为库导入，面向下游复用 `pdf_extract_pages / pdf_ocr_pages / pdf_tables_to_latex / file_ops` 工具实现。
