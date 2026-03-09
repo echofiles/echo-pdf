@@ -9,7 +9,7 @@ import { listProviderModels } from "./provider-client.js"
 import { buildToolOutputEnvelope } from "./response-schema.js"
 import { callTool, listToolSchemas } from "./tool-registry.js"
 import type { AgentTraceEvent, PdfOperationRequest } from "./pdf-types.js"
-import type { Env, JsonObject } from "./types.js"
+import type { Env, JsonObject, WorkerExecutionContext } from "./types.js"
 
 const json = (data: unknown, status = 200): Response =>
   new Response(JSON.stringify(data), {
@@ -127,7 +127,7 @@ const operationArgsFromRequest = (request: PdfOperationRequest): JsonObject => {
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     const config = loadEchoPdfConfig(env)
     const runtimeStore = getRuntimeFileStore(env, config)
