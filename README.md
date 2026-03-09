@@ -414,3 +414,5 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
   - `MISSING_FILE_INPUT`（400）
   - `FILE_NOT_FOUND`（404）
 - 服务端故障返回 `5xx`。
+
+<!-- webhook smoke: 2026-03-09T01:04:17Z -->
