@@ -1,5 +1,5 @@
-import type { StoragePolicy } from "./pdf-types"
-import type { FileStore, StoredFileMeta, StoredFileRecord } from "./types"
+import type { StoragePolicy } from "./pdf-types.js"
+import type { FileStore, StoredFileMeta, StoredFileRecord } from "./types.js"
 
 const PREFIX = "file/"
 

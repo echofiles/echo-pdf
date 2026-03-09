@@ -1,6 +1,6 @@
-import type { Env } from "./types"
-import type { EchoPdfConfig, EchoPdfProviderConfig } from "./pdf-types"
-import { resolveProviderApiKey } from "./provider-keys"
+import type { Env } from "./types.js"
+import type { EchoPdfConfig, EchoPdfProviderConfig } from "./pdf-types.js"
+import { resolveProviderApiKey } from "./provider-keys.js"
 
 const defaultBaseUrl = (provider: EchoPdfProviderConfig): string => {
   if (provider.baseUrl) return provider.baseUrl

@@ -1,4 +1,4 @@
-import type { ProviderType, ReturnMode } from "./types"
+import type { ProviderType, ReturnMode } from "./types.js"
 
 export interface EchoPdfProviderConfig {
   readonly type: ProviderType

@@ -1,6 +1,6 @@
-import { fromBase64, toBase64 } from "./file-utils"
-import type { StoragePolicy } from "./pdf-types"
-import type { StoredFileMeta, StoredFileRecord } from "./types"
+import { fromBase64, toBase64 } from "./file-utils.js"
+import type { StoragePolicy } from "./pdf-types.js"
+import type { StoredFileMeta, StoredFileRecord } from "./types.js"
 
 interface StoredValue {
   readonly id: string

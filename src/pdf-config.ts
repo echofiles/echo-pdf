@@ -1,6 +1,6 @@
-import rawConfig from "../echo-pdf.config.json"
-import type { Env, JsonObject, JsonValue } from "./types"
-import type { EchoPdfConfig } from "./pdf-types"
+import rawConfig from "../echo-pdf.config.json" with { type: "json" }
+import type { Env, JsonObject, JsonValue } from "./types.js"
+import type { EchoPdfConfig } from "./pdf-types.js"
 
 const ENV_PATTERN = /\$\{([A-Z0-9_]+)\}/g
 

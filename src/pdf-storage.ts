@@ -1,7 +1,7 @@
-import { DurableObjectFileStore } from "./file-store-do"
-import { R2FileStore } from "./r2-file-store"
-import type { EchoPdfConfig } from "./pdf-types"
-import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "./types"
+import { DurableObjectFileStore } from "./file-store-do.js"
+import { R2FileStore } from "./r2-file-store.js"
+import type { EchoPdfConfig } from "./pdf-types.js"
+import type { Env, FileStore, StoredFileMeta, StoredFileRecord } from "./types.js"
 
 class InMemoryFileStore implements FileStore {
   private readonly store = new Map<string, StoredFileRecord>()

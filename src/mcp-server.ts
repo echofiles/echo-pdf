@@ -1,8 +1,8 @@
-import type { Env, FileStore } from "./types"
-import type { EchoPdfConfig } from "./pdf-types"
-import { checkHeaderAuth } from "./auth"
-import { buildMcpContent, buildToolOutputEnvelope } from "./response-schema"
-import { callTool, listToolSchemas } from "./tool-registry"
+import type { Env, FileStore } from "./types.js"
+import type { EchoPdfConfig } from "./pdf-types.js"
+import { checkHeaderAuth } from "./auth.js"
+import { buildMcpContent, buildToolOutputEnvelope } from "./response-schema.js"
+import { callTool, listToolSchemas } from "./tool-registry.js"
 
 interface JsonRpcRequest {
   readonly jsonrpc?: string

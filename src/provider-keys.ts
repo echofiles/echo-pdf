@@ -1,6 +1,6 @@
-import { readRequiredEnv } from "./pdf-config"
-import type { EchoPdfConfig, EchoPdfProviderConfig } from "./pdf-types"
-import type { Env } from "./types"
+import { readRequiredEnv } from "./pdf-config.js"
+import type { EchoPdfConfig, EchoPdfProviderConfig } from "./pdf-types.js"
+import type { Env } from "./types.js"
 
 const normalizeKey = (value: string): string => value.trim()
 

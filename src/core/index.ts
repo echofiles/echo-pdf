@@ -1,10 +1,10 @@
-export { callTool, listToolSchemas } from "../tool-registry"
-export type { ToolRuntimeContext } from "../tool-registry"
-export type { ToolSchema } from "../pdf-types"
-export type { Env, FileStore, JsonObject } from "../types"
-import { callTool } from "../tool-registry"
-import type { JsonObject } from "../types"
-import type { ReturnMode } from "../types"
+export { callTool, listToolSchemas } from "../tool-registry.js"
+export type { ToolRuntimeContext } from "../tool-registry.js"
+export type { ToolSchema } from "../pdf-types.js"
+export type { Env, FileStore, JsonObject } from "../types.js"
+import { callTool } from "../tool-registry.js"
+import type { JsonObject } from "../types.js"
+import type { ReturnMode } from "../types.js"
 
 export interface PdfExtractPagesArgs {
   readonly fileId?: string
@@ -55,20 +55,20 @@ const asJsonObject = (value: unknown): JsonObject => value as JsonObject
 
 export const pdf_extract_pages = async (
   args: PdfExtractPagesArgs,
-  ctx: import("../tool-registry").ToolRuntimeContext
+  ctx: import("../tool-registry.js").ToolRuntimeContext
 ): Promise<unknown> => callTool("pdf_extract_pages", asJsonObject(args), ctx)
 
 export const pdf_ocr_pages = async (
   args: PdfOcrPagesArgs,
-  ctx: import("../tool-registry").ToolRuntimeContext
+  ctx: import("../tool-registry.js").ToolRuntimeContext
 ): Promise<unknown> => callTool("pdf_ocr_pages", asJsonObject(args), ctx)
 
 export const pdf_tables_to_latex = async (
   args: PdfTablesToLatexArgs,
-  ctx: import("../tool-registry").ToolRuntimeContext
+  ctx: import("../tool-registry.js").ToolRuntimeContext
 ): Promise<unknown> => callTool("pdf_tables_to_latex", asJsonObject(args), ctx)
 
 export const file_ops = async (
   args: FileOpsArgs,
-  ctx: import("../tool-registry").ToolRuntimeContext
+  ctx: import("../tool-registry.js").ToolRuntimeContext
 ): Promise<unknown> => callTool("file_ops", asJsonObject(args), ctx)

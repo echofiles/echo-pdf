@@ -1,4 +1,4 @@
-import type { JsonObject } from "./types"
+import type { JsonObject } from "./types.js"
 
 export interface ToolArtifact {
   readonly id?: string
