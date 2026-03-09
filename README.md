@@ -35,6 +35,11 @@ npm i -g @echofiles/echo-pdf
 echo-pdf dev --port 8787
 ```
 
+`echo-pdf dev` 启动时会打印可直接给下游使用的：
+
+- `ECHO_PDF_BASE_URL`
+- `ECHO_PDF_MCP_URL`
+
 健康检查与能力检查：
 
 ```bash
@@ -254,7 +259,7 @@ echo-pdf mcp call --tool pdf_extract_pages --args '{
 stdio 模式会把本地 `path/filePath` 自动上传为 `fileId` 后再调用远端工具。
 
 ```bash
-echo-pdf mcp stdio
+echo-pdf mcp-stdio
 ```
 
 生成 Claude Desktop/Cursor 等可用的 stdio 配置片段：

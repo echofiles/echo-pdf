@@ -208,10 +208,25 @@ const runDevServer = (port, host) => {
   })
 }
 
-const runMcpStdioCommand = async () => {
+const printLocalServiceHints = (host, port) => {
+  const resolvedHost = host === "0.0.0.0" ? "127.0.0.1" : host
+  const baseUrl = `http://${resolvedHost}:${port}`
+  const mcpUrl = `${baseUrl}/mcp`
+  process.stdout.write(`\nLocal component endpoints:\n`)
+  process.stdout.write(`  ECHO_PDF_BASE_URL=${baseUrl}\n`)
+  process.stdout.write(`  ECHO_PDF_MCP_URL=${mcpUrl}\n`)
+  process.stdout.write(`\nExport snippet:\n`)
+  process.stdout.write(`  export ECHO_PDF_BASE_URL=${baseUrl}\n`)
+  process.stdout.write(`  export ECHO_PDF_MCP_URL=${mcpUrl}\n\n`)
+}
+
+const runMcpStdioCommand = async (serviceUrlOverride) => {
   const config = loadConfig()
+  const serviceUrl = typeof serviceUrlOverride === "string" && serviceUrlOverride.trim().length > 0
+    ? serviceUrlOverride.trim()
+    : config.serviceUrl
   await runMcpStdio({
-    serviceUrl: config.serviceUrl,
+    serviceUrl,
     headers: buildMcpHeaders(),
     postJson,
     withUploadedLocalFile,
@@ -328,6 +343,7 @@ const usage = () => {
   process.stdout.write(`  mcp initialize\n`)
   process.stdout.write(`  mcp tools\n`)
   process.stdout.write(`  mcp call --tool <name> --args '<json>'\n`)
+  process.stdout.write(`  mcp-stdio [--service-url URL]\n`)
   process.stdout.write(`  mcp stdio\n`)
   process.stdout.write(`  setup add <claude-desktop|claude-code|cursor|cline|windsurf|gemini|json>\n`)
 }
@@ -338,7 +354,7 @@ const setupSnippet = (tool, serviceUrl, mode = "http") => {
       mcpServers: {
         "echo-pdf": {
           command: "echo-pdf",
-          args: ["mcp", "stdio"],
+          args: ["mcp-stdio"],
           env: {
             ECHO_PDF_SERVICE_URL: serviceUrl,
           },
@@ -436,7 +452,13 @@ const main = async () => {
     const port = typeof flags.port === "string" ? Number(flags.port) : 8788
     const host = typeof flags.host === "string" ? flags.host : "127.0.0.1"
     if (!Number.isFinite(port) || port <= 0) throw new Error("dev --port must be positive number")
+    printLocalServiceHints(host, Math.floor(port))
     runDevServer(Math.floor(port), host)
+    return
+  }
+
+  if (command === "mcp-stdio") {
+    await runMcpStdioCommand(typeof flags["service-url"] === "string" ? flags["service-url"] : undefined)
     return
   }
 
@@ -638,7 +660,7 @@ const main = async () => {
   }
 
   if (command === "mcp" && subcommand === "stdio") {
-    await runMcpStdioCommand()
+    await runMcpStdioCommand(typeof flags["service-url"] === "string" ? flags["service-url"] : undefined)
     return
   }
 
