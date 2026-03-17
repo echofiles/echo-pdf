@@ -1,0 +1,20 @@
+name: Feature request
+description: New feature or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What user-facing outcome do we want?
+    validations:
+      required: true
+  - type: textarea
+    id: non_goal
+    attributes:
+      label: Non-goals
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / constraints
+      description: Include \"no mocks\" and any local-first requirements.
