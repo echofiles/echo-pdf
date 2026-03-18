@@ -126,6 +126,16 @@ const operationArgsFromRequest = (request: PdfOperationRequest): JsonObject => {
   return args
 }
 
+const checkComputeAuth = (request: Request, env: Env, config: { service: { computeAuth?: { authHeader?: string; authEnv?: string } } }) =>
+  checkHeaderAuth(request, env, {
+    authHeader: config.service.computeAuth?.authHeader,
+    authEnv: config.service.computeAuth?.authEnv,
+    allowMissingSecret: false,
+    misconfiguredCode: "COMPUTE_AUTH_MISCONFIGURED",
+    unauthorizedCode: "UNAUTHORIZED",
+    contextName: "compute endpoint",
+  })
+
 export default {
   async fetch(request: Request, env: Env, ctx: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url)
@@ -168,6 +178,8 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/tools/call") {
+      const auth = checkComputeAuth(request, env, config)
+      if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       const name = typeof body.name === "string" ? body.name : ""
       if (!name) return json({ error: "Missing required field: name" }, 400)
@@ -206,6 +218,8 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/providers/models") {
+      const auth = checkComputeAuth(request, env, config)
+      if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       const provider = resolveProviderAlias(config, typeof body.provider === "string" ? body.provider : undefined)
       const runtimeKeys = typeof body.providerApiKeys === "object" && body.providerApiKeys !== null
@@ -220,6 +234,8 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/api/agent/run") {
+      const auth = checkComputeAuth(request, env, config)
+      if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
         return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)
@@ -239,6 +255,8 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/api/agent/stream") {
+      const auth = checkComputeAuth(request, env, config)
+      if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
         return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)

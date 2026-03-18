@@ -23,6 +23,10 @@ export interface EchoPdfConfig {
   readonly service: {
     readonly name: string
     readonly publicBaseUrl?: string
+    readonly computeAuth?: {
+      readonly authHeader?: string
+      readonly authEnv?: string
+    }
     readonly fileGet?: {
       readonly authHeader?: string
       readonly authEnv?: string
