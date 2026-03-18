@@ -345,11 +345,17 @@ curl -sS -X POST https://echo-pdf.echofilesai.workers.dev/tools/call \
   }'
 ```
 
-CLI（支持直接传本地路径）：
+CLI（默认不自动上传本地文件，需显式开启）：
 
 ```bash
-echo-pdf call --tool pdf_extract_pages --args '{"path":"./sample.pdf","pages":[1],"returnMode":"url"}'
+echo-pdf call --tool pdf_extract_pages --auto-upload --args '{"path":"./sample.pdf","pages":[1],"returnMode":"url"}'
 ```
+
+说明：
+
+- `echo-pdf call` 默认禁用本地文件自动上传，避免误上传脚枪。
+- 需要自动上传时，显式传 `--auto-upload`，CLI 会回显上传清单（本地路径 -> fileId）。
+- 如果是本地 agent/IDE 场景，优先使用 `echo-pdf mcp-stdio`，它会按 MCP stdio 约定处理 `path/filePath` 自动上传。
 
 下载产物：
 

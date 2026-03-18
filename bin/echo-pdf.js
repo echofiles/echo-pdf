@@ -4,7 +4,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { downloadFile, postJson, uploadFile, withUploadedLocalFile } from "./lib/http.js"
+import { downloadFile, postJson, prepareArgsWithLocalUploads, uploadFile, withUploadedLocalFile } from "./lib/http.js"
 import { runMcpStdio } from "./lib/mcp-stdio.js"
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "echo-pdf-cli")
@@ -337,7 +337,7 @@ const usage = () => {
   process.stdout.write(`  model get [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
-  process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name]\n`)
+  process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name] [--auto-upload]\n`)
   process.stdout.write(`  file upload <local.pdf>\n`)
   process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
@@ -595,7 +595,17 @@ const main = async () => {
     const tool = flags.tool
     if (typeof tool !== "string") throw new Error("call requires --tool")
     const args = typeof flags.args === "string" ? JSON.parse(flags.args) : {}
-    const preparedArgs = await withUploadedLocalFile(config.serviceUrl, tool, args)
+    const autoUpload = flags["auto-upload"] === true
+    const prepared = await prepareArgsWithLocalUploads(config.serviceUrl, tool, args, {
+      autoUpload,
+    })
+    if (prepared.uploads.length > 0) {
+      process.stderr.write(`[echo-pdf] auto-uploaded local files:\n`)
+      for (const item of prepared.uploads) {
+        process.stderr.write(`  - ${item.localPath} -> ${item.fileId} (${item.tool})\n`)
+      }
+    }
+    const preparedArgs = prepared.args
     const provider = resolveProviderAlias(profile, flags.provider)
     const model = typeof flags.model === "string" ? flags.model : resolveDefaultModel(profile, provider)
     const providerApiKeys = buildProviderApiKeys(config, profileName)
