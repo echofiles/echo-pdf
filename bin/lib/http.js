@@ -53,20 +53,45 @@ export const downloadFile = async (serviceUrl, fileId, outputPath) => {
   return absOut
 }
 
-export const withUploadedLocalFile = async (serviceUrl, tool, args) => {
+const parseAutoUploadFlag = (value) => {
+  if (value === true) return true
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase()
+    return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on"
+  }
+  return false
+}
+
+export const prepareArgsWithLocalUploads = async (serviceUrl, tool, args, options = {}) => {
   const nextArgs = { ...(args || {}) }
+  const uploads = []
+  const autoUploadEnabled = options.autoUpload !== false
   if (tool.startsWith("pdf_")) {
     const localPath = typeof nextArgs.path === "string"
       ? nextArgs.path
       : (typeof nextArgs.filePath === "string" ? nextArgs.filePath : "")
     if (localPath && !nextArgs.fileId && !nextArgs.url && !nextArgs.base64) {
+      if (!autoUploadEnabled) {
+        throw new Error(
+          "Local file auto-upload is disabled for `echo-pdf call`. " +
+          "Use --auto-upload, or upload first (`echo-pdf file upload`) and pass fileId, or use `echo-pdf mcp-stdio`."
+        )
+      }
       const upload = await uploadFile(serviceUrl, localPath)
       const fileId = upload?.file?.id
       if (!fileId) throw new Error(`upload failed for local path: ${localPath}`)
       nextArgs.fileId = fileId
       delete nextArgs.path
       delete nextArgs.filePath
+      uploads.push({ tool, localPath, fileId })
     }
   }
+  return { args: nextArgs, uploads }
+}
+
+export const withUploadedLocalFile = async (serviceUrl, tool, args, options = {}) => {
+  const { args: nextArgs } = await prepareArgsWithLocalUploads(serviceUrl, tool, args, {
+    autoUpload: parseAutoUploadFlag(options.autoUpload ?? true),
+  })
   return nextArgs
 }

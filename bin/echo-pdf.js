@@ -4,7 +4,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { downloadFile, postJson, uploadFile, withUploadedLocalFile } from "./lib/http.js"
+import { downloadFile, postJson, prepareArgsWithLocalUploads, uploadFile, withUploadedLocalFile } from "./lib/http.js"
 import { runMcpStdio } from "./lib/mcp-stdio.js"
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "echo-pdf-cli")
@@ -208,10 +208,25 @@ const runDevServer = (port, host) => {
   })
 }
 
-const runMcpStdioCommand = async () => {
+const printLocalServiceHints = (host, port) => {
+  const resolvedHost = host === "0.0.0.0" ? "127.0.0.1" : host
+  const baseUrl = `http://${resolvedHost}:${port}`
+  const mcpUrl = `${baseUrl}/mcp`
+  process.stdout.write(`\nLocal component endpoints:\n`)
+  process.stdout.write(`  ECHO_PDF_BASE_URL=${baseUrl}\n`)
+  process.stdout.write(`  ECHO_PDF_MCP_URL=${mcpUrl}\n`)
+  process.stdout.write(`\nExport snippet:\n`)
+  process.stdout.write(`  export ECHO_PDF_BASE_URL=${baseUrl}\n`)
+  process.stdout.write(`  export ECHO_PDF_MCP_URL=${mcpUrl}\n\n`)
+}
+
+const runMcpStdioCommand = async (serviceUrlOverride) => {
   const config = loadConfig()
+  const serviceUrl = typeof serviceUrlOverride === "string" && serviceUrlOverride.trim().length > 0
+    ? serviceUrlOverride.trim()
+    : config.serviceUrl
   await runMcpStdio({
-    serviceUrl: config.serviceUrl,
+    serviceUrl,
     headers: buildMcpHeaders(),
     postJson,
     withUploadedLocalFile,
@@ -322,12 +337,13 @@ const usage = () => {
   process.stdout.write(`  model get [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
-  process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name]\n`)
+  process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name] [--auto-upload]\n`)
   process.stdout.write(`  file upload <local.pdf>\n`)
   process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
   process.stdout.write(`  mcp tools\n`)
   process.stdout.write(`  mcp call --tool <name> --args '<json>'\n`)
+  process.stdout.write(`  mcp-stdio [--service-url URL]\n`)
   process.stdout.write(`  mcp stdio\n`)
   process.stdout.write(`  setup add <claude-desktop|claude-code|cursor|cline|windsurf|gemini|json>\n`)
 }
@@ -338,7 +354,7 @@ const setupSnippet = (tool, serviceUrl, mode = "http") => {
       mcpServers: {
         "echo-pdf": {
           command: "echo-pdf",
-          args: ["mcp", "stdio"],
+          args: ["mcp-stdio"],
           env: {
             ECHO_PDF_SERVICE_URL: serviceUrl,
           },
@@ -436,7 +452,13 @@ const main = async () => {
     const port = typeof flags.port === "string" ? Number(flags.port) : 8788
     const host = typeof flags.host === "string" ? flags.host : "127.0.0.1"
     if (!Number.isFinite(port) || port <= 0) throw new Error("dev --port must be positive number")
+    printLocalServiceHints(host, Math.floor(port))
     runDevServer(Math.floor(port), host)
+    return
+  }
+
+  if (command === "mcp-stdio") {
+    await runMcpStdioCommand(typeof flags["service-url"] === "string" ? flags["service-url"] : undefined)
     return
   }
 
@@ -573,7 +595,17 @@ const main = async () => {
     const tool = flags.tool
     if (typeof tool !== "string") throw new Error("call requires --tool")
     const args = typeof flags.args === "string" ? JSON.parse(flags.args) : {}
-    const preparedArgs = await withUploadedLocalFile(config.serviceUrl, tool, args)
+    const autoUpload = flags["auto-upload"] === true
+    const prepared = await prepareArgsWithLocalUploads(config.serviceUrl, tool, args, {
+      autoUpload,
+    })
+    if (prepared.uploads.length > 0) {
+      process.stderr.write(`[echo-pdf] auto-uploaded local files:\n`)
+      for (const item of prepared.uploads) {
+        process.stderr.write(`  - ${item.localPath} -> ${item.fileId} (${item.tool})\n`)
+      }
+    }
+    const preparedArgs = prepared.args
     const provider = resolveProviderAlias(profile, flags.provider)
     const model = typeof flags.model === "string" ? flags.model : resolveDefaultModel(profile, provider)
     const providerApiKeys = buildProviderApiKeys(config, profileName)
@@ -638,7 +670,7 @@ const main = async () => {
   }
 
   if (command === "mcp" && subcommand === "stdio") {
-    await runMcpStdioCommand()
+    await runMcpStdioCommand(typeof flags["service-url"] === "string" ? flags["service-url"] : undefined)
     return
   }
 
