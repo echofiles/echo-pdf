@@ -8,6 +8,55 @@ const requestWith = (header: string, value?: string): Request =>
   })
 
 describe("checkHeaderAuth", () => {
+  it("allows when auth is fully disabled", () => {
+    const result = checkHeaderAuth(
+      requestWith("x-test"),
+      {} as Env,
+      {
+        misconfiguredCode: "AUTH_MISCONFIGURED",
+        unauthorizedCode: "UNAUTHORIZED",
+        contextName: "mcp",
+      }
+    )
+    expect(result).toEqual({ ok: true })
+  })
+
+  it("denies when only authHeader is configured", () => {
+    const result = checkHeaderAuth(
+      requestWith("x-test", "abc"),
+      {} as Env,
+      {
+        authHeader: "x-test",
+        misconfiguredCode: "AUTH_MISCONFIGURED",
+        unauthorizedCode: "UNAUTHORIZED",
+        contextName: "mcp",
+      }
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(500)
+      expect(result.code).toBe("AUTH_MISCONFIGURED")
+    }
+  })
+
+  it("denies when only authEnv is configured", () => {
+    const result = checkHeaderAuth(
+      requestWith("x-test", "abc"),
+      {} as Env,
+      {
+        authEnv: "TEST_SECRET",
+        misconfiguredCode: "AUTH_MISCONFIGURED",
+        unauthorizedCode: "UNAUTHORIZED",
+        contextName: "mcp",
+      }
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(500)
+      expect(result.code).toBe("AUTH_MISCONFIGURED")
+    }
+  })
+
   it("denies when auth is configured but secret is missing", () => {
     const result = checkHeaderAuth(
       requestWith("x-test", "abc"),

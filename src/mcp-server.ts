@@ -25,7 +25,8 @@ const err = (
   id: JsonRpcRequest["id"],
   code: number,
   message: string,
-  data?: Record<string, unknown>
+  data?: Record<string, unknown>,
+  httpStatus = 400
 ): Response =>
   new Response(
     JSON.stringify({
@@ -33,7 +34,7 @@ const err = (
       id: id ?? null,
       error: data ? { code, message, data } : { code, message },
     }),
-    { status: 400, headers: { "Content-Type": "application/json" } }
+    { status: httpStatus, headers: { "Content-Type": "application/json" } }
   )
 
 const asObj = (v: unknown): Record<string, unknown> =>
@@ -67,10 +68,13 @@ export const handleMcpRequest = async (
     contextName: "MCP",
   })
   if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.message, code: auth.code }), {
-      status: auth.status,
-      headers: { "Content-Type": "application/json" },
-    })
+    return err(
+      null,
+      -32001,
+      auth.message,
+      { status: auth.status, code: auth.code },
+      200
+    )
   }
 
   let body: JsonRpcRequest
