@@ -1,6 +1,6 @@
 {
   "name": "@echofiles/echo-pdf",
-  "description": "MCP-first PDF agent on Cloudflare Workers with CLI and web demo.",
+  "description": "Local-first PDF document component core with CLI, workspace artifacts, and reusable page primitives.",
   "version": "0.4.2",
   "type": "module",
   "publishConfig": {
@@ -19,6 +19,10 @@
     "./core": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
+    },
+    "./local": {
+      "types": "./dist/local/index.d.ts",
+      "import": "./dist/local/index.js"
     },
     "./worker": {
       "types": "./dist/worker.d.ts",

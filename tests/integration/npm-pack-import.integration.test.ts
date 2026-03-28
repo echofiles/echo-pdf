@@ -19,7 +19,7 @@ const run = async (cmd: string, args: string[], cwd: string): Promise<string> =>
 }
 
 describe("npm pack import smoke", () => {
-  it("imports package root/core/worker from packed artifact", async () => {
+  it("imports package root/core/local/worker from packed artifact", async () => {
     const packJson = await run("npm", ["pack", "--json"], rootDir)
     const parsed = JSON.parse(packJson) as Array<{ filename?: string }>
     const filename = parsed[0]?.filename
@@ -33,9 +33,11 @@ describe("npm pack import smoke", () => {
       const code = [
         "const root = await import('@echofiles/echo-pdf')",
         "const core = await import('@echofiles/echo-pdf/core')",
+        "const local = await import('@echofiles/echo-pdf/local')",
         "const worker = await import('@echofiles/echo-pdf/worker')",
         "if (typeof root.callTool !== 'function') throw new Error('root.callTool missing')",
         "if (typeof core.listToolSchemas !== 'function') throw new Error('core.listToolSchemas missing')",
+        "if (typeof local.get_document !== 'function') throw new Error('local.get_document missing')",
         "if (!worker.default || typeof worker.default.fetch !== 'function') throw new Error('worker.fetch missing')",
         "console.log('ok')",
       ].join(";")

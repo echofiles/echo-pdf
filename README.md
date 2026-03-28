@@ -1,85 +1,88 @@
 # echo-pdf
 
-`echo-pdf` 是一个部署在 Cloudflare Workers 的 PDF Agent，支持：
+`echo-pdf` 当前阶段定位为本地优先的 document component core，支持：
 
 - 页面提取：把 PDF 指定页渲染为图片
 - OCR：识别页面文本
 - 表格识别：提取表格并输出 LaTeX `tabular`
-- MCP 服务：可直接挂到 Claude Desktop / Cursor / Cline / Windsurf 等客户端
+- 页级文档索引：生成本地可复用的 document / page artifacts
 
-支持三种使用方式：
+当前阶段优先：
 
-- MCP（推荐）
-- CLI
-- HTTP API
+- 本地 CLI
+- 本地 library/client API
+- 本地 workspace artifacts
 
-## Use echo-pdf as a component
+当前阶段非重点：
 
-推荐把 `echo-pdf` 作为一个独立组件服务接入（MCP-first，HTTP fallback），下游系统（如 echo-datasheet）只通过 URL 调用，不直接依赖实现代码。
+- MCP 扩展
+- Hosted SaaS / multi-tenant 平台能力
 
-### Downstream config
+## Local-first workflow
 
-下游至少配置以下变量：
-
-```bash
-export ECHO_PDF_BASE_URL="http://127.0.0.1:8787"
-export ECHO_PDF_MCP_URL="${ECHO_PDF_BASE_URL}/mcp"
-# optional
-export ECHO_PDF_MCP_KEY="<your-mcp-key>"
-```
-
-### Local-first quick start
+最短路径：
 
 ```bash
 npm i -g @echofiles/echo-pdf
-echo-pdf dev --port 8787
+echo-pdf document index ./sample.pdf
+echo-pdf document structure ./sample.pdf
+echo-pdf document page ./sample.pdf --page 1
 ```
 
-`echo-pdf dev` 启动时会打印可直接给下游使用的：
+默认会在当前目录写入可检查的 workspace：
 
-- `ECHO_PDF_BASE_URL`
-- `ECHO_PDF_MCP_URL`
-
-健康检查与能力检查：
-
-```bash
-curl -sS "$ECHO_PDF_BASE_URL/health"
-curl -sS "$ECHO_PDF_BASE_URL/tools/catalog"
+```text
+.echo-pdf-workspace/
+  documents/<documentId>/
+    document.json
+    structure.json
+    pages/
+      0001.json
+      0002.json
+      ...
 ```
 
-### Recommended call flow (downstream)
+这些 artifacts 会在 PDF 未变化时被复用，便于本地下游产品（例如 echo-datasheet）做增量读取。
 
-1. 下游先做 ingest（例如 `echo_pdf_ingest`），上传 PDF 到 `POST /api/files/upload`，得到 `echoPdfFileId`。  
-2. 下游通过 MCP/HTTP 调工具，并传 `fileId=echoPdfFileId`：
-  - `pdf_extract_pages`
-  - `pdf_ocr_pages`
-  - `pdf_tables_to_latex`
+## Local library/client API
 
-MCP-first 示例：
+当前阶段优先提供本地可组合 primitives，让下游产品直接围绕 PDF 建立 document metadata / page-level artifacts，而不是先依赖远端 MCP/SaaS。
 
-```bash
-curl -sS -X POST "$ECHO_PDF_MCP_URL" \
-  -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1]}}}'
+### Local-first entrypoints（semver 稳定）
+
+- `@echofiles/echo-pdf`：core API
+- `@echofiles/echo-pdf/core`：与根入口等价的 core API
+- `@echofiles/echo-pdf/local`：本地 document primitives
+- `@echofiles/echo-pdf/worker`：兼容保留的 Worker 路由入口，不是本阶段重点
+
+### Local document primitives
+
+```ts
+import {
+  get_document,
+  get_document_structure,
+  get_page_content,
+} from "@echofiles/echo-pdf/local"
+
+const doc = await get_document({ pdfPath: "./sample.pdf" })
+const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
+const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 ```
 
-HTTP fallback 示例：
+这些调用会把 artifacts 写入本地 workspace，并在 PDF 未变化时尽量复用已有页面结果。
 
-```bash
-curl -sS -X POST "$ECHO_PDF_BASE_URL/tools/call" \
-  -H 'content-type: application/json' \
-  -d '{"name":"pdf_extract_pages","arguments":{"fileId":"<FILE_ID>","pages":[1]}}'
-```
+当前 `get_document_structure()` 返回的是最小可复用 page index：`document -> pages[]`。它还不是 section/headings 级别的语义树，文档承诺也只到这里。
 
-## Using echo-pdf as a library
+## Tool library compatibility
 
-`@echofiles/echo-pdf` 支持直接作为库导入，面向下游复用 `pdf_extract_pages / pdf_ocr_pages / pdf_tables_to_latex / file_ops` 工具实现。
+除了 local-first primitives 之外，`@echofiles/echo-pdf` 仍保留现有 `pdf_extract_pages / pdf_ocr_pages / pdf_tables_to_latex / file_ops` 工具实现的复用入口，用于兼容已有集成。
 
 ### Public entrypoints（semver 稳定）
 
-- `@echofiles/echo-pdf`：core API（推荐）
+- `@echofiles/echo-pdf`：core API
 - `@echofiles/echo-pdf/core`：与根入口等价的 core API
-- `@echofiles/echo-pdf/worker`：Worker 路由入口（给 Wrangler/Worker 集成用）
+- `@echofiles/echo-pdf/local`：本地 document primitives
+- `@echofiles/echo-pdf/worker`：Worker 路由入口（兼容保留）
 
 仅以上 `exports` 子路径视为公开 API。`src/*`、`dist/*` 等深路径导入不受兼容性承诺保护，可能在次版本中变动。
 
@@ -87,6 +90,7 @@ curl -sS -X POST "$ECHO_PDF_BASE_URL/tools/call" \
 
 - Node.js: `>=20`（与 `package.json#engines` 一致）
 - 需要 ESM `import` 能力与标准 `fetch`（Node 20+ 原生支持）
+- `@echofiles/echo-pdf/local` 面向本地 Node/Bun CLI 或 app runtime
 - 建议使用支持 package `exports` 的现代 bundler/runtime（Vite、Webpack 5、Rspack、esbuild、Wrangler 等）
 - TypeScript 消费方建议：`module=NodeNext` + `moduleResolution=NodeNext`
 
@@ -99,7 +103,7 @@ tmpdir="$(mktemp -d)"
 cd "$tmpdir"
 npm init -y
 npm i /path/to/echofiles-echo-pdf-<version>.tgz
-node --input-type=module -e "await import('@echofiles/echo-pdf'); await import('@echofiles/echo-pdf/core'); await import('@echofiles/echo-pdf/worker'); console.log('ok')"
+node --input-type=module -e "await import('@echofiles/echo-pdf'); await import('@echofiles/echo-pdf/core'); await import('@echofiles/echo-pdf/local'); await import('@echofiles/echo-pdf/worker'); console.log('ok')"
 ```
 
 ### Example
@@ -145,7 +149,7 @@ console.log(result)
 - 对公开 API 的破坏性变更只会在 major 版本发布
 - 新增导出、参数扩展（向后兼容）会在 minor/patch 发布
 
-## 1. 服务地址
+## 1. Existing service surfaces（compatibility）
 
 请先确定你的线上地址（Worker 域名）。文档里用：
 
@@ -217,7 +221,39 @@ echo-pdf config set --key service.storage.maxFileBytes --value 10000000
 echo-pdf config set --key service.maxPagesPerRequest --value 20
 ```
 
-## 3. MCP 使用（推荐）
+## 2.1 本地文档索引与读取
+
+建立本地索引并输出 metadata：
+
+```bash
+echo-pdf document index ./sample.pdf
+```
+
+读取 document metadata：
+
+```bash
+echo-pdf document get ./sample.pdf
+```
+
+读取结构树：
+
+```bash
+echo-pdf document structure ./sample.pdf
+```
+
+读取指定页面内容：
+
+```bash
+echo-pdf document page ./sample.pdf --page 1
+```
+
+自定义 artifact workspace：
+
+```bash
+echo-pdf document index ./sample.pdf --workspace ./.cache/echo-pdf
+```
+
+## 3. MCP 使用（兼容保留，非本阶段重点）
 
 ### 3.1 检查 MCP 服务可用
 
