@@ -10,12 +10,14 @@ import { visionRecognize } from "../provider-client.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
 import type { Env } from "../types.js"
 import { extractLocalPdfPageText, getLocalPdfPageCount, renderLocalPdfPageToPng } from "../node/pdfium-local.js"
+import { buildSemanticSectionTree } from "../node/semantic-local.js"
 
 export interface LocalDocumentArtifactPaths {
   readonly workspaceDir: string
   readonly documentDir: string
   readonly documentJsonPath: string
   readonly structureJsonPath: string
+  readonly semanticStructureJsonPath: string
   readonly pagesDir: string
   readonly rendersDir: string
   readonly ocrDir: string
@@ -47,6 +49,29 @@ export interface LocalDocumentStructure {
   readonly documentId: string
   readonly generatedAt: string
   readonly root: LocalDocumentStructureNode
+}
+
+export interface LocalSemanticStructureNode {
+  readonly id: string
+  readonly type: "document" | "section"
+  readonly title: string
+  readonly level?: number
+  readonly pageNumber?: number
+  readonly pageArtifactPath?: string
+  readonly excerpt?: string
+  readonly children?: ReadonlyArray<LocalSemanticStructureNode>
+}
+
+export interface LocalSemanticDocumentStructure {
+  readonly documentId: string
+  readonly generatedAt: string
+  readonly detector: "heading-heuristic-v1"
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
+  readonly pageIndexArtifactPath: string
+  readonly artifactPath: string
+  readonly root: LocalSemanticStructureNode
+  readonly cacheStatus: "fresh" | "reused"
 }
 
 export interface LocalPageContent {
@@ -150,6 +175,7 @@ const buildArtifactPaths = (workspaceDir: string, documentId: string): LocalDocu
     documentDir,
     documentJsonPath: path.join(documentDir, "document.json"),
     structureJsonPath: path.join(documentDir, "structure.json"),
+    semanticStructureJsonPath: path.join(documentDir, "semantic-structure.json"),
     pagesDir: path.join(documentDir, "pages"),
     rendersDir: path.join(documentDir, "renders"),
     ocrDir: path.join(documentDir, "ocr"),
@@ -255,6 +281,55 @@ const matchesSourceSnapshot = (
   record: StoredDocumentRecord
 ): boolean =>
   artifact.sourceSizeBytes === record.sizeBytes && artifact.sourceMtimeMs === record.mtimeMs
+
+const ensureSemanticStructureArtifact = async (
+  request: LocalDocumentRequest
+): Promise<LocalSemanticDocumentStructure> => {
+  const { record } = await indexDocumentInternal(request)
+  const artifactPath = record.artifactPaths.semanticStructureJsonPath
+  if (!request.forceRefresh && await fileExists(artifactPath)) {
+    const cached = await readJson<LocalSemanticDocumentStructure>(artifactPath)
+    if (matchesSourceSnapshot(cached, record)) {
+      return {
+        ...cached,
+        cacheStatus: "reused",
+      }
+    }
+  }
+
+  const pages: Array<{ pageNumber: number; text: string; artifactPath: string }> = []
+  for (let pageNumber = 1; pageNumber <= record.pageCount; pageNumber += 1) {
+    const pagePath = path.join(record.artifactPaths.pagesDir, `${pageLabel(pageNumber)}.json`)
+    const page = await readJson<LocalPageContent>(pagePath)
+    pages.push({
+      pageNumber,
+      text: page.text,
+      artifactPath: page.artifactPath,
+    })
+  }
+
+  const sections = buildSemanticSectionTree(pages)
+  const artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus"> = {
+    documentId: record.documentId,
+    generatedAt: new Date().toISOString(),
+    detector: "heading-heuristic-v1",
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
+    pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
+    artifactPath,
+    root: {
+      id: `semantic-${record.documentId}`,
+      type: "document",
+      title: record.filename,
+      children: sections,
+    },
+  }
+  await writeJson(artifactPath, artifact)
+  return {
+    ...artifact,
+    cacheStatus: "fresh",
+  }
+}
 
 const ensurePageNumber = (pageCount: number, pageNumber: number): void => {
   if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {
@@ -403,6 +478,10 @@ export const get_document_structure = async (request: LocalDocumentRequest): Pro
   const { record } = await indexDocumentInternal(request)
   return readJson<LocalDocumentStructure>(record.artifactPaths.structureJsonPath)
 }
+
+export const get_semantic_document_structure = async (
+  request: LocalDocumentRequest
+): Promise<LocalSemanticDocumentStructure> => ensureSemanticStructureArtifact(request)
 
 export const get_page_content = async (request: LocalPageContentRequest): Promise<LocalPageContent> => {
   const { record } = await indexDocumentInternal(request)
