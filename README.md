@@ -97,11 +97,16 @@ const ocr1 = await get_page_ocr({ pdfPath: "./sample.pdf", pageNumber: 1, model:
   - artifact：`structure.json`
   - 目的：给下游做页级遍历、page artifact 定位、增量读取
 - `get_semantic_document_structure()`
-  - 契约：保守的 heading / section 语义层，只在“可检测”时返回结构
+  - 契约：显式的 heading / section 语义层，优先走本地 provider/model 的 agent 抽取；未配置或失败时退回保守 heuristic
   - artifact：`semantic-structure.json`
   - 目的：给下游做章节导航、语义分段；它不替代 page index，也不改变 `pages[]` 输出
 
-当前 semantic 结构使用本地启发式检测（`heading-heuristic-v1`），只覆盖显式编号标题、章节标题等明显模式；检测不到时会返回空结构，而不是伪造 section tree。
+当前 semantic 结构会把 detector 明确写入 artifact：
+
+- `agent-structured-v1`：使用本地配置的 provider/model 对 page text 进行结构化抽取
+- `heading-heuristic-v1`：当本地未配置模型，或 agent 抽取失败时使用的保守回退
+
+两种模式都遵循同一输出契约；检测不到时会返回空结构，而不是伪造 section tree。
 
 ## Tool library compatibility
 

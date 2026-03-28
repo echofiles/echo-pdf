@@ -6,7 +6,7 @@ import path from "node:path"
 import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
 import { toDataUrl } from "../file-utils.js"
 import { loadEchoPdfConfig } from "../pdf-config.js"
-import { visionRecognize } from "../provider-client.js"
+import { generateText, visionRecognize } from "../provider-client.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
 import type { Env } from "../types.js"
 import { extractLocalPdfPageText, getLocalPdfPageCount, renderLocalPdfPageToPng } from "../node/pdfium-local.js"
@@ -65,7 +65,8 @@ export interface LocalSemanticStructureNode {
 export interface LocalSemanticDocumentStructure {
   readonly documentId: string
   readonly generatedAt: string
-  readonly detector: "heading-heuristic-v1"
+  readonly detector: "agent-structured-v1" | "heading-heuristic-v1"
+  readonly strategyKey: string
   readonly sourceSizeBytes: number
   readonly sourceMtimeMs: number
   readonly pageIndexArtifactPath: string
@@ -126,6 +127,11 @@ export interface LocalDocumentRequest {
 
 export interface LocalPageContentRequest extends LocalDocumentRequest {
   readonly pageNumber: number
+}
+
+export interface LocalSemanticDocumentRequest extends LocalDocumentRequest {
+  readonly env?: Env
+  readonly providerApiKeys?: Record<string, string>
 }
 
 export interface LocalPageRenderRequest extends LocalPageContentRequest {
@@ -228,6 +234,21 @@ const stripCodeFences = (value: string): string => {
   return typeof fenced?.[1] === "string" ? fenced[1].trim() : text
 }
 
+const parseJsonObject = (value: string): unknown => {
+  const trimmed = stripCodeFences(value).trim()
+  if (!trimmed) return null
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    const start = trimmed.indexOf("{")
+    const end = trimmed.lastIndexOf("}")
+    if (start >= 0 && end > start) {
+      return JSON.parse(trimmed.slice(start, end + 1))
+    }
+    throw new Error("semantic structure model output was not valid JSON")
+  }
+}
+
 const resolveConfig = (config?: EchoPdfConfig): EchoPdfConfig => config ?? loadEchoPdfConfig({} as never)
 
 const resolveEnv = (env?: Env): Env => env ?? (process.env as unknown as Env)
@@ -282,14 +303,125 @@ const matchesSourceSnapshot = (
 ): boolean =>
   artifact.sourceSizeBytes === record.sizeBytes && artifact.sourceMtimeMs === record.mtimeMs
 
+const matchesStrategyKey = (
+  artifact: { strategyKey?: unknown },
+  strategyKey: string
+): boolean => artifact.strategyKey === strategyKey
+
+const toSemanticTree = (
+  value: unknown,
+  pageArtifactPaths: ReadonlyMap<number, string>
+): ReadonlyArray<LocalSemanticStructureNode> => {
+  if (!Array.isArray(value)) return []
+  const nodes: LocalSemanticStructureNode[] = []
+  value.forEach((item, index) => {
+      const node = item as {
+        title?: unknown
+        level?: unknown
+        pageNumber?: unknown
+        excerpt?: unknown
+        children?: unknown
+      }
+      const title = typeof node.title === "string" ? node.title.trim() : ""
+      const level = typeof node.level === "number" && Number.isInteger(node.level) && node.level > 0 ? node.level : undefined
+      const pageNumber =
+        typeof node.pageNumber === "number" && Number.isInteger(node.pageNumber) && node.pageNumber > 0 ? node.pageNumber : undefined
+      if (!title || typeof level !== "number" || typeof pageNumber !== "number") return
+      nodes.push({
+        id: `semantic-node-${index + 1}-${pageNumber}-${level}`,
+        type: "section" as const,
+        title,
+        level,
+        pageNumber,
+        pageArtifactPath: pageArtifactPaths.get(pageNumber),
+        excerpt: typeof node.excerpt === "string" ? node.excerpt.trim() : undefined,
+        children: toSemanticTree(node.children, pageArtifactPaths),
+    })
+  })
+  return nodes
+}
+
+const buildSemanticPrompt = (
+  record: StoredDocumentRecord,
+  pages: ReadonlyArray<LocalPageContent>
+): string => {
+  const pageDump = pages
+    .map((page) => [
+      `PAGE ${page.pageNumber}`,
+      page.text.split(/\r?\n/).slice(0, 24).join("\n").slice(0, 1800),
+    ].join("\n"))
+    .join("\n\n")
+
+  return [
+    "You extract semantic document structure from page text.",
+    "Return JSON only.",
+    "Schema:",
+    "{",
+    '  "sections": [',
+    "    {",
+    '      "title": "string",',
+    '      "level": 1,',
+    '      "pageNumber": 1,',
+    '      "excerpt": "short evidence string",',
+    '      "children": []',
+    "    }",
+    "  ]",
+    "}",
+    "Rules:",
+    "- Use only headings/sections that are clearly supported by the page text.",
+    "- Prefer conservative extraction over guessing.",
+    "- Preserve hierarchy with nested children.",
+    "- pageNumber must reference the page where the heading appears.",
+    "- Do not include page index entries, table rows, figure labels, or prose sentences.",
+    "- If no reliable semantic structure is detectable, return {\"sections\":[]}.",
+    `Document filename: ${record.filename}`,
+    `Page count: ${record.pageCount}`,
+    "",
+    pageDump,
+  ].join("\n")
+}
+
+const buildHeuristicSemanticArtifact = (
+  record: StoredDocumentRecord,
+  artifactPath: string,
+  sections: ReadonlyArray<LocalSemanticStructureNode>
+): Omit<LocalSemanticDocumentStructure, "cacheStatus"> => ({
+  documentId: record.documentId,
+  generatedAt: new Date().toISOString(),
+  detector: "heading-heuristic-v1",
+  strategyKey: "heuristic::heading-heuristic-v1",
+  sourceSizeBytes: record.sizeBytes,
+  sourceMtimeMs: record.mtimeMs,
+  pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
+  artifactPath,
+  root: {
+    id: `semantic-${record.documentId}`,
+    type: "document",
+    title: record.filename,
+    children: sections,
+  },
+})
+
 const ensureSemanticStructureArtifact = async (
-  request: LocalDocumentRequest
+  request: LocalSemanticDocumentRequest
 ): Promise<LocalSemanticDocumentStructure> => {
+  const config = resolveConfig(request.config)
+  const env = resolveEnv(request.env)
   const { record } = await indexDocumentInternal(request)
   const artifactPath = record.artifactPaths.semanticStructureJsonPath
+  let provider = ""
+  let model = ""
+  try {
+    provider = resolveProviderAlias(config)
+    model = provider ? resolveModelForProvider(config, provider) : ""
+  } catch {
+    provider = ""
+    model = ""
+  }
+  const strategyKey = model ? `agent::agent-structured-v1::${provider}::${model}` : "heuristic::heading-heuristic-v1"
   if (!request.forceRefresh && await fileExists(artifactPath)) {
-    const cached = await readJson<LocalSemanticDocumentStructure>(artifactPath)
-    if (matchesSourceSnapshot(cached, record)) {
+    const cached = await readJson<Omit<LocalSemanticDocumentStructure, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
+    if (matchesSourceSnapshot(cached, record) && matchesStrategyKey(cached, strategyKey)) {
       return {
         ...cached,
         cacheStatus: "reused",
@@ -297,33 +429,50 @@ const ensureSemanticStructureArtifact = async (
     }
   }
 
-  const pages: Array<{ pageNumber: number; text: string; artifactPath: string }> = []
+  const pages: LocalPageContent[] = []
   for (let pageNumber = 1; pageNumber <= record.pageCount; pageNumber += 1) {
     const pagePath = path.join(record.artifactPaths.pagesDir, `${pageLabel(pageNumber)}.json`)
     const page = await readJson<LocalPageContent>(pagePath)
-    pages.push({
-      pageNumber,
-      text: page.text,
-      artifactPath: page.artifactPath,
-    })
+    pages.push(page)
+  }
+  const pageArtifactPaths = new Map(pages.map((page) => [page.pageNumber, page.artifactPath]))
+
+  let artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus">
+  if (model) {
+    try {
+      const response = await generateText({
+        config,
+        env,
+        providerAlias: provider,
+        model,
+        prompt: buildSemanticPrompt(record, pages),
+        runtimeApiKeys: request.providerApiKeys,
+      })
+      const parsed = parseJsonObject(response) as { sections?: unknown }
+      const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
+      artifact = {
+        documentId: record.documentId,
+        generatedAt: new Date().toISOString(),
+        detector: "agent-structured-v1",
+        strategyKey,
+        sourceSizeBytes: record.sizeBytes,
+        sourceMtimeMs: record.mtimeMs,
+        pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
+        artifactPath,
+        root: {
+          id: `semantic-${record.documentId}`,
+          type: "document",
+          title: record.filename,
+          children: sections,
+        },
+      }
+    } catch {
+      artifact = buildHeuristicSemanticArtifact(record, artifactPath, buildSemanticSectionTree(pages))
+    }
+  } else {
+    artifact = buildHeuristicSemanticArtifact(record, artifactPath, buildSemanticSectionTree(pages))
   }
 
-  const sections = buildSemanticSectionTree(pages)
-  const artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus"> = {
-    documentId: record.documentId,
-    generatedAt: new Date().toISOString(),
-    detector: "heading-heuristic-v1",
-    sourceSizeBytes: record.sizeBytes,
-    sourceMtimeMs: record.mtimeMs,
-    pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
-    artifactPath,
-    root: {
-      id: `semantic-${record.documentId}`,
-      type: "document",
-      title: record.filename,
-      children: sections,
-    },
-  }
   await writeJson(artifactPath, artifact)
   return {
     ...artifact,
@@ -480,7 +629,7 @@ export const get_document_structure = async (request: LocalDocumentRequest): Pro
 }
 
 export const get_semantic_document_structure = async (
-  request: LocalDocumentRequest
+  request: LocalSemanticDocumentRequest
 ): Promise<LocalSemanticDocumentStructure> => ensureSemanticStructureArtifact(request)
 
 export const get_page_content = async (request: LocalPageContentRequest): Promise<LocalPageContent> => {
