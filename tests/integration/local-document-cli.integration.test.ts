@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { cp, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { cp, mkdtemp, readFile, symlink } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -13,10 +13,26 @@ const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
 const systemNodeMajor = Number(
   execFileSync("node", ["-p", "process.versions.node.split('.')[0]"], { encoding: "utf-8" }).trim()
 )
+const hasBun = (() => {
+  try {
+    return execFileSync("bun", ["--version"], { encoding: "utf-8" }).trim().length > 0
+  } catch {
+    return false
+  }
+})()
 const itWithNode20 = systemNodeMajor >= 20 ? it : it.skip
+const itWithNode20AndBun = systemNodeMajor >= 20 && hasBun ? it : it.skip
 
 const runCli = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
   const { stdout, stderr } = await execFileAsync("node", [path.join(repoDir, "bin", "echo-pdf.js"), ...args], {
+    cwd: repoDir,
+    env: process.env,
+  })
+  return { stdout, stderr }
+}
+
+const runSourceCheckoutDocumentDev = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
+  const { stdout, stderr } = await execFileAsync("npm", ["run", "document:dev", "--", ...args], {
     cwd: repoDir,
     env: process.env,
   })
@@ -90,20 +106,21 @@ describe("local document CLI", () => {
     expect(stored.documentId).toBe(doc.documentId)
   })
 
-  itWithNode20("fails fast with a build hint when dist artifacts are missing in a source checkout", async () => {
+  itWithNode20AndBun("supports a source-checkout document workflow without dist artifacts", async () => {
     const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-source-"))
     await cp(path.join(rootDir, "bin"), path.join(checkoutDir, "bin"), { recursive: true })
+    await cp(path.join(rootDir, "src"), path.join(checkoutDir, "src"), { recursive: true })
     await cp(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
-    await writeFile(path.join(checkoutDir, "package.json"), `${JSON.stringify({ type: "module" }, null, 2)}\n`, "utf-8")
+    await cp(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
+    await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
 
-    let failureMessage = ""
-    try {
-      await runCli(checkoutDir, ["document", "get", fixturePdf])
-    } catch (error) {
-      failureMessage = String(error instanceof Error ? error.message : error)
+    const { stdout } = await runSourceCheckoutDocumentDev(checkoutDir, ["get", fixturePdf, "--workspace", checkoutDir])
+    const doc = JSON.parse(stdout.replace(/^>.*\n/gm, "").trim()) as {
+      pageCount: number
+      cacheStatus: "fresh" | "reused"
     }
 
-    expect(failureMessage).toContain("npm run build")
-    expect(failureMessage).toContain("Local document commands require built artifacts")
+    expect(doc.pageCount).toBeGreaterThan(0)
+    expect(doc.cacheStatus).toBe("fresh")
   })
 })
