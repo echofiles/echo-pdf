@@ -359,6 +359,8 @@ const usage = () => {
   process.stdout.write(`  document get <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  file upload <local.pdf>\n`)
   process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
@@ -614,6 +616,7 @@ const main = async () => {
     const pdfPath = rest[0]
     const workspaceDir = typeof flags.workspace === "string" ? flags.workspace : undefined
     const forceRefresh = flags["force-refresh"] === true
+    const renderScale = typeof flags.scale === "string" ? Number(flags.scale) : undefined
     if (typeof pdfPath !== "string" || pdfPath.length === 0) {
       throw new Error("document command requires a pdf path argument")
     }
@@ -636,7 +639,34 @@ const main = async () => {
       print(data)
       return
     }
-    throw new Error("document command supports: index|get|structure|page")
+    if (subcommand === "render") {
+      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
+      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+        throw new Error("document render requires --page <positive integer>")
+      }
+      const data = await local.get_page_render({ pdfPath, workspaceDir, forceRefresh, pageNumber, renderScale })
+      print(data)
+      return
+    }
+    if (subcommand === "ocr") {
+      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
+      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+        throw new Error("document ocr requires --page <positive integer>")
+      }
+      const data = await local.get_page_ocr({
+        pdfPath,
+        workspaceDir,
+        forceRefresh,
+        pageNumber,
+        renderScale,
+        provider: typeof flags.provider === "string" ? flags.provider : undefined,
+        model: typeof flags.model === "string" ? flags.model : undefined,
+        prompt: typeof flags.prompt === "string" ? flags.prompt : undefined,
+      })
+      print(data)
+      return
+    }
+    throw new Error("document command supports: index|get|structure|page|render|ocr")
   }
 
   if (command === "call") {

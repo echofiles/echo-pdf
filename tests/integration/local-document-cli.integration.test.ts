@@ -59,11 +59,30 @@ describe("local document CLI", () => {
     expect(page.pageNumber).toBe(1)
     expect(typeof page.text).toBe("string")
 
+    const { stdout: renderRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const render = JSON.parse(renderRaw) as {
+      pageNumber: number
+      mimeType: string
+      imagePath: string
+      cacheStatus: "fresh" | "reused"
+    }
+    expect(render.pageNumber).toBe(1)
+    expect(render.mimeType).toBe("image/png")
+    expect(render.cacheStatus).toBe("fresh")
+
     const { stdout: docSecondRaw } = await runCli(rootDir, ["document", "get", fixturePdf, "--workspace", workspaceDir])
     const docSecond = JSON.parse(docSecondRaw) as {
       cacheStatus: "fresh" | "reused"
     }
     expect(docSecond.cacheStatus).toBe("reused")
+
+    const { stdout: renderSecondRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const renderSecond = JSON.parse(renderSecondRaw) as {
+      cacheStatus: "fresh" | "reused"
+      imagePath: string
+    }
+    expect(renderSecond.cacheStatus).toBe("reused")
+    expect(renderSecond.imagePath).toBe(render.imagePath)
 
     const stored = JSON.parse(await readFile(doc.artifactPaths.documentJsonPath, "utf-8")) as {
       documentId?: string
