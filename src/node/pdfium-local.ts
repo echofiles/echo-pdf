@@ -1,5 +1,6 @@
 /// <reference path="./compat.d.ts" />
 
+import { encode as encodePng } from "@cf-wasm/png"
 import { init } from "@embedpdf/pdfium"
 import type { WrappedPdfiumModule } from "@embedpdf/pdfium"
 import type { EchoPdfConfig } from "../pdf-types.js"
@@ -75,12 +76,65 @@ const decodeUtf16Le = (buf: Uint8Array): string => {
   return String.fromCharCode(...chars)
 }
 
+const bgraToRgba = (bgra: Uint8Array): Uint8Array => {
+  const rgba = new Uint8Array(bgra.length)
+  for (let i = 0; i < bgra.length; i += 4) {
+    rgba[i] = bgra[i + 2] ?? 0
+    rgba[i + 1] = bgra[i + 1] ?? 0
+    rgba[i + 2] = bgra[i] ?? 0
+    rgba[i + 3] = bgra[i + 3] ?? 255
+  }
+  return rgba
+}
+
 export const getLocalPdfPageCount = async (config: EchoPdfConfig, bytes: Uint8Array): Promise<number> => {
   const pdfium = await ensureLocalPdfium(config)
   const { doc, memPtr } = makeDoc(pdfium, bytes)
   try {
     return pdfium.FPDF_GetPageCount(doc)
   } finally {
+    closeDoc(pdfium, doc, memPtr)
+  }
+}
+
+export const renderLocalPdfPageToPng = async (
+  config: EchoPdfConfig,
+  bytes: Uint8Array,
+  pageIndex: number,
+  scale = config.service.defaultRenderScale
+): Promise<{
+  width: number
+  height: number
+  png: Uint8Array
+}> => {
+  const pdfium = await ensureLocalPdfium(config)
+  const { doc, memPtr } = makeDoc(pdfium, bytes)
+  let page = 0
+  let bitmap = 0
+  try {
+    page = pdfium.FPDF_LoadPage(doc, pageIndex)
+    if (!page) {
+      throw new Error(`Failed to load page ${pageIndex}`)
+    }
+    const width = Math.max(1, Math.round(pdfium.FPDF_GetPageWidthF(page) * scale))
+    const height = Math.max(1, Math.round(pdfium.FPDF_GetPageHeightF(page) * scale))
+    bitmap = pdfium.FPDFBitmap_Create(width, height, 1)
+    if (!bitmap) {
+      throw new Error("Failed to create bitmap")
+    }
+    pdfium.FPDFBitmap_FillRect(bitmap, 0, 0, width, height, 0xffffffff)
+    pdfium.FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, 0, 0)
+
+    const stride = pdfium.FPDFBitmap_GetStride(bitmap)
+    const bufferPtr = pdfium.FPDFBitmap_GetBuffer(bitmap)
+    const heap = (pdfium.pdfium as unknown as { HEAPU8: Uint8Array }).HEAPU8
+    const bgra = heap.slice(bufferPtr, bufferPtr + stride * height)
+    const rgba = bgraToRgba(bgra)
+    const png = encodePng(rgba, width, height)
+    return { width, height, png }
+  } finally {
+    if (bitmap) pdfium.FPDFBitmap_Destroy(bitmap)
+    if (page) pdfium.FPDF_ClosePage(page)
     closeDoc(pdfium, doc, memPtr)
   }
 }

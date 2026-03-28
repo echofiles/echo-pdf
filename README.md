@@ -6,6 +6,7 @@
 - OCR：识别页面文本
 - 表格识别：提取表格并输出 LaTeX `tabular`
 - 页级文档索引：生成本地可复用的 document / page artifacts
+- 页面渲染与 OCR artifacts：把 page render/image 与 OCR 结果缓存到本地 workspace
 
 当前阶段优先：
 
@@ -27,6 +28,7 @@ npm i -g @echofiles/echo-pdf
 echo-pdf document index ./sample.pdf
 echo-pdf document structure ./sample.pdf
 echo-pdf document page ./sample.pdf --page 1
+echo-pdf document render ./sample.pdf --page 1
 ```
 
 默认会在当前目录写入可检查的 workspace：
@@ -40,6 +42,11 @@ echo-pdf document page ./sample.pdf --page 1
       0001.json
       0002.json
       ...
+    renders/
+      0001.scale-2.json
+      0001.scale-2.png
+    ocr/
+      0001.scale-2.provider-openai.model-gpt-4o.prompt-<hash>.json
 ```
 
 这些 artifacts 会在 PDF 未变化时被复用，便于本地下游产品（例如 echo-datasheet）做增量读取。
@@ -62,14 +69,20 @@ import {
   get_document,
   get_document_structure,
   get_page_content,
+  get_page_render,
+  get_page_ocr,
 } from "@echofiles/echo-pdf/local"
 
 const doc = await get_document({ pdfPath: "./sample.pdf" })
 const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
+const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1 })
+const ocr1 = await get_page_ocr({ pdfPath: "./sample.pdf", pageNumber: 1, model: "gpt-4.1-mini" })
 ```
 
 这些调用会把 artifacts 写入本地 workspace，并在 PDF 未变化时尽量复用已有页面结果。
+`get_page_render()` 会生成可复用的 PNG + metadata。
+`get_page_ocr()` 会把 OCR 结果写入独立 artifact；它需要本地 provider key / model，不依赖 MCP 或远端服务入口。
 
 当前 `get_document_structure()` 返回的是最小可复用 page index：`document -> pages[]`。它还不是 section/headings 级别的语义树，文档承诺也只到这里。
 
@@ -245,6 +258,18 @@ echo-pdf document structure ./sample.pdf
 
 ```bash
 echo-pdf document page ./sample.pdf --page 1
+```
+
+生成页面渲染 artifact：
+
+```bash
+echo-pdf document render ./sample.pdf --page 1 --scale 2
+```
+
+生成 OCR artifact（需要本地 provider key / model）：
+
+```bash
+echo-pdf document ocr ./sample.pdf --page 1 --model gpt-4.1-mini
 ```
 
 自定义 artifact workspace：
