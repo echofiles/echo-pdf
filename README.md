@@ -45,7 +45,8 @@ npm run document:dev -- page ./fixtures/smoke.pdf --page 1
 
 - 发布包 / 已构建 checkout：`echo-pdf document ...` 继续走 `dist/`
 - 源码 checkout 且还没 build：使用 `npm run document:dev -- ...`
-- `document:dev` 只用于本地开发；它在 Bun 下直接加载 `src/local/index.ts`，不改变发布包行为
+- `document:dev` 只用于本地开发；它会显式优先加载 `src/local/index.ts`，即使仓库里仍然存在旧 `dist/`
+- 发布包和正常 `echo-pdf document ...` 仍然只走 `dist/`
 
 默认会在当前目录写入可检查的 workspace：
 

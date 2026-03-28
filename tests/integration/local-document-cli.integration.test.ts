@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { cp, mkdtemp, readFile, symlink } from "node:fs/promises"
+import { cp, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -106,13 +106,19 @@ describe("local document CLI", () => {
     expect(stored.documentId).toBe(doc.documentId)
   })
 
-  itWithNode20AndBun("supports a source-checkout document workflow without dist artifacts", async () => {
+  itWithNode20AndBun("supports a source-checkout document workflow even when dist artifacts exist", async () => {
     const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-source-"))
     await cp(path.join(rootDir, "bin"), path.join(checkoutDir, "bin"), { recursive: true })
+    await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
     await cp(path.join(rootDir, "src"), path.join(checkoutDir, "src"), { recursive: true })
     await cp(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
     await cp(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
     await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
+    await writeFile(
+      path.join(checkoutDir, "dist", "local", "index.js"),
+      'throw new Error("dist local entry should not load in document:dev");\n',
+      "utf-8"
+    )
 
     const { stdout } = await runSourceCheckoutDocumentDev(checkoutDir, ["get", fixturePdf, "--workspace", checkoutDir])
     const doc = JSON.parse(stdout.replace(/^>.*\n/gm, "").trim()) as {
