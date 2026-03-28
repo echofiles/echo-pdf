@@ -130,6 +130,8 @@ export interface LocalPageContentRequest extends LocalDocumentRequest {
 }
 
 export interface LocalSemanticDocumentRequest extends LocalDocumentRequest {
+  readonly provider?: string
+  readonly model?: string
   readonly env?: Env
   readonly providerApiKeys?: Record<string, string>
 }
@@ -348,7 +350,7 @@ const buildSemanticPrompt = (
   const pageDump = pages
     .map((page) => [
       `PAGE ${page.pageNumber}`,
-      page.text.split(/\r?\n/).slice(0, 24).join("\n").slice(0, 1800),
+      page.text,
     ].join("\n"))
     .join("\n\n")
 
@@ -412,11 +414,14 @@ const ensureSemanticStructureArtifact = async (
   let provider = ""
   let model = ""
   try {
-    provider = resolveProviderAlias(config)
+    provider = resolveProviderAlias(config, request.provider)
     model = provider ? resolveModelForProvider(config, provider) : ""
   } catch {
     provider = ""
     model = ""
+  }
+  if (provider) {
+    model = resolveModelForProvider(config, provider, request.model)
   }
   const strategyKey = model ? `agent::agent-structured-v1::${provider}::${model}` : "heuristic::heading-heuristic-v1"
   if (!request.forceRefresh && await fileExists(artifactPath)) {

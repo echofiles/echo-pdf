@@ -25,6 +25,18 @@ const model = typeof process.env.ECHO_PDF_TEST_SEMANTIC_MODEL === "string" && pr
   : (typeof process.env.ECHO_PDF_TEST_OCR_MODEL === "string" ? process.env.ECHO_PDF_TEST_OCR_MODEL.trim() : "")
 const itWithSemanticEnv = provider && model ? it : it.skip
 
+const loadTestConfig = async (): Promise<{
+  agent: {
+    defaultProvider: string
+    defaultModel: string
+  }
+}> => JSON.parse(await readFile(path.join(rootDir, "echo-pdf.config.json"), "utf-8")) as {
+  agent: {
+    defaultProvider: string
+    defaultModel: string
+  }
+}
+
 describe("local semantic document structure", () => {
   it("adds a semantic structure artifact without changing the page index contract", async () => {
     const local = await import("@echofiles/echo-pdf/local")
@@ -119,7 +131,7 @@ describe("local semantic document structure", () => {
     expect(semantic.root.children ?? []).toHaveLength(0)
   })
 
-  itWithSemanticEnv("prefers agent-native extraction when a local provider/model is configured", async () => {
+  itWithSemanticEnv("uses runtime provider/model overrides instead of config defaults", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-agent-"))
     const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-agent-pdf-"))
@@ -141,21 +153,19 @@ describe("local semantic document structure", () => {
       ],
     ])
 
-    const config = JSON.parse(await readFile(path.join(rootDir, "echo-pdf.config.json"), "utf-8")) as {
-      agent: {
-        defaultProvider: string
-        defaultModel: string
-      }
-    }
-    config.agent.defaultProvider = provider
-    config.agent.defaultModel = model
+    const config = await loadTestConfig()
+    config.agent.defaultProvider = "openai"
+    config.agent.defaultModel = ""
 
     const semantic = await local.get_semantic_document_structure({
       pdfPath: semanticPdf,
       workspaceDir,
       config,
+      provider,
+      model,
     }) as {
       detector: string
+      strategyKey: string
       root: {
         children?: Array<{
           title?: string
@@ -165,8 +175,46 @@ describe("local semantic document structure", () => {
     }
 
     expect(semantic.detector).toBe("agent-structured-v1")
+    expect(semantic.strategyKey).toContain(`::${provider}::${model}`)
     expect(semantic.root.children?.[0]?.title).toBe("1 Overview")
     expect(semantic.root.children?.[0]?.children?.[0]?.title).toBe("1.1 Goals")
     expect(semantic.root.children?.[1]?.title).toBe("2 Usage")
+  })
+
+  itWithSemanticEnv("keeps later page headings visible to the agent path", async () => {
+    const local = await import("@echofiles/echo-pdf/local")
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-late-"))
+    const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-late-pdf-"))
+    const semanticPdf = path.join(fixtureDir, "semantic-late.pdf")
+    const filler = Array.from({ length: 36 }, (_, index) => `Body filler line ${index + 1}`)
+
+    await writeSimplePdf(semanticPdf, [[
+      "Document Guide",
+      ...filler,
+      "2 Deep Heading",
+      "Late heading body text",
+    ]])
+
+    const config = await loadTestConfig()
+    config.agent.defaultProvider = "openai"
+    config.agent.defaultModel = ""
+
+    const semantic = await local.get_semantic_document_structure({
+      pdfPath: semanticPdf,
+      workspaceDir,
+      config,
+      provider,
+      model,
+    }) as {
+      detector: string
+      root: {
+        children?: Array<{
+          title?: string
+        }>
+      }
+    }
+
+    expect(semantic.detector).toBe("agent-structured-v1")
+    expect(semantic.root.children?.some((node) => node.title?.includes("Deep Heading"))).toBe(true)
   })
 })
