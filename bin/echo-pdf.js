@@ -323,6 +323,23 @@ const writeDevVarsConfigJson = (devVarsPath, configJson) => {
   fs.writeFileSync(devVarsPath, lines.join("\n"))
 }
 
+const LOCAL_DOCUMENT_DIST_ENTRY = new URL("../dist/local/index.js", import.meta.url)
+
+const loadLocalDocumentApi = async () => {
+  try {
+    return await import(LOCAL_DOCUMENT_DIST_ENTRY.href)
+  } catch (error) {
+    const code = error && typeof error === "object" ? error.code : ""
+    if (code === "ERR_MODULE_NOT_FOUND") {
+      throw new Error(
+        "Local document commands require built artifacts in a source checkout. " +
+        "Run `npm run build` first, or install the published package."
+      )
+    }
+    throw error
+  }
+}
+
 const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
   process.stdout.write(`Commands:\n`)
@@ -338,6 +355,10 @@ const usage = () => {
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
   process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name] [--auto-upload]\n`)
+  process.stdout.write(`  document index <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document get <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  file upload <local.pdf>\n`)
   process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
@@ -432,7 +453,7 @@ const main = async () => {
   const [command, ...raw] = argv
   let subcommand = ""
   let rest = raw
-  if (["provider", "mcp", "setup", "model", "config"].includes(command)) {
+  if (["provider", "mcp", "setup", "model", "config", "document"].includes(command)) {
     subcommand = raw[0] || ""
     rest = raw.slice(1)
   }
@@ -586,6 +607,36 @@ const main = async () => {
     if (!response.ok) throw new Error(JSON.stringify(data))
     print(data)
     return
+  }
+
+  if (command === "document") {
+    const local = await loadLocalDocumentApi()
+    const pdfPath = rest[0]
+    const workspaceDir = typeof flags.workspace === "string" ? flags.workspace : undefined
+    const forceRefresh = flags["force-refresh"] === true
+    if (typeof pdfPath !== "string" || pdfPath.length === 0) {
+      throw new Error("document command requires a pdf path argument")
+    }
+    if (subcommand === "index" || subcommand === "get") {
+      const data = await local.get_document({ pdfPath, workspaceDir, forceRefresh })
+      print(data)
+      return
+    }
+    if (subcommand === "structure") {
+      const data = await local.get_document_structure({ pdfPath, workspaceDir, forceRefresh })
+      print(data)
+      return
+    }
+    if (subcommand === "page") {
+      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
+      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+        throw new Error("document page requires --page <positive integer>")
+      }
+      const data = await local.get_page_content({ pdfPath, workspaceDir, forceRefresh, pageNumber })
+      print(data)
+      return
+    }
+    throw new Error("document command supports: index|get|structure|page")
   }
 
   if (command === "call") {
