@@ -217,4 +217,57 @@ describe("local semantic document structure", () => {
     expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.root.children?.some((node) => node.title?.includes("Deep Heading"))).toBe(true)
   })
+
+  itWithSemanticEnv("uses budgeted chunk extraction instead of falling back on long multi-page inputs", async () => {
+    const local = await import("@echofiles/echo-pdf/local")
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-budget-"))
+    const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-budget-pdf-"))
+    const semanticPdf = path.join(fixtureDir, "semantic-budget.pdf")
+    const longFiller = Array.from({ length: 80 }, (_, index) => `Long body paragraph ${index + 1} with repeated text to consume prompt budget.`)
+
+    await writeSimplePdf(semanticPdf, [
+      [
+        "Document Guide",
+        ...longFiller.slice(0, 40),
+        "3 Late Page Heading",
+        "Late page heading body",
+      ],
+      [
+        "Continuation",
+        ...longFiller.slice(40),
+        "4 Final Section",
+        "Final section body",
+      ],
+    ])
+
+    const config = await loadTestConfig()
+    config.agent.defaultProvider = "openai"
+    config.agent.defaultModel = ""
+
+    const semantic = await local.get_semantic_document_structure({
+      pdfPath: semanticPdf,
+      workspaceDir,
+      config,
+      provider,
+      model,
+      semanticExtraction: {
+        pageSelection: "all",
+        chunkMaxChars: 500,
+        chunkOverlapChars: 120,
+      },
+    }) as {
+      detector: string
+      strategyKey: string
+      root: {
+        children?: Array<{
+          title?: string
+        }>
+      }
+    }
+
+    expect(semantic.detector).toBe("agent-structured-v1")
+    expect(semantic.strategyKey).toContain("::all::500::120")
+    expect(semantic.root.children?.some((node) => node.title?.includes("Late Page Heading"))).toBe(true)
+    expect(semantic.root.children?.some((node) => node.title?.includes("Final Section"))).toBe(true)
+  })
 })

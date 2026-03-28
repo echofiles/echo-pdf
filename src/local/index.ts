@@ -132,6 +132,11 @@ export interface LocalPageContentRequest extends LocalDocumentRequest {
 export interface LocalSemanticDocumentRequest extends LocalDocumentRequest {
   readonly provider?: string
   readonly model?: string
+  readonly semanticExtraction?: {
+    readonly pageSelection?: "all"
+    readonly chunkMaxChars?: number
+    readonly chunkOverlapChars?: number
+  }
   readonly env?: Env
   readonly providerApiKeys?: Record<string, string>
 }
@@ -310,6 +315,46 @@ const matchesStrategyKey = (
   strategyKey: string
 ): boolean => artifact.strategyKey === strategyKey
 
+const resolveSemanticExtractionBudget = (
+  input?: LocalSemanticDocumentRequest["semanticExtraction"]
+): { pageSelection: "all"; chunkMaxChars: number; chunkOverlapChars: number } => ({
+  pageSelection: "all",
+  chunkMaxChars: typeof input?.chunkMaxChars === "number" && Number.isFinite(input.chunkMaxChars) && input.chunkMaxChars > 400
+    ? Math.floor(input.chunkMaxChars)
+    : 4000,
+  chunkOverlapChars: typeof input?.chunkOverlapChars === "number" && Number.isFinite(input.chunkOverlapChars) && input.chunkOverlapChars >= 0
+    ? Math.floor(input.chunkOverlapChars)
+    : 300,
+})
+
+const splitSemanticTextIntoChunks = (
+  text: string,
+  budget: { chunkMaxChars: number; chunkOverlapChars: number }
+): string[] => {
+  const normalized = text.trim()
+  if (!normalized) return []
+  if (normalized.length <= budget.chunkMaxChars) return [normalized]
+
+  const chunks: string[] = []
+  let start = 0
+  while (start < normalized.length) {
+    const idealEnd = Math.min(normalized.length, start + budget.chunkMaxChars)
+    let end = idealEnd
+    if (idealEnd < normalized.length) {
+      const newlineBreak = normalized.lastIndexOf("\n", idealEnd)
+      const sentenceBreak = normalized.lastIndexOf("。", idealEnd)
+      const whitespaceBreak = normalized.lastIndexOf(" ", idealEnd)
+      end = Math.max(newlineBreak, sentenceBreak, whitespaceBreak, start + Math.floor(budget.chunkMaxChars * 0.7))
+      if (end <= start) end = idealEnd
+    }
+    const chunk = normalized.slice(start, end).trim()
+    if (chunk) chunks.push(chunk)
+    if (end >= normalized.length) break
+    start = Math.max(end - budget.chunkOverlapChars, start + 1)
+  }
+  return chunks
+}
+
 const toSemanticTree = (
   value: unknown,
   pageArtifactPaths: ReadonlyMap<number, string>
@@ -344,18 +389,48 @@ const toSemanticTree = (
 }
 
 const buildSemanticPrompt = (
-  record: StoredDocumentRecord,
-  pages: ReadonlyArray<LocalPageContent>
+  pageNumber: number,
+  chunkIndex: number,
+  chunkText: string
 ): string => {
-  const pageDump = pages
-    .map((page) => [
-      `PAGE ${page.pageNumber}`,
-      page.text,
-    ].join("\n"))
-    .join("\n\n")
-
   return [
-    "You extract semantic document structure from page text.",
+    "You extract heading/section candidates from one document text segment.",
+    "Return JSON only.",
+    "Schema:",
+    "{",
+    '  "candidates": [',
+    "    {",
+    '      "title": "string",',
+    '      "level": 1,',
+    '      "excerpt": "short evidence string",',
+    "    }",
+    "  ]",
+    "}",
+    "Rules:",
+    "- Use only headings/sections that are clearly supported by the text segment.",
+    "- Prefer conservative extraction over guessing.",
+    "- Do not include page index entries, table rows, figure labels, or prose sentences.",
+    "- Do not infer hierarchy beyond the explicit heading numbering or structure visible in the segment.",
+    "- If no reliable semantic structure is detectable, return {\"candidates\":[]}.",
+    `Page number: ${pageNumber}`,
+    `Chunk index: ${chunkIndex}`,
+    "",
+    chunkText,
+  ].join("\n")
+}
+
+const buildSemanticAggregationPrompt = (
+  record: StoredDocumentRecord,
+  candidates: ReadonlyArray<{
+    title: string
+    level: number
+    pageNumber: number
+    excerpt?: string
+  }>
+): string => {
+  const candidateDump = JSON.stringify({ candidates }, null, 2)
+  return [
+    "You assemble semantic document structure from heading candidates.",
     "Return JSON only.",
     "Schema:",
     "{",
@@ -370,16 +445,15 @@ const buildSemanticPrompt = (
     "  ]",
     "}",
     "Rules:",
-    "- Use only headings/sections that are clearly supported by the page text.",
-    "- Prefer conservative extraction over guessing.",
     "- Preserve hierarchy with nested children.",
-    "- pageNumber must reference the page where the heading appears.",
-    "- Do not include page index entries, table rows, figure labels, or prose sentences.",
+    "- Use only candidate headings that form a reliable document structure.",
+    "- Deduplicate repeated headings from overlapping segments.",
+    "- Do not invent sections not present in the candidates.",
     "- If no reliable semantic structure is detectable, return {\"sections\":[]}.",
     `Document filename: ${record.filename}`,
     `Page count: ${record.pageCount}`,
     "",
-    pageDump,
+    candidateDump,
   ].join("\n")
 }
 
@@ -411,6 +485,7 @@ const ensureSemanticStructureArtifact = async (
   const env = resolveEnv(request.env)
   const { record } = await indexDocumentInternal(request)
   const artifactPath = record.artifactPaths.semanticStructureJsonPath
+  const semanticBudget = resolveSemanticExtractionBudget(request.semanticExtraction)
   let provider = ""
   let model = ""
   try {
@@ -423,7 +498,9 @@ const ensureSemanticStructureArtifact = async (
   if (provider) {
     model = resolveModelForProvider(config, provider, request.model)
   }
-  const strategyKey = model ? `agent::agent-structured-v1::${provider}::${model}` : "heuristic::heading-heuristic-v1"
+  const strategyKey = model
+    ? `agent::agent-structured-v1::${provider}::${model}::${semanticBudget.pageSelection}::${semanticBudget.chunkMaxChars}::${semanticBudget.chunkOverlapChars}`
+    : "heuristic::heading-heuristic-v1"
   if (!request.forceRefresh && await fileExists(artifactPath)) {
     const cached = await readJson<Omit<LocalSemanticDocumentStructure, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
     if (matchesSourceSnapshot(cached, record) && matchesStrategyKey(cached, strategyKey)) {
@@ -445,15 +522,44 @@ const ensureSemanticStructureArtifact = async (
   let artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus">
   if (model) {
     try {
-      const response = await generateText({
+      const candidateMap = new Map<string, { title: string; level: number; pageNumber: number; excerpt?: string }>()
+      for (const page of pages) {
+        const chunks = splitSemanticTextIntoChunks(page.text, semanticBudget)
+        for (const [chunkIndex, chunkText] of chunks.entries()) {
+          const response = await generateText({
+            config,
+            env,
+            providerAlias: provider,
+            model,
+            prompt: buildSemanticPrompt(page.pageNumber, chunkIndex + 1, chunkText),
+            runtimeApiKeys: request.providerApiKeys,
+          })
+          const parsed = parseJsonObject(response) as { candidates?: Array<{ title?: unknown; level?: unknown; excerpt?: unknown }> }
+          for (const candidate of Array.isArray(parsed?.candidates) ? parsed.candidates : []) {
+            const title = typeof candidate?.title === "string" ? candidate.title.trim() : ""
+            const level = typeof candidate?.level === "number" && Number.isInteger(candidate.level) && candidate.level > 0 ? candidate.level : 0
+            if (!title || level <= 0) continue
+            const key = `${page.pageNumber}:${level}:${title}`
+            if (!candidateMap.has(key)) {
+              candidateMap.set(key, {
+                title,
+                level,
+                pageNumber: page.pageNumber,
+                excerpt: typeof candidate?.excerpt === "string" ? candidate.excerpt.trim() : undefined,
+              })
+            }
+          }
+        }
+      }
+      const aggregated = await generateText({
         config,
         env,
         providerAlias: provider,
         model,
-        prompt: buildSemanticPrompt(record, pages),
+        prompt: buildSemanticAggregationPrompt(record, [...candidateMap.values()]),
         runtimeApiKeys: request.providerApiKeys,
       })
-      const parsed = parseJsonObject(response) as { sections?: unknown }
+      const parsed = parseJsonObject(aggregated) as { sections?: unknown }
       const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
       artifact = {
         documentId: record.documentId,
