@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { mkdtemp } from "node:fs/promises"
+import { copyFile, mkdtemp, readFile, stat, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -59,5 +59,49 @@ describe("local page OCR artifacts", () => {
     }
     expect(second.cacheStatus).toBe("reused")
     expect(second.artifactPath).toBe(first.artifactPath)
+  })
+
+  itWithOcrEnv("rebuilds OCR artifacts when the PDF changes at the same path", async () => {
+    const local = await import("@echofiles/echo-pdf/local")
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-ocr-"))
+    const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-ocr-source-"))
+    const sourcePdf = path.join(fixtureDir, "source.pdf")
+    await copyFile(fixturePdf, sourcePdf)
+
+    const first = await local.get_page_ocr({
+      pdfPath: sourcePdf,
+      workspaceDir,
+      pageNumber: 1,
+      provider,
+      model,
+    }) as {
+      cacheStatus: "fresh" | "reused"
+      artifactPath: string
+      sourceSizeBytes: number
+      sourceMtimeMs: number
+    }
+    const originalBytes = await readFile(sourcePdf)
+    await writeFile(sourcePdf, Buffer.concat([originalBytes, Buffer.from("\n% cache bust ocr\n", "utf-8")]))
+
+    const sourceAfter = await stat(sourcePdf)
+    const second = await local.get_page_ocr({
+      pdfPath: sourcePdf,
+      workspaceDir,
+      pageNumber: 1,
+      provider,
+      model,
+    }) as {
+      cacheStatus: "fresh" | "reused"
+      artifactPath: string
+      sourceSizeBytes: number
+      sourceMtimeMs: number
+    }
+    const artifactAfter = await stat(second.artifactPath)
+
+    expect(second.cacheStatus).toBe("fresh")
+    expect(second.artifactPath).toBe(first.artifactPath)
+    expect(second.sourceSizeBytes).toBe(sourceAfter.size)
+    expect(second.sourceMtimeMs).toBe(sourceAfter.mtimeMs)
+    expect(artifactAfter.size).toBeGreaterThan(0)
   })
 })

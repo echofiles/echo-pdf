@@ -63,6 +63,8 @@ export interface LocalPageRenderArtifact {
   readonly documentId: string
   readonly pageNumber: number
   readonly renderScale: number
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
   readonly width: number
   readonly height: number
   readonly mimeType: "image/png"
@@ -76,6 +78,8 @@ export interface LocalPageOcrArtifact {
   readonly documentId: string
   readonly pageNumber: number
   readonly renderScale: number
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
   readonly provider: string
   readonly model: string
   readonly prompt: string
@@ -246,6 +250,12 @@ const writeJson = async (targetPath: string, data: unknown): Promise<void> => {
 
 const readSourceBytes = async (sourcePath: string): Promise<Uint8Array> => new Uint8Array(await readFile(sourcePath))
 
+const matchesSourceSnapshot = (
+  artifact: { sourceSizeBytes?: unknown; sourceMtimeMs?: unknown },
+  record: StoredDocumentRecord
+): boolean =>
+  artifact.sourceSizeBytes === record.sizeBytes && artifact.sourceMtimeMs === record.mtimeMs
+
 const ensurePageNumber = (pageCount: number, pageNumber: number): void => {
   if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {
     throw new Error(`pageNumber must be within 1..${pageCount}`)
@@ -351,9 +361,11 @@ const ensureRenderArtifact = async (request: LocalPageRenderRequest): Promise<Lo
   const renderPaths = buildRenderArtifactPaths(record.artifactPaths, request.pageNumber, renderScale)
   if (!request.forceRefresh && await fileExists(renderPaths.artifactPath) && await fileExists(renderPaths.imagePath)) {
     const cached = await readJson<Omit<LocalPageRenderArtifact, "cacheStatus"> & { cacheStatus?: unknown }>(renderPaths.artifactPath)
-    return {
-      ...cached,
-      cacheStatus: "reused",
+    if (matchesSourceSnapshot(cached, record)) {
+      return {
+        ...cached,
+        cacheStatus: "reused",
+      }
     }
   }
 
@@ -366,6 +378,8 @@ const ensureRenderArtifact = async (request: LocalPageRenderRequest): Promise<Lo
     documentId: record.documentId,
     pageNumber: request.pageNumber,
     renderScale,
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
     width: rendered.width,
     height: rendered.height,
     mimeType: "image/png",
@@ -424,9 +438,11 @@ export const get_page_ocr = async (request: LocalPageOcrRequest): Promise<LocalP
 
   if (!request.forceRefresh && await fileExists(artifactPath)) {
     const cached = await readJson<Omit<LocalPageOcrArtifact, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
-    return {
-      ...cached,
-      cacheStatus: "reused",
+    if (matchesSourceSnapshot(cached, record)) {
+      return {
+        ...cached,
+        cacheStatus: "reused",
+      }
     }
   }
 
@@ -448,6 +464,8 @@ export const get_page_ocr = async (request: LocalPageOcrRequest): Promise<LocalP
     documentId: record.documentId,
     pageNumber: request.pageNumber,
     renderScale: renderArtifact.renderScale,
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
     provider,
     model,
     prompt,
