@@ -42,6 +42,7 @@
     "check:runtime": "bash ./scripts/check-runtime.sh",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "document:dev": "ECHO_PDF_SOURCE_DEV=1 bun ./bin/echo-pdf.js document",
     "typecheck": "npm run check:runtime && tsc --noEmit",
     "test:unit": "npm run check:runtime && vitest run tests/unit",
     "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",

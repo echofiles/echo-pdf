@@ -32,6 +32,22 @@ echo-pdf document page ./sample.pdf --page 1
 echo-pdf document render ./sample.pdf --page 1
 ```
 
+源码 checkout 的本地开发路径：
+
+```bash
+npm install
+npm run document:dev -- get ./fixtures/smoke.pdf
+npm run document:dev -- structure ./fixtures/smoke.pdf
+npm run document:dev -- page ./fixtures/smoke.pdf --page 1
+```
+
+说明：
+
+- 发布包 / 已构建 checkout：`echo-pdf document ...` 继续走 `dist/`
+- 源码 checkout 且还没 build：使用 `npm run document:dev -- ...`
+- `document:dev` 只用于本地开发；它会显式优先加载 `src/local/index.ts`，即使仓库里仍然存在旧 `dist/`
+- 发布包和正常 `echo-pdf document ...` 仍然只走 `dist/`
+
 默认会在当前目录写入可检查的 workspace：
 
 ```text

@@ -324,8 +324,20 @@ const writeDevVarsConfigJson = (devVarsPath, configJson) => {
 }
 
 const LOCAL_DOCUMENT_DIST_ENTRY = new URL("../dist/local/index.js", import.meta.url)
+const LOCAL_DOCUMENT_SOURCE_ENTRY = new URL("../src/local/index.ts", import.meta.url)
+const IS_BUN_RUNTIME = typeof process.versions?.bun === "string"
+const SHOULD_PREFER_SOURCE_DOCUMENT_API = process.env.ECHO_PDF_SOURCE_DEV === "1"
 
 const loadLocalDocumentApi = async () => {
+  if (SHOULD_PREFER_SOURCE_DOCUMENT_API) {
+    if (IS_BUN_RUNTIME && fs.existsSync(fileURLToPath(LOCAL_DOCUMENT_SOURCE_ENTRY))) {
+      return import(LOCAL_DOCUMENT_SOURCE_ENTRY.href)
+    }
+    throw new Error(
+      "Source-checkout document dev mode requires Bun and src/local/index.ts. " +
+      "Use `npm run document:dev -- <subcommand> ...` from a source checkout."
+    )
+  }
   try {
     return await import(LOCAL_DOCUMENT_DIST_ENTRY.href)
   } catch (error) {
@@ -333,7 +345,7 @@ const loadLocalDocumentApi = async () => {
     if (code === "ERR_MODULE_NOT_FOUND") {
       throw new Error(
         "Local document commands require built artifacts in a source checkout. " +
-        "Run `npm run build` first, or install the published package."
+        "Run `npm run build` first, use `npm run document:dev -- <subcommand> ...` in a source checkout, or install the published package."
       )
     }
     throw error
