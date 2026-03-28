@@ -38,6 +38,7 @@ describe("npm pack import smoke", () => {
         "if (typeof root.callTool !== 'function') throw new Error('root.callTool missing')",
         "if (typeof core.listToolSchemas !== 'function') throw new Error('core.listToolSchemas missing')",
         "if (typeof local.get_document !== 'function') throw new Error('local.get_document missing')",
+        "if (typeof local.get_semantic_document_structure !== 'function') throw new Error('local.get_semantic_document_structure missing')",
         "if (typeof local.get_page_render !== 'function') throw new Error('local.get_page_render missing')",
         "if (typeof local.get_page_ocr !== 'function') throw new Error('local.get_page_ocr missing')",
         "if (!worker.default || typeof worker.default.fetch !== 'function') throw new Error('worker.fetch missing')",

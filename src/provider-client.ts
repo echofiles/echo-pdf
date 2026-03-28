@@ -174,3 +174,54 @@ export const visionRecognize = async (input: {
   }
   return ""
 }
+
+export const generateText = async (input: {
+  config: EchoPdfConfig
+  env: Env
+  providerAlias: string
+  model: string
+  prompt: string
+  runtimeApiKeys?: Record<string, string>
+}): Promise<string> => {
+  const provider = getProvider(input.config, input.providerAlias)
+  const url = resolveEndpoint(provider, "chatCompletionsPath")
+  const response = await withTimeout(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...toAuthHeader(input.config, input.providerAlias, provider, input.env, input.runtimeApiKeys),
+        ...(provider.headers ?? {}),
+      },
+      body: JSON.stringify({
+        model: input.model,
+        messages: [
+          {
+            role: "user",
+            content: input.prompt,
+          },
+        ],
+      }),
+    },
+    provider.timeoutMs ?? 30000
+  )
+
+  if (!response.ok) {
+    throw new Error(`Text generation request failed: HTTP ${response.status} url=${url} detail=${await responseDetail(response)}`)
+  }
+
+  const payload = await response.json()
+  const message = (payload as { choices?: Array<{ message?: { content?: unknown } }> }).choices?.[0]?.message
+  if (!message) return ""
+  const content = message.content
+  if (typeof content === "string") return content
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => part as { type?: string; text?: string })
+      .filter((part) => part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text ?? "")
+      .join("")
+  }
+  return ""
+}

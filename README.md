@@ -6,6 +6,7 @@
 - OCR：识别页面文本
 - 表格识别：提取表格并输出 LaTeX `tabular`
 - 页级文档索引：生成本地可复用的 document / page artifacts
+- 语义结构层：在 page index 之上产出可缓存的 heading / section 结构
 - 页面渲染与 OCR artifacts：把 page render/image 与 OCR 结果缓存到本地 workspace
 
 当前阶段优先：
@@ -38,6 +39,7 @@ echo-pdf document render ./sample.pdf --page 1
   documents/<documentId>/
     document.json
     structure.json
+    semantic-structure.json
     pages/
       0001.json
       0002.json
@@ -68,23 +70,43 @@ echo-pdf document render ./sample.pdf --page 1
 import {
   get_document,
   get_document_structure,
+  get_semantic_document_structure,
   get_page_content,
   get_page_render,
   get_page_ocr,
 } from "@echofiles/echo-pdf/local"
 
 const doc = await get_document({ pdfPath: "./sample.pdf" })
-const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
+const pageIndex = await get_document_structure({ pdfPath: "./sample.pdf" })
+const semantic = await get_semantic_document_structure({ pdfPath: "./sample.pdf" })
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const ocr1 = await get_page_ocr({ pdfPath: "./sample.pdf", pageNumber: 1, model: "gpt-4.1-mini" })
 ```
 
 这些调用会把 artifacts 写入本地 workspace，并在 PDF 未变化时尽量复用已有页面结果。
+`get_document_structure()` 继续返回最小 page index：`document -> pages[]`。
+`get_semantic_document_structure()` 单独返回 heading / section 语义层，并写入 `semantic-structure.json`。
 `get_page_render()` 会生成可复用的 PNG + metadata。
 `get_page_ocr()` 会把 OCR 结果写入独立 artifact；它需要本地 provider key / model，不依赖 MCP 或远端服务入口。
 
-当前 `get_document_structure()` 返回的是最小可复用 page index：`document -> pages[]`。它还不是 section/headings 级别的语义树，文档承诺也只到这里。
+### Page Index vs Semantic Structure
+
+- `get_document_structure()`
+  - 契约：稳定的 `document -> pages[]`
+  - artifact：`structure.json`
+  - 目的：给下游做页级遍历、page artifact 定位、增量读取
+- `get_semantic_document_structure()`
+  - 契约：显式的 heading / section 语义层，优先走本地 provider/model 的 agent 抽取；未配置或失败时退回保守 heuristic
+  - artifact：`semantic-structure.json`
+  - 目的：给下游做章节导航、语义分段；它不替代 page index，也不改变 `pages[]` 输出
+
+当前 semantic 结构会把 detector 明确写入 artifact：
+
+- `agent-structured-v1`：使用本地配置的 provider/model 对 page text 进行结构化抽取
+- `heading-heuristic-v1`：当本地未配置模型，或 agent 抽取失败时使用的保守回退
+
+两种模式都遵循同一输出契约；检测不到时会返回空结构，而不是伪造 section tree。
 
 ## Tool library compatibility
 
