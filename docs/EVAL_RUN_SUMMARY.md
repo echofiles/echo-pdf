@@ -22,7 +22,7 @@ Top-level fields:
 
 - runtime context: `node`, `platform`, `arch`
 - local paths: `cwd`, `repoRoot`, `workspaceDir`
-- env hints for semantic/OCR provider and model selection
+- env hints for semantic provider and model selection
 
 ## `totals`
 
@@ -61,7 +61,6 @@ Each `runs[]` item contains:
 
 - `document`
 - `semantic`
-- `ocr`
 
 `source.kind` is one of:
 

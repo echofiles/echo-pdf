@@ -1,6 +1,6 @@
 {
   "suiteId": "stress",
-  "description": "Long-document pressure runs for semantic chunking and OCR scale tradeoffs on large public guidance PDFs.",
+  "description": "Long-document pressure runs for semantic chunking tradeoffs on large public guidance PDFs.",
   "semanticConfigs": [
     {
       "id": "semantic-agent-standard",
@@ -23,24 +23,6 @@
         "chunkMaxChars": 900,
         "chunkOverlapChars": 80
       }
-    }
-  ],
-  "ocrConfigs": [
-    {
-      "id": "ocr-default-prompt-standard-scale",
-      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-      "promptFile": "../prompts/ocr-default.txt",
-      "renderScale": 2,
-      "budgetLabel": "standard"
-    },
-    {
-      "id": "ocr-compact-prompt-tight-scale",
-      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-      "promptFile": "../prompts/ocr-compact.txt",
-      "renderScale": 1.25,
-      "budgetLabel": "tight"
     }
   ],
   "cases": [
@@ -67,30 +49,6 @@
         ],
         "forbiddenTitleSubstrings": [
           "Publication 15-T (2026)"
-        ]
-      }
-    },
-    {
-      "caseId": "public-guidance-nist-800-171-ocr",
-      "description": "Very long NIST guidance front matter shows OCR prompt and render-budget sensitivity.",
-      "source": {
-        "kind": "existing",
-        "path": "../../samples/public-cache/nist-sp-800-171r2.pdf"
-      },
-      "documentExpectations": {
-        "pageCount": 114
-      },
-      "ocrConfigIds": [
-        "ocr-default-prompt-standard-scale",
-        "ocr-compact-prompt-tight-scale"
-      ],
-      "ocrExpectations": {
-        "pageNumber": 1,
-        "minChars": 250,
-        "requiredSubstrings": [
-          "Withdrawn NIST Technical Series Publication",
-          "Protecting Controlled Unclassified Information",
-          "NIST SP 800-171r2"
         ]
       }
     }

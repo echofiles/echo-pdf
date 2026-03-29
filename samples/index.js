@@ -1,3 +1,4 @@
+// Kept as plain JS because eval/*.mjs scripts import this file directly before any build step.
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 

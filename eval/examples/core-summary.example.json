@@ -1,9 +1,9 @@
 {
   "summaryVersion": "echo-pdf.eval.run-summary.v1",
-  "generatedAt": "2026-03-29T13:39:54.521Z",
+  "generatedAt": "2026-03-29T13:55:55.266Z",
   "suite": {
     "suiteId": "core",
-    "description": "Representative semantic-structure and OCR comparisons across public knowledge and guidance PDFs, models, prompts, and budgets.",
+    "description": "Representative semantic-structure comparisons across public knowledge and guidance PDFs, models, and chunk budgets.",
     "manifestPath": "<repo-root>/eval/manifests/core.json"
   },
   "environment": {
@@ -16,30 +16,27 @@
     "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
     "envHints": {
       "semanticProvider": "",
-      "semanticModel": "",
-      "ocrProvider": "",
-      "ocrModel": ""
+      "semanticModel": ""
     }
   },
   "totals": {
-    "caseCount": 4,
-    "runCount": 12,
+    "caseCount": 2,
+    "runCount": 6,
     "statuses": {
-      "passed": 4,
+      "passed": 2,
       "failed": 0,
-      "blocked": 8,
+      "blocked": 4,
       "known-bad": 0,
       "unexpected-pass": 0
     },
     "taxonomyCounts": {
-      "ENV_PROVIDER_OR_MODEL_MISSING": 8
+      "ENV_PROVIDER_OR_MODEL_MISSING": 4
     }
   },
   "representativeRuns": {
     "passed": [
       "core::document::public-paper-attention-semantic",
-      "core::document::public-framework-cisa-irpf-semantic",
-      "core::document::public-paper-attention-ocr"
+      "core::document::public-framework-cisa-irpf-semantic"
     ],
     "failed": [],
     "blocked": [
@@ -58,7 +55,7 @@
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 181,
+      "durationMs": 2,
       "source": {
         "kind": "existing",
         "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
@@ -70,7 +67,7 @@
       "failures": [],
       "metrics": {
         "pageCount": 15,
-        "cacheStatus": "fresh"
+        "cacheStatus": "reused"
       },
       "artifacts": {
         "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
@@ -162,7 +159,7 @@
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 546,
+      "durationMs": 1,
       "source": {
         "kind": "existing",
         "pdfPath": "<repo-root>/samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
@@ -174,7 +171,7 @@
       "failures": [],
       "metrics": {
         "pageCount": 55,
-        "cacheStatus": "fresh"
+        "cacheStatus": "reused"
       },
       "artifacts": {
         "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
@@ -258,202 +255,6 @@
       "metrics": {},
       "artifacts": {},
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
-    },
-    {
-      "runId": "core::document::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "document",
-      "configId": "document-baseline",
-      "status": "passed",
-      "durationMs": 1,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "mode": "document-baseline"
-      },
-      "failures": [],
-      "metrics": {
-        "pageCount": 15,
-        "cacheStatus": "reused"
-      },
-      "artifacts": {
-        "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
-        "documentDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d",
-        "documentJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/document.json",
-        "structureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/structure.json",
-        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/semantic-structure.json",
-        "pagesDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/pages",
-        "rendersDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/renders"
-      },
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::ocr::ocr-default-prompt-standard-scale::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "ocr",
-      "configId": "ocr-default-prompt-standard-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-default-prompt-standard-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-default.txt",
-        "renderScale": 2,
-        "budgetLabel": "standard",
-        "notes": "Reference OCR run: fuller prompt and default render scale."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-default-prompt-standard-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::ocr::ocr-compact-prompt-tight-scale::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "ocr",
-      "configId": "ocr-compact-prompt-tight-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-compact-prompt-tight-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-compact.txt",
-        "renderScale": 1.5,
-        "budgetLabel": "tight",
-        "notes": "Prompt-compressed OCR run with lower image budget proxy."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-compact-prompt-tight-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::document::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "document",
-      "configId": "document-baseline",
-      "status": "passed",
-      "durationMs": 1931,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "mode": "document-baseline"
-      },
-      "failures": [],
-      "metrics": {
-        "pageCount": 71,
-        "cacheStatus": "fresh"
-      },
-      "artifacts": {
-        "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
-        "documentDir": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47",
-        "documentJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47/document.json",
-        "structureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47/structure.json",
-        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47/semantic-structure.json",
-        "pagesDir": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47/pages",
-        "rendersDir": "<repo-root>/eval/out/examples/core.workspace/documents/f6ba63f92fdc1f47/renders"
-      },
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
-    },
-    {
-      "runId": "core::ocr::ocr-default-prompt-standard-scale::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "ocr",
-      "configId": "ocr-default-prompt-standard-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-default-prompt-standard-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-default.txt",
-        "renderScale": 2,
-        "budgetLabel": "standard",
-        "notes": "Reference OCR run: fuller prompt and default render scale."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-default-prompt-standard-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
-    },
-    {
-      "runId": "core::ocr::ocr-compact-prompt-tight-scale::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "ocr",
-      "configId": "ocr-compact-prompt-tight-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "<repo-root>/samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-compact-prompt-tight-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-compact.txt",
-        "renderScale": 1.5,
-        "budgetLabel": "tight",
-        "notes": "Prompt-compressed OCR run with lower image budget proxy."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-compact-prompt-tight-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
     }
   ]
 }

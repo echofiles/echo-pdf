@@ -27,9 +27,9 @@ Use four suites, in this order:
 1. `smoke`
    Fast local sanity checks. No provider dependency.
 2. `core`
-   Representative semantic-structure and OCR comparisons on stable cases.
+   Representative provider-backed semantic-structure comparisons on stable cases.
 3. `stress`
-   Budget-sensitive and long-context pressure cases.
+   Budget-sensitive and long-context semantic pressure cases.
 4. `known-bad`
    Tracked unsupported patterns that should remain visible until fixed.
 
@@ -53,13 +53,9 @@ npm run eval:fetch-public-samples
 Compare along explicit axes only:
 
 - `semantic structure`
-  - heuristic vs agent-backed extraction
+  - provider/model
   - model
   - chunk budget
-- `OCR`
-  - model
-  - prompt variant
-  - render scale as the local image-budget proxy
 
 Do not hide blocked provider runs. Report them as blocked.
 

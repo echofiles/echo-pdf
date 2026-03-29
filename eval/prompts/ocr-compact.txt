@@ -1,4 +1,0 @@
-Return plain text only.
-Read the page in reading order.
-Do not summarize.
-Keep obvious headings.

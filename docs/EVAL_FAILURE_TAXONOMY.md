@@ -40,15 +40,6 @@ Use these codes in summaries and issue handoffs.
 - `SEMANTIC_MODEL_OUTPUT_INVALID`
   Provider output could not be parsed into the expected structure.
 
-## OCR
-
-- `OCR_TEXT_MISSING`
-  Required OCR text was absent.
-- `OCR_TRUNCATED_TEXT`
-  OCR output was materially shorter than expected.
-- `OCR_HALLUCINATED_TEXT`
-  OCR output contained text that should not be present.
-
 ## Runner / Reporting
 
 - `RUNNER_UNCLASSIFIED_ERROR`

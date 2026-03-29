@@ -24,7 +24,6 @@ node ./eval/run-local.mjs --suite known-bad
 ## Configuration
 
 - semantic provider/model: `provider-backed`
-- OCR provider/model: `n/a`
 - prompt: `runtime semantic prompt`
 - budget: `standard`
 
