@@ -4,6 +4,8 @@
 
 `echo-pdf` is now a local-first document component core.
 
+Product positioning lives in [`docs/PRODUCT.md`](./PRODUCT.md). Development choices should follow that product boundary first, then the implementation constraints below.
+
 Priority in this phase:
 
 - local CLI
