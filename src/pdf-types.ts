@@ -23,6 +23,7 @@ export interface EchoPdfConfig {
     readonly defaultProvider: string
     readonly defaultModel: string
     readonly tablePrompt: string
+    readonly formulaPrompt?: string
   }
   readonly providers: Record<string, EchoPdfProviderConfig>
 }

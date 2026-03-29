@@ -109,6 +109,24 @@ const startSemanticCliTestProvider = async (options?: {
       return
     }
 
+    if (prompt.includes("tabular") || prompt.includes("table")) {
+      const response = {
+        tables: [{ latexTabular: "\\begin{tabular}{cc}\na & b\\\\\n\\end{tabular}", caption: "Test Table" }],
+      }
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] }))
+      return
+    }
+
+    if (prompt.includes("formula") || prompt.includes("math")) {
+      const response = {
+        formulas: [{ latexMath: "E = mc^2", label: "eq:1" }],
+      }
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] }))
+      return
+    }
+
     res.writeHead(400, { "content-type": "application/json" })
     res.end(JSON.stringify({ error: "unexpected prompt" }))
   })
@@ -353,6 +371,78 @@ describe("local document CLI", () => {
     expect(stderr.trim()).toBe("")
     expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.root.children?.[0]?.title).toBe("1 Overview")
+  })
+
+  itWithNode20("extracts LaTeX tables from a page via the tables CLI command", async () => {
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-tables-"))
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-tables-"))
+    const providerServer = await startSemanticCliTestProvider()
+    semanticCliTestServers.push(providerServer.close)
+    const env = {
+      HOME: homeDir,
+      ECHO_PDF_CONFIG_JSON: JSON.stringify({
+        service: { defaultRenderScale: 2 },
+        pdfium: { wasmUrl: "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm" },
+        agent: { defaultProvider: "openai", defaultModel: "", tablePrompt: "detect tables" },
+        providers: {
+          openai: {
+            type: "openai",
+            apiKeyEnv: "OPENAI_API_KEY",
+            baseUrl: providerServer.baseUrl,
+            endpoints: { chatCompletionsPath: "/chat/completions", modelsPath: "/models" },
+          },
+        },
+      }),
+    }
+
+    await runCli(rootDir, ["provider", "set", "--provider", "openai", "--api-key", "test-key"], env)
+    await runCli(rootDir, ["model", "set", "--provider", "openai", "--model", "test-model"], env)
+
+    const { stdout } = await runCli(rootDir, ["tables", realFixturePdf, "--page", "1", "--workspace", workspaceDir], env)
+    const result = JSON.parse(stdout) as {
+      tables: Array<{ latexTabular: string; caption?: string }>
+      cacheStatus: string
+    }
+
+    expect(result.cacheStatus).toBe("fresh")
+    expect(result.tables.length).toBeGreaterThan(0)
+    expect(result.tables[0]?.latexTabular).toContain("\\begin{tabular}")
+  })
+
+  itWithNode20("extracts LaTeX formulas from a page via the formulas CLI command", async () => {
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-formulas-"))
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-formulas-"))
+    const providerServer = await startSemanticCliTestProvider()
+    semanticCliTestServers.push(providerServer.close)
+    const env = {
+      HOME: homeDir,
+      ECHO_PDF_CONFIG_JSON: JSON.stringify({
+        service: { defaultRenderScale: 2 },
+        pdfium: { wasmUrl: "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm" },
+        agent: { defaultProvider: "openai", defaultModel: "", tablePrompt: "unused" },
+        providers: {
+          openai: {
+            type: "openai",
+            apiKeyEnv: "OPENAI_API_KEY",
+            baseUrl: providerServer.baseUrl,
+            endpoints: { chatCompletionsPath: "/chat/completions", modelsPath: "/models" },
+          },
+        },
+      }),
+    }
+
+    await runCli(rootDir, ["provider", "set", "--provider", "openai", "--api-key", "test-key"], env)
+    await runCli(rootDir, ["model", "set", "--provider", "openai", "--model", "test-model"], env)
+
+    const { stdout } = await runCli(rootDir, ["formulas", realFixturePdf, "--page", "1", "--workspace", workspaceDir], env)
+    const result = JSON.parse(stdout) as {
+      formulas: Array<{ latexMath: string; label?: string }>
+      cacheStatus: string
+    }
+
+    expect(result.cacheStatus).toBe("fresh")
+    expect(result.formulas.length).toBeGreaterThan(0)
+    expect(result.formulas[0]?.latexMath).toBe("E = mc^2")
   })
 
   itWithNode20("fails early with a clear model error instead of silently falling back", async () => {
