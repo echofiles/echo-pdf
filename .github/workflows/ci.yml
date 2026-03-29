@@ -32,6 +32,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Prepare canonical public PDF samples for acceptance
+        run: npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need
+
       - name: Acceptance tests
         run: npm run test:acceptance
 
