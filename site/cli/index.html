@@ -21,9 +21,9 @@
       <main>
         <section class="hero">
           <span class="eyebrow">CLI</span>
-          <h1>One command surface, same six primitives.</h1>
+          <h1>One command surface, same VL-first core path.</h1>
           <p class="lead">
-            The local CLI is aligned to the same six primitives as the package API. Use the top-level primitive commands directly.
+            The local CLI centers the same mainline path as the package API: render, page understanding, semantic structure, and workspace artifacts. OCR remains available as compatibility/fallback, not as the lead story.
           </p>
         </section>
 
@@ -33,15 +33,14 @@
 echo-pdf structure ./sample.pdf
 echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
-echo-pdf render ./sample.pdf --page 1
-echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
+echo-pdf render ./sample.pdf --page 1</code></pre>
         </section>
 
         <section class="two-col" style="margin-top:28px;">
           <article class="panel">
             <h2>Supported boundary</h2>
             <ul>
-              <li>the public local CLI surface is the same six top-level primitives shown above</li>
+              <li>the public local CLI surface still includes compatibility commands, but the promoted mainline path is document / structure / semantic / page / render</li>
               <li>legacy <code>document ...</code> alias trees are not part of the supported docs path</li>
               <li>workspace-writing local runs stay the mainline workflow</li>
             </ul>
@@ -55,6 +54,13 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
               <li>no domain-specific command families</li>
             </ul>
           </article>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>OCR is not the main CLI story.</h3>
+          <p>
+            <code>echo-pdf ocr</code> may remain available as a compatibility/fallback command, but the product direction is VL-first rather than OCR-first.
+          </p>
         </section>
 
         <section class="callout warn" style="margin-top:32px;">

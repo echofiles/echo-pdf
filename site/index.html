@@ -6,12 +6,12 @@
     <title>echo-pdf Docs</title>
     <meta name="description" content="Static docs for echo-pdf, a local-first PDF context engine for AI agents.">
     <meta property="og:title" content="echo-pdf Docs | Local-first PDF context for agents">
-    <meta property="og:description" content="Install echo-pdf as a local package + CLI, generate workspace artifacts, and give agents stable PDF context without a hosted service.">
+    <meta property="og:description" content="Install echo-pdf as a local package + CLI, generate render, page, and semantic artifacts, and give agents stable PDF context without a hosted service.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pdf.echofile.ai/">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="echo-pdf Docs | Local-first PDF context for agents">
-    <meta name="twitter:description" content="Docs-only site for the local-first echo-pdf package, CLI, and workspace artifact contract.">
+    <meta name="twitter:description" content="Docs-only site for the local-first, VL-first echo-pdf package, CLI, and workspace artifact contract.">
     <link rel="stylesheet" href="./assets/styles.css">
   </head>
   <body>
@@ -35,14 +35,14 @@
           <span class="eyebrow">Docs only, not a service</span>
           <div class="hero-grid">
             <div>
-              <h1>Local-first PDF context for agents.</h1>
+              <h1>Local-first, VL-first PDF context for agents.</h1>
               <p class="lead">
                 <code>echo-pdf</code> turns local PDFs into reusable package APIs, CLI outputs, and workspace artifacts.
-                This site explains the product boundary and local workflows. It does not expose hosted PDF processing.
+                The mainline path is render, page understanding, semantic structure, and reusable local artifacts. This site explains that boundary and does not expose hosted PDF processing.
               </p>
               <div class="actions">
                 <a class="button primary" href="./cli/index.html">Start with the CLI</a>
-                <a class="button" href="./api/index.html">Read the 6 primitives</a>
+                <a class="button" href="./api/index.html">Read the VL-first primitives</a>
                 <a class="button" href="./integrations/index.html">Integration contract</a>
               </div>
             </div>
@@ -52,7 +52,7 @@
                 <li><code>document.json</code> with source snapshot and page count</li>
                 <li><code>structure.json</code> with a stable <code>document -&gt; pages[]</code> index</li>
                 <li><code>semantic-structure.json</code> when semantic extraction is requested</li>
-                <li>page JSON, render PNG, and OCR JSON artifacts under one workspace root</li>
+                <li>page JSON and render PNG artifacts under one workspace root</li>
               </ul>
               <p class="kicker" style="margin-top:20px;">Non-goals in this phase</p>
               <ul>
@@ -65,8 +65,8 @@
           </div>
           <div class="metrics">
             <div class="metric card">
-              <strong>6</strong>
-              <p>core document primitives, mirrored by the local CLI and package API.</p>
+              <strong>5</strong>
+              <p>mainline local primitives in the VL-first path, mirrored by the CLI and package API.</p>
             </div>
             <div class="metric card">
               <strong>3</strong>
@@ -89,8 +89,7 @@ echo-pdf document ./sample.pdf
 echo-pdf structure ./sample.pdf
 echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
-echo-pdf render ./sample.pdf --page 1
-echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
+echo-pdf render ./sample.pdf --page 1</code></pre>
           </div>
           <div class="panel">
             <h2>Copyable output example</h2>
@@ -116,8 +115,7 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
               <li><span>document.json</span>source path, snapshot, page count, artifact roots</li>
               <li><span>structure.json</span>stable page index for deterministic traversal</li>
               <li><span>semantic-structure.json</span>heading / section layer, separate from <code>pages[]</code></li>
-              <li><span>renders/0001.scale-2.png</span>page render proof, ready for visual reuse</li>
-              <li><span>ocr/0001...json</span>OCR text plus traceability back to the render artifact</li>
+              <li><span>renders/0001.scale-2.png</span>page render proof, ready for VL reuse</li>
             </ul>
           </article>
           <article class="panel">
@@ -144,14 +142,14 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
           </article>
           <article class="card">
             <h3>API</h3>
-            <p>Read the six local-first primitives and how they map to the artifact model.</p>
+            <p>Read the mainline VL-first primitives and how they map to the artifact model.</p>
             <div class="actions">
               <a class="button" href="./api/index.html">API reference</a>
             </div>
           </article>
           <article class="card">
             <h3>CLI</h3>
-            <p>Use the same six primitives from the command line, with a clear source-checkout workflow.</p>
+            <p>Use the same VL-first primitives from the command line, with a clear source-checkout workflow.</p>
             <div class="actions">
               <a class="button" href="./cli/index.html">CLI reference</a>
             </div>
@@ -178,7 +176,7 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
           <h3>Compatibility surfaces are secondary.</h3>
           <p>
             Worker and MCP surfaces may still exist in the repo for compatibility, but they are not the main adoption path in this phase.
-            The homepage, concepts, API, and CLI sections intentionally keep the center of gravity on local package + CLI + artifacts.
+            OCR may also remain as a compatibility/fallback path, but the homepage, concepts, API, and CLI sections intentionally keep the center of gravity on local package + CLI + render/page/semantic artifacts.
           </p>
         </section>
       </main>
@@ -188,7 +186,7 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
           <div>
             <p class="kicker">Continue reading</p>
             <ul>
-              <li><a href="./api/index.html">Six primitive API reference</a></li>
+              <li><a href="./api/index.html">VL-first primitive API reference</a></li>
               <li><a href="./cli/index.html">CLI command mapping</a></li>
               <li><a href="./integrations/index.html">Integration guidance for local downstream apps</a></li>
             </ul>

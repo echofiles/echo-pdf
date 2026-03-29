@@ -4,6 +4,8 @@ This document defines the local workspace artifact contract for `echo-pdf`.
 
 It is the contract downstream local apps and operators may rely on when they read `.echo-pdf-workspace/` directly.
 
+The mainline artifact story in the current phase is document metadata, page artifacts, render artifacts, and semantic structure. OCR artifacts may still exist as compatibility/fallback materializations, but they are not the primary product surface.
+
 ## Scope
 
 This contract covers:
@@ -53,7 +55,7 @@ Layout rules:
 - `document.json`, `structure.json`, and `pages/*.json` are the required baseline artifacts after document indexing.
 - `semantic-structure.json` is materialized only after semantic extraction runs.
 - `renders/*` artifacts are materialized only after page rendering runs.
-- `ocr/*` artifacts are materialized only after OCR runs.
+- `ocr/*` artifacts are materialized only after OCR runs as an optional compatibility/fallback path.
 
 ## Document Identity
 
@@ -209,11 +211,12 @@ The sibling `.png` file is the actual rendered image addressed by `imagePath`.
 Downstream use:
 
 - visual page inspection
-- OCR/image reuse without rerendering the same page
+- VL input reuse without rerendering the same page
+- optional OCR fallback/image reuse when that path is explicitly invoked
 
 ### `ocr/<page>...json`
 
-Optional OCR artifact.
+Optional OCR compatibility/fallback artifact.
 
 Required fields:
 

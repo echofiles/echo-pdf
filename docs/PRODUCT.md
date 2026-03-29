@@ -1,10 +1,10 @@
 # Product Positioning
 
-`echo-pdf` is a local-first PDF context engine for AI agents.
+`echo-pdf` is a local-first, vision-language-first PDF context engine for AI agents.
 
 ## One-Sentence Definition
 
-`echo-pdf` turns local PDFs into reusable CLI outputs, local library primitives, and inspectable workspace artifacts for downstream local apps and agents.
+`echo-pdf` turns local PDFs into reusable CLI outputs, local library primitives, and inspectable workspace artifacts for page rendering, page understanding, semantic structure, and downstream local reuse.
 
 ## Primary Product Surfaces
 
@@ -26,9 +26,21 @@ For the package-level contract, see [`docs/PACKAGING.md`](./PACKAGING.md).
 ## Primary Use Cases
 
 - index a local PDF into reusable page metadata and artifacts
-- render and OCR pages into cacheable local outputs
+- render pages into reusable visual artifacts for downstream VL workflows
+- extract page-level text and semantic structure that downstream agents can navigate
 - expose stable local document context primitives to a Node/Bun app
 - let downstream local tools reuse the same workspace artifacts instead of reparsing the same file
+
+## Current Architecture Direction
+
+The mainline product path is:
+
+- render
+- page understanding
+- semantic structure
+- workspace artifacts
+
+OCR may remain in the repo as a compatibility or fallback path, but it no longer defines the primary product direction or the main capability story.
 
 ## Non-Goals For This Phase
 
