@@ -21,7 +21,7 @@ For the package-level contract, see [`docs/PACKAGING.md`](./PACKAGING.md).
 
 - developers building local AI agents or IDE integrations that need PDF context
 - downstream apps that need stable page-level document primitives and cached local artifacts
-- consumers who want a clean package import plus a local CLI workflow, without depending on a hosted service
+- consumers who want a clean local package import plus a local CLI workflow, without depending on a hosted service
 
 ## Primary Use Cases
 
@@ -40,9 +40,7 @@ The mainline product path is:
 - semantic structure
 - workspace artifacts
 
-OCR is no longer a first-class product surface. Public CLI, local package API, and worker tool surfaces now center the VL-first path above.
-
-Short-term compatibility residue may still exist internally in the repo to avoid a broad runtime rewrite in this issue, but that residue is migration-only and not part of the supported public product surface.
+OCR is no longer a first-class product surface. Public CLI and local package API now center the VL-first path above.
 
 ## Non-Goals For This Phase
 
@@ -60,11 +58,5 @@ The intended boundary is:
 
 - `echo-pdf` produces general document/page artifacts and primitives
 - downstream products consume those artifacts and add product-specific logic outside this repo
-
-## Secondary / Compatibility Surfaces
-
-Worker and MCP surfaces may remain in the repo for compatibility, but they are not the primary shape of the product in the current phase.
-
-When the docs mention service or Worker endpoints, read them as compatibility surfaces rather than the main adoption path.
 
 For the artifact-level contract that downstream local products may depend on, see [`docs/WORKSPACE_CONTRACT.md`](./WORKSPACE_CONTRACT.md).

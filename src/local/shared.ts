@@ -40,7 +40,6 @@ export const buildArtifactPaths = (workspaceDir: string, documentId: string): In
     semanticStructureJsonPath: path.join(documentDir, "semantic-structure.json"),
     pagesDir: path.join(documentDir, "pages"),
     rendersDir: path.join(documentDir, "renders"),
-    ocrDir: path.join(documentDir, "ocr"),
   }
 }
 
@@ -64,24 +63,6 @@ export const buildRenderArtifactPaths = (
     artifactPath: path.join(paths.rendersDir, `${key}.json`),
     imagePath: path.join(paths.rendersDir, `${key}.png`),
   }
-}
-
-export const buildOcrArtifactPath = (
-  paths: InternalDocumentArtifactPaths,
-  pageNumber: number,
-  renderScale: number,
-  provider: string,
-  model: string,
-  prompt: string
-): string => {
-  const key = [
-    pageLabel(pageNumber),
-    `scale-${scaleLabel(renderScale)}`,
-    `provider-${sanitizeSegment(provider)}`,
-    `model-${sanitizeSegment(model)}`,
-    `prompt-${hashFragment(prompt, 10)}`,
-  ].join(".")
-  return path.join(paths.ocrDir, `${key}.json`)
 }
 
 export const buildStructuredArtifactPath = (

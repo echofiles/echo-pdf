@@ -13,9 +13,7 @@ export interface LocalDocumentArtifactPaths {
   readonly rendersDir: string
 }
 
-export interface InternalDocumentArtifactPaths extends LocalDocumentArtifactPaths {
-  readonly ocrDir: string
-}
+export interface InternalDocumentArtifactPaths extends LocalDocumentArtifactPaths {}
 
 export interface LocalDocumentMetadata {
   readonly documentId: string
@@ -149,24 +147,6 @@ export interface LocalPageFormulasArtifact {
   readonly cacheStatus: "fresh" | "reused"
 }
 
-export interface LocalPageOcrArtifact {
-  readonly documentId: string
-  readonly pageNumber: number
-  readonly renderScale: number
-  readonly sourceSizeBytes: number
-  readonly sourceMtimeMs: number
-  readonly provider: string
-  readonly model: string
-  readonly prompt: string
-  readonly text: string
-  readonly chars: number
-  readonly imagePath: string
-  readonly renderArtifactPath: string
-  readonly artifactPath: string
-  readonly generatedAt: string
-  readonly cacheStatus: "fresh" | "reused"
-}
-
 export interface LocalDocumentRequest {
   readonly pdfPath: string
   readonly workspaceDir?: string
@@ -203,14 +183,6 @@ export interface LocalPageTablesRequest extends LocalPageRenderRequest {
 }
 
 export interface LocalPageFormulasRequest extends LocalPageRenderRequest {
-  readonly provider?: string
-  readonly model?: string
-  readonly prompt?: string
-  readonly env?: Env
-  readonly providerApiKeys?: Record<string, string>
-}
-
-export interface LocalPageOcrRequest extends LocalPageRenderRequest {
   readonly provider?: string
   readonly model?: string
   readonly prompt?: string

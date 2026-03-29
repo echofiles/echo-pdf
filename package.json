@@ -9,24 +9,16 @@
   "bin": {
     "echo-pdf": "./bin/echo-pdf.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/local/index.js",
+  "types": "./dist/local/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
+      "types": "./dist/local/index.d.ts",
+      "import": "./dist/local/index.js"
     },
     "./local": {
       "types": "./dist/local/index.d.ts",
       "import": "./dist/local/index.js"
-    },
-    "./worker": {
-      "types": "./dist/worker.d.ts",
-      "import": "./dist/worker.js"
     }
   },
   "files": [
@@ -34,14 +26,11 @@
     "dist",
     "scripts",
     "README.md",
-    "wrangler.toml",
     "echo-pdf.config.json"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "check:runtime": "bash ./scripts/check-runtime.sh",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
     "cli:dev": "ECHO_PDF_SOURCE_DEV=1 bun ./bin/echo-pdf.js",
     "eval": "node ./eval/run-local.mjs",
     "eval:smoke": "node ./eval/run-local.mjs --suite smoke",
@@ -53,7 +42,7 @@
     "test:unit": "npm run check:runtime && vitest run tests/unit",
     "test:acceptance": "npm run check:runtime && npm run build && vitest run tests/acceptance",
     "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
-    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration",
+    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration/local-document-cli.integration.test.ts tests/integration/local-document.integration.test.ts tests/integration/local-semantic-structure.integration.test.ts tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
     "test": "npm run test:unit && npm run test:acceptance && npm run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
     "prepublishOnly": "npm run build && npm run typecheck && npm run test"
@@ -62,10 +51,8 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260301.0",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.9",
-    "wrangler": "^4.8.0"
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@cf-wasm/png": "^0.3.2",

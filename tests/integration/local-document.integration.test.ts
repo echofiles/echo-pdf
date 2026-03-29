@@ -22,7 +22,6 @@ describe("local document workflow", () => {
         structureJsonPath: string
         pagesDir: string
         rendersDir: string
-        ocrDir: string
       }
     }
     expect(first.pageCount).toBeGreaterThan(0)

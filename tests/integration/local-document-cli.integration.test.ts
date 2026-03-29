@@ -254,24 +254,12 @@ describe("local document CLI", () => {
       HOME: homeDir,
       ECHO_PDF_CONFIG_JSON: JSON.stringify({
         service: {
-          name: "echo-pdf",
-          publicBaseUrl: "https://echo-pdf.echofilesai.workers.dev",
-          fileGet: { cacheTtlSeconds: 300 },
-          maxPdfBytes: 10000000,
-          maxPagesPerRequest: 20,
           defaultRenderScale: 2,
-          storage: {
-            maxFileBytes: 10000000,
-            maxTotalBytes: 52428800,
-            ttlHours: 24,
-            cleanupBatchSize: 50,
-          },
         },
         pdfium: { wasmUrl: "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm" },
         agent: {
           defaultProvider: "openai",
           defaultModel: "",
-          ocrPrompt: "unused",
           tablePrompt: "unused",
         },
         providers: {
@@ -284,12 +272,6 @@ describe("local document CLI", () => {
               modelsPath: "/models",
             },
           },
-        },
-        mcp: {
-          serverName: "echo-pdf-mcp",
-          version: "0.1.0",
-          authHeader: "x-mcp-key",
-          authEnv: "ECHO_PDF_MCP_KEY",
         },
       }),
     }

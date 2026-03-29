@@ -1,19 +1,6 @@
 {
   "service": {
-    "name": "echo-pdf",
-    "publicBaseUrl": "https://echo-pdf.echofilesai.workers.dev",
-    "fileGet": {
-      "cacheTtlSeconds": 300
-    },
-    "maxPdfBytes": 10000000,
-    "maxPagesPerRequest": 20,
-    "defaultRenderScale": 2,
-    "storage": {
-      "maxFileBytes": 10000000,
-      "maxTotalBytes": 52428800,
-      "ttlHours": 24,
-      "cleanupBatchSize": 50
-    }
+    "defaultRenderScale": 2
   },
   "pdfium": {
     "wasmUrl": "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm"
@@ -21,7 +8,6 @@
   "agent": {
     "defaultProvider": "openai",
     "defaultModel": "",
-    "ocrPrompt": "Extract readable text from this PDF page image. Preserve line breaks and section structure.",
     "tablePrompt": "Detect all tabular structures from this PDF page image. Output only valid LaTeX tabular environments, no explanations, no markdown fences."
   },
   "providers": {
@@ -52,11 +38,5 @@
         "modelsPath": "/models"
       }
     }
-  },
-  "mcp": {
-    "serverName": "echo-pdf-mcp",
-    "version": "0.1.0",
-    "authHeader": "x-mcp-key",
-    "authEnv": "ECHO_PDF_MCP_KEY"
   }
 }
