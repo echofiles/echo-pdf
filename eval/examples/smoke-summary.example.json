@@ -4,16 +4,16 @@
   "suite": {
     "suiteId": "smoke",
     "description": "Fast local-first sanity checks on large public knowledge and guidance PDFs with no provider dependency.",
-    "manifestPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/manifests/smoke.json"
+    "manifestPath": "eval/manifests/smoke.json"
   },
   "environment": {
-    "cwd": "/Users/huangjinfeng/workspace/echofiles/echo-pdf",
-    "repoRoot": "/Users/huangjinfeng/workspace/echofiles/echo-pdf",
+    "cwd": "<repo-root>",
+    "repoRoot": "<repo-root>",
     "node": "v20.20.1",
     "platform": "darwin",
     "arch": "arm64",
-    "hostname": "huangjinfengdeMacBook-Air.local",
-    "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace",
+    "hostname": "<local-host>",
+    "workspaceDir": "eval/examples/smoke-workspace",
     "envHints": {
       "semanticProvider": "",
       "semanticModel": "",
@@ -55,7 +55,7 @@
       "durationMs": 1532,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -67,14 +67,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/0d2de462036fc194/ocr"
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/ocr"
       },
       "notes": "Public long-form IRS guidance stays indexable as a dense operational sample."
     },
@@ -88,7 +88,7 @@
       "durationMs": 126,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -100,14 +100,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/ocr"
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/ocr"
       },
       "notes": "Public multi-column paper keeps obvious numbered sections in the heuristic path."
     },
@@ -121,7 +121,7 @@
       "durationMs": 5,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -139,8 +139,8 @@
         "flattenedSectionCount": 22
       },
       "artifacts": {
-        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pageIndexArtifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json"
+        "artifactPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json"
       },
       "notes": "Public multi-column paper keeps obvious numbered sections in the heuristic path."
     },
@@ -154,7 +154,7 @@
       "durationMs": 530,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -166,14 +166,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/ocr"
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/ocr"
       },
       "notes": "Public CISA framework stays indexable as a large planning manual."
     },
@@ -187,7 +187,7 @@
       "durationMs": 933,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/nist-sp-800-171r2.pdf",
+        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -199,14 +199,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/smoke-workspace/documents/e8316eae43e9da70/ocr"
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/ocr"
       },
       "notes": "Public NIST security guidance stays indexable as a very long dense document."
     }

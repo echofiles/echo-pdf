@@ -6,6 +6,7 @@ import os from "node:os"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import process from "node:process"
 import { createHash } from "node:crypto"
+import { classifyThrownError, resolveRunStatus } from "./summary-utils.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, "..")
@@ -140,32 +141,6 @@ const resolveString = (value, envKey) => {
     if (typeof envValue === "string" && envValue.trim().length > 0) return envValue.trim()
   }
   return ""
-}
-
-const classifyThrownError = (error) => {
-  const message = error instanceof Error ? error.message : String(error)
-  if (/Missing required env var/i.test(message)) {
-    return { code: "ENV_PROVIDER_KEY_MISSING", layer: "infra", message }
-  }
-  if (/model is required/i.test(message) || /Provider ".+" not configured/i.test(message)) {
-    return { code: "ENV_PROVIDER_OR_MODEL_MISSING", layer: "infra", message }
-  }
-  if (/timeout/i.test(message)) {
-    return { code: "INFRA_REQUEST_TIMEOUT", layer: "infra", message }
-  }
-  if (/HTTP 401|HTTP 403/i.test(message)) {
-    return { code: "INFRA_PROVIDER_AUTH_FAILED", layer: "infra", message }
-  }
-  if (/HTTP 429/i.test(message)) {
-    return { code: "INFRA_PROVIDER_RATE_LIMITED", layer: "infra", message }
-  }
-  if (/not valid JSON/i.test(message)) {
-    return { code: "SEMANTIC_MODEL_OUTPUT_INVALID", layer: "semantic", message }
-  }
-  if (/Failed to load PDF|pageNumber must be within/i.test(message)) {
-    return { code: "INPUT_PDF_INVALID", layer: "sample", message }
-  }
-  return { code: "RUNNER_UNCLASSIFIED_ERROR", layer: "runner", message }
 }
 
 const compareDocument = (document, expectations) => {
@@ -319,18 +294,6 @@ const compareOcr = (ocr, expectations) => {
   }
 }
 
-const finalizeStatus = (expectedOutcome, failures, expectedFailureCodes) => {
-  if (failures.length === 0) {
-    return expectedOutcome === "known-bad" ? "unexpected-pass" : "passed"
-  }
-  if (expectedOutcome === "known-bad") {
-    const expectedCodes = new Set(Array.isArray(expectedFailureCodes) ? expectedFailureCodes : [])
-    const onlyExpected = expectedCodes.size === 0 || failures.every((failure) => expectedCodes.has(failure.code))
-    return onlyExpected ? "known-bad" : "failed"
-  }
-  return "failed"
-}
-
 const buildRepresentativeRuns = (runs, limit = 3) => {
   const pick = (status) => runs.filter((run) => run.status === status).slice(0, limit).map((run) => run.runId)
   return {
@@ -446,9 +409,7 @@ const run = async () => {
     }
 
     const documentFailures = materializationError ? [materializationError] : compareDocument(documentResult, caseDef.documentExpectations)
-    const documentStatus = materializationError?.code === "ENV_PROVIDER_KEY_MISSING"
-      ? "blocked"
-      : finalizeStatus("pass", documentFailures, caseDef.expectedFailureCodes)
+    const documentStatus = resolveRunStatus("pass", documentFailures, caseDef.expectedFailureCodes)
 
     const documentRun = {
       runId: `${manifest.suiteId}::document::${caseDef.caseId}`,
@@ -524,7 +485,7 @@ const run = async () => {
         failures = [classifyThrownError(error)]
       }
 
-      const status = failures.some((failure) => failure.code.startsWith("ENV_")) ? "blocked" : finalizeStatus(expectedOutcome, failures, caseDef.expectedFailureCodes)
+      const status = resolveRunStatus(expectedOutcome, failures, caseDef.expectedFailureCodes)
       const semanticMetrics = semantic ? compareSemantic(semantic, caseDef.semanticExpectations).metrics : {}
 
       runs.push({
@@ -606,7 +567,7 @@ const run = async () => {
         failures = [classifyThrownError(error)]
       }
 
-      const status = failures.some((failure) => failure.code.startsWith("ENV_")) ? "blocked" : finalizeStatus(expectedOutcome, failures, caseDef.expectedFailureCodes)
+      const status = resolveRunStatus(expectedOutcome, failures, caseDef.expectedFailureCodes)
       const ocrMetrics = ocr ? compareOcr(ocr, caseDef.ocrExpectations).metrics : {}
 
       runs.push({

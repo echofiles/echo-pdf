@@ -4,16 +4,16 @@
   "suite": {
     "suiteId": "known-bad",
     "description": "Tracked unsupported or unstable patterns that should remain visible in public guidance-document evals.",
-    "manifestPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/manifests/known-bad.json"
+    "manifestPath": "eval/manifests/known-bad.json"
   },
   "environment": {
-    "cwd": "/Users/huangjinfeng/workspace/echofiles/echo-pdf",
-    "repoRoot": "/Users/huangjinfeng/workspace/echofiles/echo-pdf",
+    "cwd": "<repo-root>",
+    "repoRoot": "<repo-root>",
     "node": "v20.20.1",
     "platform": "darwin",
     "arch": "arm64",
-    "hostname": "huangjinfengdeMacBook-Air.local",
-    "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace",
+    "hostname": "<local-host>",
+    "workspaceDir": "eval/examples/known-bad-workspace",
     "envHints": {
       "semanticProvider": "",
       "semanticModel": "",
@@ -60,7 +60,7 @@
       "durationMs": 1532,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -72,14 +72,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/ocr"
+        "workspaceDir": "eval/examples/known-bad-workspace",
+        "documentDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194",
+        "documentJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/document.json",
+        "structureJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json",
+        "semanticStructureJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pagesDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/pages",
+        "rendersDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/renders",
+        "ocrDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/ocr"
       },
       "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
     },
@@ -93,7 +93,7 @@
       "durationMs": 23,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -127,8 +127,8 @@
         "flattenedSectionCount": 18
       },
       "artifacts": {
-        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pageIndexArtifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json"
+        "artifactPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json"
       },
       "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
     },
@@ -142,7 +142,7 @@
       "durationMs": 988,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/nist-sp-800-171r2.pdf",
+        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -154,14 +154,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace",
-        "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70",
-        "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/document.json",
-        "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json",
-        "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/ocr"
+        "workspaceDir": "eval/examples/known-bad-workspace",
+        "documentDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70",
+        "documentJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/document.json",
+        "structureJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json",
+        "semanticStructureJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pagesDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/pages",
+        "rendersDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/renders",
+        "ocrDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/ocr"
       },
       "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
     },
@@ -175,7 +175,7 @@
       "durationMs": 17,
       "source": {
         "kind": "existing",
-        "pdfPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/public-samples/nist-sp-800-171r2.pdf",
+        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -204,8 +204,8 @@
         "flattenedSectionCount": 358
       },
       "artifacts": {
-        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pageIndexArtifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json"
+        "artifactPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json"
       },
       "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
     }
