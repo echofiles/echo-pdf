@@ -9,24 +9,16 @@ It tells downstream consumers which imports are public, which runtime expectatio
 Only these package entrypoints are public:
 
 - `@echofiles/echo-pdf`
-- `@echofiles/echo-pdf/core`
 - `@echofiles/echo-pdf/local`
-- `@echofiles/echo-pdf/worker`
 
 Entrypoint intent:
 
 - `@echofiles/echo-pdf`
-  - root core API
-  - semver-stable public package surface
-- `@echofiles/echo-pdf/core`
-  - equivalent core API surface to the root entry
+  - root local API
   - semver-stable public package surface
 - `@echofiles/echo-pdf/local`
   - local-first document primitives for Node/Bun
   - semver-stable public package surface
-- `@echofiles/echo-pdf/worker`
-  - Worker route entry kept for compatibility
-  - public, but not the primary product surface in the current phase
 
 Everything else is private implementation detail, including:
 
@@ -53,12 +45,11 @@ TypeScript consumer expectation:
 
 Entrypoint-specific boundary:
 
+- `@echofiles/echo-pdf`
+  - root alias for the supported local library surface
 - `@echofiles/echo-pdf/local`
   - intended for local Node/Bun app and CLI use
   - may depend on Node-only capabilities through the documented local boundary
-- `@echofiles/echo-pdf/worker`
-  - intended for Worker compatibility surfaces
-  - should not be treated as the primary local-first adoption path
 
 ## Semver Contract
 
@@ -76,9 +67,8 @@ Semver rules in the current phase:
 
 Specific compatibility expectations:
 
-- `@echofiles/echo-pdf` and `@echofiles/echo-pdf/core` remain the documented core API surfaces
+- `@echofiles/echo-pdf` remains the documented root local API surface
 - `@echofiles/echo-pdf/local` remains the documented local document primitive surface
-- `@echofiles/echo-pdf/worker` remains compatibility-only unless the product direction changes explicitly
 
 ## Clean Consumer Guarantees
 
@@ -93,9 +83,7 @@ The clean-consumer expectation is:
 1. install the package into a fresh directory
 2. import:
    - `@echofiles/echo-pdf`
-   - `@echofiles/echo-pdf/core`
    - `@echofiles/echo-pdf/local`
-   - `@echofiles/echo-pdf/worker`
 3. observe successful runtime import
 4. observe successful NodeNext typechecking
 

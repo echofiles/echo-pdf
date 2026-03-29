@@ -7,11 +7,9 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": [
-      "@cloudflare/workers-types"
-    ],
     "lib": [
-      "ES2022"
+      "ES2022",
+      "DOM"
     ]
   },
   "include": [

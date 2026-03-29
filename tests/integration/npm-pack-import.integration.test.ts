@@ -19,7 +19,7 @@ const run = async (cmd: string, args: string[], cwd: string): Promise<string> =>
 }
 
 describe("npm pack import smoke", () => {
-  it("imports package root/core/local/worker from packed artifact", async () => {
+  it("imports package root/local from packed artifact", async () => {
     const packJson = await run("npm", ["pack", "--json"], rootDir)
     const parsed = JSON.parse(packJson) as Array<{ filename?: string }>
     const filename = parsed[0]?.filename
@@ -32,15 +32,12 @@ describe("npm pack import smoke", () => {
       await run("npm", ["i", tgzPath], tempDir)
       const code = [
         "const root = await import('@echofiles/echo-pdf')",
-        "const core = await import('@echofiles/echo-pdf/core')",
         "const local = await import('@echofiles/echo-pdf/local')",
-        "const worker = await import('@echofiles/echo-pdf/worker')",
-        "if (typeof root.callTool !== 'function') throw new Error('root.callTool missing')",
-        "if (typeof core.listToolSchemas !== 'function') throw new Error('core.listToolSchemas missing')",
+        "if (typeof root.get_document !== 'function') throw new Error('root.get_document missing')",
         "if (typeof local.get_document !== 'function') throw new Error('local.get_document missing')",
         "if (typeof local.get_semantic_document_structure !== 'function') throw new Error('local.get_semantic_document_structure missing')",
         "if (typeof local.get_page_render !== 'function') throw new Error('local.get_page_render missing')",
-        "if (!worker.default || typeof worker.default.fetch !== 'function') throw new Error('worker.fetch missing')",
+        "if (typeof root.get_page_render !== 'function') throw new Error('root.get_page_render missing')",
         "console.log('ok')",
       ].join(";")
       const output = await run("node", ["--input-type=module", "-e", code], tempDir)

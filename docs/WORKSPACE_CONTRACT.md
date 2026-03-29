@@ -213,7 +213,6 @@ Downstream use:
 
 - visual page inspection
 - VL input reuse without rerendering the same page
-- optional OCR fallback/image reuse when that path is explicitly invoked
 
 ## Cache Semantics
 

@@ -1,10 +1,7 @@
 /// <reference path="../node/compat.d.ts" />
 
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
+import { mkdir, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
-import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
-import { toDataUrl } from "../file-utils.js"
-import { visionRecognize } from "../provider-client.js"
 import { extractLocalPdfPageText, getLocalPdfPageCount, renderLocalPdfPageToPng } from "../node/pdfium-local.js"
 import type {
   LocalDocumentMetadata,
@@ -13,15 +10,12 @@ import type {
   LocalDocumentStructureNode,
   LocalPageContent,
   LocalPageContentRequest,
-  LocalPageOcrArtifact,
-  LocalPageOcrRequest,
   LocalPageRenderArtifact,
   LocalPageRenderRequest,
   StoredDocumentRecord,
 } from "./types.js"
 import {
   buildArtifactPaths,
-  buildOcrArtifactPath,
   buildRenderArtifactPaths,
   createPageTitle,
   createPreview,
@@ -190,72 +184,3 @@ export const get_page_content = async (request: LocalPageContentRequest): Promis
 
 export const get_page_render = async (request: LocalPageRenderRequest): Promise<LocalPageRenderArtifact> =>
   ensureRenderArtifact(request)
-
-export const getPageOcrMigrationOnly = async (request: LocalPageOcrRequest): Promise<LocalPageOcrArtifact> => {
-  const env = resolveEnv(request.env)
-  const config = resolveConfig(request.config, env)
-  const { record } = await indexDocumentInternal(request)
-  ensurePageNumber(record.pageCount, request.pageNumber)
-
-  const renderArtifact = await ensureRenderArtifact(request)
-  const provider = resolveProviderAlias(config, request.provider)
-  const model = resolveModelForProvider(config, provider, request.model)
-  if (!model) {
-    throw new Error("model is required for local OCR artifacts; pass `model` or set agent.defaultModel")
-  }
-  const prompt = request.prompt?.trim() || config.agent.ocrPrompt
-  const artifactPath = buildOcrArtifactPath(
-    record.artifactPaths,
-    request.pageNumber,
-    renderArtifact.renderScale,
-    provider,
-    model,
-    prompt
-  )
-
-  if (!request.forceRefresh && await fileExists(artifactPath)) {
-    const cached = await readJson<Omit<LocalPageOcrArtifact, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
-    if (matchesSourceSnapshot(cached, record)) {
-      return {
-        ...cached,
-        cacheStatus: "reused",
-      }
-    }
-  }
-
-  const imageBytes = new Uint8Array(await readFile(renderArtifact.imagePath))
-  const imageDataUrl = toDataUrl(imageBytes, renderArtifact.mimeType)
-  const fallbackText = (await get_page_content(request)).text
-  const recognized = await visionRecognize({
-    config,
-    env,
-    providerAlias: provider,
-    model,
-    prompt,
-    imageDataUrl,
-    runtimeApiKeys: request.providerApiKeys,
-  })
-  const text = recognized.trim() || fallbackText || ""
-
-  const artifact: Omit<LocalPageOcrArtifact, "cacheStatus"> = {
-    documentId: record.documentId,
-    pageNumber: request.pageNumber,
-    renderScale: renderArtifact.renderScale,
-    sourceSizeBytes: record.sizeBytes,
-    sourceMtimeMs: record.mtimeMs,
-    provider,
-    model,
-    prompt,
-    text,
-    chars: text.length,
-    imagePath: renderArtifact.imagePath,
-    renderArtifactPath: renderArtifact.artifactPath,
-    artifactPath,
-    generatedAt: new Date().toISOString(),
-  }
-  await writeJson(artifactPath, artifact)
-  return {
-    ...artifact,
-    cacheStatus: "fresh",
-  }
-}

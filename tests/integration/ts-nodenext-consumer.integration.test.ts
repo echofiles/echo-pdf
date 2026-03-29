@@ -16,7 +16,7 @@ const run = async (cmd: string, args: string[], cwd: string): Promise<string> =>
 }
 
 describe("ts nodenext consumer smoke", () => {
-  it("typechecks package root/core/local/worker imports in a fresh consumer", async () => {
+  it("typechecks package root/local imports in a fresh consumer", async () => {
     const packJson = await run("npm", ["pack", "--json"], rootDir)
     const parsed = JSON.parse(packJson) as Array<{ filename?: string }>
     const filename = parsed[0]?.filename
@@ -31,15 +31,12 @@ describe("ts nodenext consumer smoke", () => {
 
       await writeFile(path.join(tempDir, "index.ts"), [
         "import * as pkg from '@echofiles/echo-pdf'",
-        "import * as core from '@echofiles/echo-pdf/core'",
         "import * as local from '@echofiles/echo-pdf/local'",
-        "import worker from '@echofiles/echo-pdf/worker'",
-        "pkg.listToolSchemas()",
-        "core.listToolSchemas()",
+        "pkg.get_document",
+        "pkg.get_page_render",
         "local.get_document",
         "local.get_semantic_document_structure",
         "local.get_page_render",
-        "worker",
         "",
       ].join("\n"))
       await writeFile(path.join(tempDir, "tsconfig.json"), JSON.stringify({

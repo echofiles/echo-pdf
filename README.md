@@ -129,9 +129,9 @@ Migration note:
 The semver-stable public entrypoints are:
 
 - `@echofiles/echo-pdf`
-- `@echofiles/echo-pdf/core`
 - `@echofiles/echo-pdf/local`
-- `@echofiles/echo-pdf/worker`
+
+`@echofiles/echo-pdf` and `@echofiles/echo-pdf/local` expose the same supported local-first library surface.
 
 Everything else, including deep imports such as `src/*` or `dist/*`, is private implementation detail.
 

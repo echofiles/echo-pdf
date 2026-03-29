@@ -24,8 +24,7 @@ If the current internal structure becomes more expensive than rebuilding, a gree
 ## Runtime Boundaries
 
 - Node.js `>= 20` is the baseline runtime. Do not treat older local Node versions as a repo bug.
-- Do not mix Node-only code into Worker-only paths.
-- If Node APIs are introduced, keep them in Node-specific modules or entrypoints.
+- Keep Node-only code inside the documented local runtime boundary.
 - Do not solve boundary problems by injecting Node globals or Node types into the whole project.
 
 ## Validation Order
@@ -51,7 +50,7 @@ Rules:
 ## Testing Policy
 
 - No mocks unless explicitly approved.
-- Integration tests should be env-gated when they require real providers or local services.
+- Integration tests should be env-gated when they require real providers.
 - Do not weaken product scope to make tests easier.
 - Do not merge static, unit, and integration failures into one vague "test failed" statement. Report the layer.
 
@@ -68,7 +67,7 @@ Rules:
 
 Every PR should state:
 
-- which runtime boundary it touches: Node, Worker, or shared
+- which runtime boundary it touches: Node local runtime or shared support code
 - which validation layers were run
 - which checks were blocked by infra, if any
 - whether the change is a targeted fix or part of a greenfield rebuild

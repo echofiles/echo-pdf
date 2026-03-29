@@ -5,7 +5,7 @@ import type { Env } from "../../src/types"
 describe("loadEchoPdfConfig", () => {
   it("loads default config", () => {
     const config = loadEchoPdfConfig({} as Env)
-    expect(config.service.name.length).toBeGreaterThan(0)
+    expect(config.service.defaultRenderScale).toBeGreaterThan(0)
     expect(config.providers[config.agent.defaultProvider]).toBeTruthy()
   })
 
@@ -13,16 +13,7 @@ describe("loadEchoPdfConfig", () => {
     const config = loadEchoPdfConfig({
       ECHO_PDF_CONFIG_JSON: JSON.stringify({
         service: {
-          name: "echo-pdf-test",
-          maxPdfBytes: 1024 * 1024,
-          maxPagesPerRequest: 3,
           defaultRenderScale: 1,
-          storage: {
-            maxFileBytes: 1024 * 1024,
-            maxTotalBytes: 1024 * 1024 * 4,
-            ttlHours: 1,
-            cleanupBatchSize: 10,
-          },
         },
         pdfium: {
           wasmUrl: "https://example.com/pdfium.wasm",
@@ -30,7 +21,6 @@ describe("loadEchoPdfConfig", () => {
         agent: {
           defaultProvider: "openai",
           defaultModel: "gpt-4.1-mini",
-          ocrPrompt: "ocr",
           tablePrompt: "table",
         },
         providers: {
@@ -39,43 +29,28 @@ describe("loadEchoPdfConfig", () => {
             apiKeyEnv: "OPENAI_API_KEY",
           },
         },
-        mcp: {
-          serverName: "echo-pdf-mcp",
-          version: "0.1.0",
-        },
       }),
     } as Env)
-    expect(config.service.name).toBe("echo-pdf-test")
+    expect(config.service.defaultRenderScale).toBe(1)
     expect(config.agent.defaultModel).toBe("gpt-4.1-mini")
   })
 
-  it("rejects config when maxFileBytes is smaller than maxPdfBytes", () => {
+  it("rejects config when defaultRenderScale is not positive", () => {
     expect(() => loadEchoPdfConfig({
       ECHO_PDF_CONFIG_JSON: JSON.stringify({
         service: {
-          name: "echo-pdf-test",
-          maxPdfBytes: 2048,
-          maxPagesPerRequest: 3,
-          defaultRenderScale: 1,
-          storage: {
-            maxFileBytes: 1024,
-            maxTotalBytes: 4096,
-            ttlHours: 1,
-            cleanupBatchSize: 10,
-          },
+          defaultRenderScale: 0,
         },
         pdfium: { wasmUrl: "https://example.com/pdfium.wasm" },
         agent: {
           defaultProvider: "openai",
           defaultModel: "gpt-4.1-mini",
-          ocrPrompt: "ocr",
           tablePrompt: "table",
         },
         providers: {
           openai: { type: "openai", apiKeyEnv: "OPENAI_API_KEY" },
         },
-        mcp: { serverName: "echo-pdf-mcp", version: "0.1.0" },
       }),
-    } as Env)).toThrow(/maxFileBytes/)
+    } as Env)).toThrow(/defaultRenderScale/)
   })
 })
