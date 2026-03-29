@@ -54,10 +54,19 @@ Index a local PDF and inspect its page-level context:
 ```bash
 echo-pdf document ./sample.pdf
 echo-pdf structure ./sample.pdf
-echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1 --scale 2
 ```
+
+To run the VL-first semantic path locally, configure a provider key and model once, then run `semantic`:
+
+```bash
+echo-pdf provider set --provider openai --api-key "$OPENAI_API_KEY"
+echo-pdf model set --provider openai --model gpt-4.1-mini
+echo-pdf semantic ./sample.pdf
+```
+
+`echo-pdf semantic` now uses the CLI profile's provider/model/api-key settings. If the selected provider or model is missing, it fails early with a clear setup error instead of quietly dropping back to a weaker path.
 
 What these commands map to:
 

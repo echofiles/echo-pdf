@@ -274,9 +274,9 @@ const parseJsonObject = (value: string): unknown => {
   }
 }
 
-const resolveConfig = (config?: EchoPdfConfig): EchoPdfConfig => config ?? loadEchoPdfConfig({} as never)
-
 const resolveEnv = (env?: Env): Env => env ?? (process.env as unknown as Env)
+
+const resolveConfig = (config?: EchoPdfConfig, env?: Env): EchoPdfConfig => config ?? loadEchoPdfConfig(resolveEnv(env))
 
 const fileExists = async (targetPath: string): Promise<boolean> => {
   try {
@@ -552,8 +552,8 @@ const summarizeSemanticAgentFailure = (error: unknown): string => {
 const ensureSemanticStructureArtifact = async (
   request: LocalSemanticDocumentRequest
 ): Promise<LocalSemanticDocumentStructure> => {
-  const config = resolveConfig(request.config)
   const env = resolveEnv(request.env)
+  const config = resolveConfig(request.config, env)
   const { record } = await indexDocumentInternal(request)
   const artifactPath = record.artifactPaths.semanticStructureJsonPath
   const semanticBudget = resolveSemanticExtractionBudget(request.semanticExtraction)
@@ -827,8 +827,8 @@ export const get_page_render = async (request: LocalPageRenderRequest): Promise<
   ensureRenderArtifact(request)
 
 const getPageOcrMigrationOnly = async (request: LocalPageOcrRequest): Promise<LocalPageOcrArtifact> => {
-  const config = resolveConfig(request.config)
   const env = resolveEnv(request.env)
+  const config = resolveConfig(request.config, env)
   const { record } = await indexDocumentInternal(request)
   ensurePageNumber(record.pageCount, request.pageNumber)
 
