@@ -82,15 +82,30 @@
         <p class="section-label">Agent-first happy path</p>
         <section class="example-grid">
           <div class="panel">
-            <h2>Minimal local run</h2>
+            <h2>Zero-config local run</h2>
             <pre><code>npm i -g @echofiles/echo-pdf
 
 echo-pdf document ./sample.pdf
 echo-pdf structure ./sample.pdf
-echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1</code></pre>
           </div>
+          <div class="panel">
+            <h2>Provider-backed semantic setup</h2>
+            <pre><code>echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
+echo-pdf model set --provider openai --model gpt-4.1-mini
+echo-pdf semantic ./sample.pdf</code></pre>
+          </div>
+        </section>
+
+        <section class="callout warn" style="margin-top:24px;">
+          <h3>Semantic is not zero-config.</h3>
+          <p>
+            <code>document</code>, <code>structure</code>, <code>page</code>, and <code>render</code> work without provider setup. <code>semantic</code> requires a configured local provider and model.
+          </p>
+        </section>
+
+        <section class="example-grid" style="margin-top:24px;">
           <div class="panel">
             <h2>Copyable output example</h2>
             <pre><code>{
@@ -126,7 +141,7 @@ echo-pdf render ./sample.pdf --page 1</code></pre>
               <li>downstream local tools can reuse the same workspace instead of reparsing PDFs</li>
               <li>cache reuse stays explicit through source snapshot and strategy metadata</li>
             </ul>
-          </div>
+          </article>
         </section>
 
         <p class="section-label">Information architecture</p>
