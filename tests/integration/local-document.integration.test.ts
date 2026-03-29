@@ -1,14 +1,37 @@
 import { describe, expect, it } from "vitest"
-import { copyFile, mkdtemp, readFile, stat, writeFile } from "node:fs/promises"
+import { copyFile, cp, mkdtemp, readFile, stat, symlink, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
 const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
 
 describe("local document workflow", () => {
+  it("supports the built local runtime from a dist checkout", async () => {
+    const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-local-"))
+    await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
+    await copyFile(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
+    await copyFile(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
+    await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
+
+    const local = await import(pathToFileURL(path.join(checkoutDir, "dist", "local", "index.js")).href)
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-local-ws-"))
+
+    const document = await local.get_document({ pdfPath: fixturePdf, workspaceDir }) as {
+      pageCount: number
+    }
+    const render = await local.get_page_render({ pdfPath: fixturePdf, workspaceDir, pageNumber: 1 }) as {
+      mimeType: string
+      imagePath: string
+    }
+
+    expect(document.pageCount).toBeGreaterThan(0)
+    expect(render.mimeType).toBe("image/png")
+    expect(render.imagePath.endsWith(".png")).toBe(true)
+  })
+
   it("indexes a PDF into inspectable local artifacts and reuses them", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-local-"))

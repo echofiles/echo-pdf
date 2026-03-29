@@ -138,6 +138,16 @@ const runSourceCheckoutCliDev = async (repoDir: string, args: string[]): Promise
   return { stdout, stderr }
 }
 
+const createBuiltCheckout = async (): Promise<string> => {
+  const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-checkout-"))
+  await cp(path.join(rootDir, "bin"), path.join(checkoutDir, "bin"), { recursive: true })
+  await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
+  await cp(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
+  await cp(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
+  await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
+  return checkoutDir
+}
+
 describe("local document CLI", () => {
   itWithNode20("reads a PDF through the zero-config local primitives", async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-"))
@@ -306,14 +316,27 @@ describe("local document CLI", () => {
     expect(stderr).toContain("echo-pdf model set --provider openai --model <model-id>")
   })
 
+  itWithNode20("preserves semantic setup guidance in built CLI mode before importing the local runtime", async () => {
+    const checkoutDir = await createBuiltCheckout()
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-built-no-model-"))
+    await writeFile(
+      path.join(checkoutDir, "dist", "local", "index.js"),
+      'import "./missing-local-runtime.js"\n',
+      "utf-8"
+    )
+
+    const { stderr } = await runCliFailure(checkoutDir, ["semantic", realFixturePdf, "--workspace", checkoutDir], {
+      HOME: homeDir,
+    })
+
+    expect(stderr).toContain('semantic requires a configured model for provider "openai"')
+    expect(stderr).toContain("echo-pdf model set --provider openai --model <model-id>")
+    expect(stderr).not.toContain("Local primitive commands require built artifacts")
+  })
+
   itWithNode20AndBun("supports the internal source-checkout cli:dev workflow even when dist artifacts exist", async () => {
-    const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-source-"))
-    await cp(path.join(rootDir, "bin"), path.join(checkoutDir, "bin"), { recursive: true })
-    await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
+    const checkoutDir = await createBuiltCheckout()
     await cp(path.join(rootDir, "src"), path.join(checkoutDir, "src"), { recursive: true })
-    await cp(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
-    await cp(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
-    await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
     await writeFile(
       path.join(checkoutDir, "dist", "local", "index.js"),
       'throw new Error("dist local entry should not load in cli:dev");\n',

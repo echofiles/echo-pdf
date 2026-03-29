@@ -189,6 +189,7 @@ const print = (data) => {
 }
 
 const LOCAL_DOCUMENT_DIST_ENTRY = new URL("../dist/local/index.js", import.meta.url)
+const LOCAL_DOCUMENT_DIST_PATH = fileURLToPath(LOCAL_DOCUMENT_DIST_ENTRY)
 const LOCAL_DOCUMENT_SOURCE_ENTRY = new URL("../src/local/index.ts", import.meta.url)
 const IS_BUN_RUNTIME = typeof process.versions?.bun === "string"
 const SHOULD_PREFER_SOURCE_DOCUMENT_API = process.env.ECHO_PDF_SOURCE_DEV === "1"
@@ -203,18 +204,13 @@ const loadLocalDocumentApi = async () => {
       "Use `npm run cli:dev -- <primitive> ...` only from a source checkout."
     )
   }
-  try {
-    return await import(LOCAL_DOCUMENT_DIST_ENTRY.href)
-  } catch (error) {
-    const code = error && typeof error === "object" ? error.code : ""
-    if (code === "ERR_MODULE_NOT_FOUND") {
-      throw new Error(
-        "Local primitive commands require built artifacts in a source checkout. " +
-        "Run `npm run build` first, use the internal `npm run cli:dev -- <primitive> ...` path in this repo, or install the published package."
-      )
-    }
-    throw error
+  if (!fs.existsSync(LOCAL_DOCUMENT_DIST_PATH)) {
+    throw new Error(
+      "Local primitive commands require built artifacts in a source checkout. " +
+      "Run `npm run build` first, use the internal `npm run cli:dev -- <primitive> ...` path in this repo, or install the published package."
+    )
   }
+  return import(LOCAL_DOCUMENT_DIST_ENTRY.href)
 }
 
 const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render"]
@@ -252,7 +248,6 @@ const readDocumentPrimitiveArgs = (command, subcommand, rest) => {
 }
 
 const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
-  const local = await loadLocalDocumentApi()
   const { primitive, pdfPath } = readDocumentPrimitiveArgs(command, subcommand, rest)
   const workspaceDir = typeof flags.workspace === "string" ? flags.workspace : undefined
   const forceRefresh = flags["force-refresh"] === true
@@ -263,17 +258,20 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
   }
 
   if (primitive === "document") {
+    const local = await loadLocalDocumentApi()
     print(await local.get_document({ pdfPath, workspaceDir, forceRefresh }))
     return
   }
 
   if (primitive === "structure") {
+    const local = await loadLocalDocumentApi()
     print(await local.get_document_structure({ pdfPath, workspaceDir, forceRefresh }))
     return
   }
 
   if (primitive === "semantic") {
     const semanticContext = resolveLocalSemanticContext(flags)
+    const local = await loadLocalDocumentApi()
     const data = await local.get_semantic_document_structure({
       pdfPath,
       workspaceDir,
@@ -297,11 +295,13 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
   }
 
   if (primitive === "page") {
+    const local = await loadLocalDocumentApi()
     print(await local.get_page_content({ pdfPath, workspaceDir, forceRefresh, pageNumber }))
     return
   }
 
   if (primitive === "render") {
+    const local = await loadLocalDocumentApi()
     print(await local.get_page_render({ pdfPath, workspaceDir, forceRefresh, pageNumber, renderScale }))
     return
   }
