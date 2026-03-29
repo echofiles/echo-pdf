@@ -50,3 +50,5 @@ The intended boundary is:
 Worker and MCP surfaces may remain in the repo for compatibility, but they are not the primary shape of the product in the current phase.
 
 When the docs mention service or Worker endpoints, read them as compatibility surfaces rather than the main adoption path.
+
+For the artifact-level contract that downstream local products may depend on, see [`docs/WORKSPACE_CONTRACT.md`](./WORKSPACE_CONTRACT.md).
