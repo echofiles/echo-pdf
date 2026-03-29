@@ -44,7 +44,7 @@ const toAuthHeader = (
     provider,
     runtimeApiKeys,
   })
-  return { Authorization: `Bearer ${token}` }
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 const withTimeout = async (

@@ -9,24 +9,26 @@ const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PROJECT_CONFIG_FILE = path.resolve(__dirname, "../echo-pdf.config.json")
 const PROJECT_CONFIG = JSON.parse(fs.readFileSync(PROJECT_CONFIG_FILE, "utf-8"))
-const PROVIDER_ENTRIES = Object.entries(PROJECT_CONFIG.providers || {})
-const PROVIDER_ALIASES = PROVIDER_ENTRIES.map(([alias]) => alias)
-const PROVIDER_ALIAS_BY_TYPE = new Map(PROVIDER_ENTRIES.map(([alias, provider]) => [provider.type, alias]))
-const PROVIDER_SET_NAMES = Array.from(new Set(PROVIDER_ENTRIES.flatMap(([alias, provider]) => [alias, provider.type])))
 const PROJECT_DEFAULT_MODEL = String(PROJECT_CONFIG.agent?.defaultModel || "").trim()
 
+const getProviderEntries = () => Object.entries(PROJECT_CONFIG.providers || {})
+const getProviderAliases = () => getProviderEntries().map(([alias]) => alias)
+const getProviderAliasByType = () => new Map(getProviderEntries().map(([alias, provider]) => [provider.type, alias]))
+const getProviderSetNames = () => Array.from(new Set(getProviderEntries().flatMap(([alias, provider]) => [alias, provider.type])))
+
 const emptyProviders = () =>
-  Object.fromEntries(PROVIDER_ALIASES.map((providerAlias) => [providerAlias, { apiKey: "" }]))
+  Object.fromEntries(getProviderAliases().map((providerAlias) => [providerAlias, { apiKey: "" }]))
 
 const resolveProviderAliasInput = (input) => {
   if (typeof input !== "string" || input.trim().length === 0) {
     throw new Error("provider is required")
   }
   const raw = input.trim()
-  if (PROVIDER_ALIASES.includes(raw)) return raw
-  const fromType = PROVIDER_ALIAS_BY_TYPE.get(raw)
+  const providerAliases = getProviderAliases()
+  if (providerAliases.includes(raw)) return raw
+  const fromType = getProviderAliasByType().get(raw)
   if (fromType) return fromType
-  throw new Error(`provider must be one of: ${PROVIDER_SET_NAMES.join(", ")}`)
+  throw new Error(`provider must be one of: ${getProviderSetNames().join(", ")}`)
 }
 
 function resolveDefaultProviderAlias() {
@@ -34,7 +36,7 @@ function resolveDefaultProviderAlias() {
   if (typeof configured === "string" && configured.trim().length > 0) {
     return resolveProviderAliasInput(configured.trim())
   }
-  return PROVIDER_ALIASES[0] || "openai"
+  return getProviderAliases()[0] || "openai"
 }
 
 const DEFAULT_PROVIDER_ALIAS = resolveDefaultProviderAlias()
@@ -73,7 +75,7 @@ const getProfile = (config, name) => {
   }
   const profile = config.profiles[profileName]
   if (!profile.providers || typeof profile.providers !== "object") profile.providers = {}
-  for (const providerAlias of PROVIDER_ALIASES) {
+  for (const providerAlias of getProviderAliases()) {
     if (!profile.providers[providerAlias] || typeof profile.providers[providerAlias] !== "object") {
       profile.providers[providerAlias] = { apiKey: "" }
     }
@@ -102,7 +104,7 @@ const parseFlags = (args) => {
     if (!token?.startsWith("--")) continue
     const key = token.slice(2)
     const next = args[i + 1]
-    if (!next || next.startsWith("--")) {
+    if (typeof next !== "string" || next.startsWith("--")) {
       flags[key] = true
     } else {
       flags[key] = next
@@ -147,7 +149,7 @@ const readEnvApiKey = (providerAlias) => {
 const buildProviderApiKeys = (config, profileName) => {
   const profile = getProfile(config, profileName)
   const providerApiKeys = {}
-  for (const [providerAlias, providerConfig] of PROVIDER_ENTRIES) {
+  for (const [providerAlias, providerConfig] of getProviderEntries()) {
     const apiKey = profile.providers?.[providerAlias]?.apiKey || profile.providers?.[providerConfig.type]?.apiKey || ""
     providerApiKeys[providerAlias] = apiKey
     providerApiKeys[providerConfig.type] = apiKey
@@ -171,8 +173,8 @@ const resolveLocalSemanticContext = (flags) => {
   }
   const providerApiKeys = buildProviderApiKeys(config, profileName)
   const configuredApiKey = typeof providerApiKeys[provider] === "string" ? providerApiKeys[provider].trim() : ""
-  if (!configuredApiKey && !readEnvApiKey(provider)) {
-    const apiKeyEnv = PROJECT_CONFIG.providers?.[provider]?.apiKeyEnv || "PROVIDER_API_KEY"
+  const apiKeyEnv = PROJECT_CONFIG.providers?.[provider]?.apiKeyEnv || ""
+  if (apiKeyEnv && !configuredApiKey && !readEnvApiKey(provider)) {
     throw new Error(
       [
         `semantic requires an API key for provider "${provider}".`,
@@ -312,12 +314,16 @@ const usage = () => {
   process.stdout.write(`  page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`\nLocal config commands:\n`)
-  process.stdout.write(`  provider set --provider <${PROVIDER_SET_NAMES.join("|")}> --api-key <KEY> [--profile name]\n`)
-  process.stdout.write(`  provider use --provider <${PROVIDER_ALIASES.join("|")}> [--profile name]\n`)
+  process.stdout.write(`  provider set --provider <${getProviderSetNames().join("|")}> --api-key <KEY> [--profile name]\n`)
+  process.stdout.write(`  provider use --provider <${getProviderAliases().join("|")}> [--profile name]\n`)
   process.stdout.write(`  provider list [--profile name]\n`)
   process.stdout.write(`  model set --model <model-id> [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model get [--provider alias] [--profile name]\n`)
   process.stdout.write(`  model list [--profile name]\n`)
+  process.stdout.write(`\nLocal LLM example (no auth):\n`)
+  process.stdout.write(`  echo-pdf provider set --provider ollama --api-key \"\"\n`)
+  process.stdout.write(`  echo-pdf model set --provider ollama --model llava:13b\n`)
+  process.stdout.write(`  echo-pdf semantic ./sample.pdf --provider ollama\n`)
 }
 
 const main = async () => {

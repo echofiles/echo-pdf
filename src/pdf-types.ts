@@ -2,7 +2,7 @@ import type { ProviderType } from "./types.js"
 
 export interface EchoPdfProviderConfig {
   readonly type: ProviderType
-  readonly apiKeyEnv: string
+  readonly apiKeyEnv?: string
   readonly baseUrl?: string
   readonly headers?: Record<string, string>
   readonly timeoutMs?: number

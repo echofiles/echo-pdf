@@ -21,6 +21,15 @@ Provider-backed semantic CLI setup:
 - echo-pdf model set --provider openai --model gpt-4.1-mini
 - echo-pdf semantic ./sample.pdf
 
+Local OpenAI-compatible semantic setup:
+- add a provider in echo-pdf.config.json with type: openai-compatible
+- set baseUrl to a local server such as http://127.0.0.1:11434/v1
+- leave apiKeyEnv empty for no-auth local servers
+- echo-pdf provider set --provider ollama --api-key ""
+- echo-pdf model set --provider ollama --model llava:13b
+- echo-pdf semantic ./sample.pdf --provider ollama
+- if the local vision model is slow, raise timeoutMs in the provider config
+
 Key docs:
 - Overview: https://pdf.echofile.ai/
 - API: https://pdf.echofile.ai/api/index.html

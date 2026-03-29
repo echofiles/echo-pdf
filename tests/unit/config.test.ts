@@ -53,4 +53,33 @@ describe("loadEchoPdfConfig", () => {
       }),
     } as Env)).toThrow(/defaultRenderScale/)
   })
+
+  it("accepts custom OpenAI-compatible provider types and empty apiKeyEnv", () => {
+    const config = loadEchoPdfConfig({
+      ECHO_PDF_CONFIG_JSON: JSON.stringify({
+        service: {
+          defaultRenderScale: 2,
+        },
+        pdfium: {
+          wasmUrl: "https://example.com/pdfium.wasm",
+        },
+        agent: {
+          defaultProvider: "ollama",
+          defaultModel: "llava:13b",
+          tablePrompt: "table",
+        },
+        providers: {
+          ollama: {
+            type: "openai-compatible",
+            apiKeyEnv: "",
+            baseUrl: "http://127.0.0.1:11434/v1",
+          },
+        },
+      }),
+    } as Env)
+
+    expect(config.agent.defaultProvider).toBe("ollama")
+    expect(config.providers.ollama?.type).toBe("openai-compatible")
+    expect(config.providers.ollama?.apiKeyEnv).toBe("")
+  })
 })

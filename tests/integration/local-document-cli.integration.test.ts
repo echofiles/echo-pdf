@@ -55,7 +55,9 @@ const runCliFailure = async (
   throw new Error(`Expected CLI failure for args: ${args.join(" ")}`)
 }
 
-const startSemanticCliTestProvider = async (): Promise<{
+const startSemanticCliTestProvider = async (options?: {
+  requireNoAuth?: boolean
+}): Promise<{
   baseUrl: string
   close: () => Promise<void>
 }> => {
@@ -63,6 +65,11 @@ const startSemanticCliTestProvider = async (): Promise<{
     if (req.method !== "POST" || req.url !== "/chat/completions") {
       res.writeHead(404, { "content-type": "application/json" })
       res.end(JSON.stringify({ error: "not found" }))
+      return
+    }
+    if (options?.requireNoAuth && typeof req.headers.authorization === "string" && req.headers.authorization.length > 0) {
+      res.writeHead(400, { "content-type": "application/json" })
+      res.end(JSON.stringify({ error: "authorization header should be absent for local no-auth provider" }))
       return
     }
 
@@ -300,6 +307,51 @@ describe("local document CLI", () => {
     expect(stderr.trim()).toBe("")
     expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.strategyKey).toContain("page-understanding-v1")
+    expect(semantic.root.children?.[0]?.title).toBe("1 Overview")
+  })
+
+  itWithNode20("supports a local OpenAI-compatible provider without a dummy API key", async () => {
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-local-provider-"))
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-local-provider-"))
+    const providerServer = await startSemanticCliTestProvider({ requireNoAuth: true })
+    semanticCliTestServers.push(providerServer.close)
+    const env = {
+      HOME: homeDir,
+      ECHO_PDF_CONFIG_JSON: JSON.stringify({
+        service: {
+          defaultRenderScale: 2,
+        },
+        pdfium: { wasmUrl: "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm" },
+        agent: {
+          defaultProvider: "ollama",
+          defaultModel: "",
+          tablePrompt: "unused",
+        },
+        providers: {
+          ollama: {
+            type: "openai-compatible",
+            apiKeyEnv: "",
+            baseUrl: providerServer.baseUrl,
+            endpoints: {
+              chatCompletionsPath: "/chat/completions",
+              modelsPath: "/models",
+            },
+          },
+        },
+      }),
+    }
+
+    await runCli(rootDir, ["provider", "set", "--provider", "ollama", "--api-key", ""], env)
+    await runCli(rootDir, ["model", "set", "--provider", "ollama", "--model", "llava:13b"], env)
+
+    const { stdout, stderr } = await runCli(rootDir, ["semantic", realFixturePdf, "--workspace", workspaceDir, "--provider", "ollama"], env)
+    const semantic = JSON.parse(stdout) as {
+      detector: string
+      root: { children?: Array<{ title?: string }> }
+    }
+
+    expect(stderr.trim()).toBe("")
+    expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.root.children?.[0]?.title).toBe("1 Overview")
   })
 

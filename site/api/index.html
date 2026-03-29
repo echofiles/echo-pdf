@@ -35,7 +35,7 @@
             <tbody>
               <tr><td><code>get_document</code></td><td>document metadata</td><td><code>document.json</code></td><td>source snapshot and document root</td></tr>
               <tr><td><code>get_document_structure</code></td><td>stable page index</td><td><code>structure.json</code></td><td>iterate pages and locate page artifacts</td></tr>
-              <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code>; requires provider + model</td></tr>
+              <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code>; requires provider + model and can target a local OpenAI-compatible server</td></tr>
               <tr><td><code>get_page_content</code></td><td>page text artifact</td><td><code>pages/&lt;page&gt;.json</code></td><td>page retrieval and semantic input</td></tr>
               <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse and VL input</td></tr>
             </tbody>
@@ -57,8 +57,8 @@
             <h2>Provider-backed semantic call</h2>
             <pre><code>const semantic = await get_semantic_document_structure({
   pdfPath: "./sample.pdf",
-  provider: "openai",
-  model: "gpt-4.1-mini",
+  provider: "ollama",
+  model: "llava:13b",
 })</code></pre>
           </article>
         </section>
@@ -70,6 +70,7 @@
             <li>local-first Node/Bun runtime</li>
             <li>package <code>exports</code> aware consumer</li>
             <li><code>get_semantic_document_structure</code> requires provider and model parameters or configured defaults</li>
+            <li>that provider may be a local OpenAI-compatible endpoint via <code>baseUrl: "http://127.0.0.1:..."</code></li>
           </ul>
         </section>
         <section class="callout warn" style="margin-top:32px;">

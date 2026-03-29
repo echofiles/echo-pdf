@@ -33,6 +33,8 @@ export const resolveProviderApiKey = (input: {
   provider: EchoPdfProviderConfig
   runtimeApiKeys?: Record<string, string>
 }): string => {
+  const envKey = typeof input.provider.apiKeyEnv === "string" ? input.provider.apiKeyEnv.trim() : ""
+  if (!envKey) return ""
   const candidates = runtimeProviderKeyCandidates(input.config, input.providerAlias, input.provider)
   for (const candidate of candidates) {
     const value = input.runtimeApiKeys?.[candidate]
@@ -40,5 +42,5 @@ export const resolveProviderApiKey = (input: {
       return value.trim()
     }
   }
-  return readRequiredEnv(input.env, input.provider.apiKeyEnv)
+  return readRequiredEnv(input.env, envKey)
 }

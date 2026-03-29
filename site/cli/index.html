@@ -36,9 +36,15 @@ echo-pdf render ./sample.pdf --page 1</code></pre>
         </section>
         <section class="panel" style="margin-top:28px;">
           <h2>Provider-required semantic setup</h2>
-          <pre><code>echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
+          <pre><code># Cloud provider example
+echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
 echo-pdf model set --provider openai --model gpt-4.1-mini
-echo-pdf semantic ./sample.pdf</code></pre>
+echo-pdf semantic ./sample.pdf
+
+# Local OpenAI-compatible example (Ollama / LM Studio / vLLM / LocalAI)
+echo-pdf provider set --provider ollama --api-key ""
+echo-pdf model set --provider ollama --model llava:13b
+echo-pdf semantic ./sample.pdf --provider ollama</code></pre>
         </section>
 
         <section class="two-col" style="margin-top:28px;">
@@ -47,6 +53,8 @@ echo-pdf semantic ./sample.pdf</code></pre>
             <ul>
               <li><code>document</code>, <code>structure</code>, <code>page</code>, and <code>render</code> work without provider configuration</li>
               <li><code>semantic</code> requires a configured provider and model before it runs</li>
+              <li>the provider may be a local OpenAI-compatible server such as Ollama, LM Studio, vLLM, llama.cpp, or LocalAI</li>
+              <li>slow local vision models may need a higher provider <code>timeoutMs</code> in <code>echo-pdf.config.json</code></li>
               <li>legacy <code>document ...</code> alias trees are not part of the supported docs path</li>
               <li>workspace-writing local runs stay the mainline workflow</li>
             </ul>
