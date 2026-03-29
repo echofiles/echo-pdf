@@ -45,6 +45,7 @@
 进一步的定位说明见：
 
 - [`docs/PRODUCT.md`](./docs/PRODUCT.md)
+- [`docs/PACKAGING.md`](./docs/PACKAGING.md)
 - [`docs/WORKSPACE_CONTRACT.md`](./docs/WORKSPACE_CONTRACT.md)
 - [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 
@@ -166,6 +167,8 @@ const ocr1 = await get_page_ocr({ pdfPath: "./sample.pdf", pageNumber: 1, model:
 - `@echofiles/echo-pdf/worker`：Worker 路由入口（兼容保留）
 
 仅以上 `exports` 子路径视为公开 API。`src/*`、`dist/*` 等深路径导入不受兼容性承诺保护，可能在次版本中变动。
+
+完整的 package entrypoint、runtime、semver、以及 clean-consumer import 保证，见 [`docs/PACKAGING.md`](./docs/PACKAGING.md)。
 
 ### Runtime expectations
 
