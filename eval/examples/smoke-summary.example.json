@@ -73,8 +73,7 @@
         "structureJsonPath": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/semantic-structure.json",
         "pagesDir": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/ocr"
+        "rendersDir": "eval/out/examples/smoke.workspace/documents/0d2de462036fc194/renders"
       },
       "notes": "Public long-form IRS guidance stays indexable as a dense operational sample."
     },
@@ -106,8 +105,7 @@
         "structureJsonPath": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
         "pagesDir": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/ocr"
+        "rendersDir": "eval/out/examples/smoke.workspace/documents/44cefe56c9b5dcad/renders"
       },
       "notes": "Public multi-column paper keeps obvious numbered sections in the heuristic path."
     },
@@ -172,8 +170,7 @@
         "structureJsonPath": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
         "pagesDir": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/pages",
-        "rendersDir": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/renders",
-        "ocrDir": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/ocr"
+        "rendersDir": "eval/out/examples/smoke.workspace/documents/cb55555cc4fa90d7/renders"
       },
       "notes": "Public CISA framework stays indexable as a large planning manual."
     },
@@ -205,8 +202,7 @@
         "structureJsonPath": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/semantic-structure.json",
         "pagesDir": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/ocr"
+        "rendersDir": "eval/out/examples/smoke.workspace/documents/e8316eae43e9da70/renders"
       },
       "notes": "Public NIST security guidance stays indexable as a very long dense document."
     }

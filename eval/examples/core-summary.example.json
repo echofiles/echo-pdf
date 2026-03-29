@@ -79,8 +79,7 @@
         "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
         "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
+        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders"
       },
       "notes": "Representative public research paper for semantic structure comparisons."
     },
@@ -217,8 +216,7 @@
         "structureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
         "pagesDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/ocr"
+        "rendersDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/renders"
       },
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
     },
@@ -355,8 +353,7 @@
         "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
         "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
+        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders"
       },
       "notes": "Public research paper for OCR comparisons on dense multi-column text."
     },
@@ -454,8 +451,7 @@
         "structureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/semantic-structure.json",
         "pagesDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/ocr"
+        "rendersDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/renders"
       },
       "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
     },

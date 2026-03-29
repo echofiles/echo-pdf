@@ -78,8 +78,7 @@
         "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/semantic-structure.json",
         "pagesDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/ocr"
+        "rendersDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/renders"
       },
       "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
     },
@@ -160,8 +159,7 @@
         "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/structure.json",
         "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/semantic-structure.json",
         "pagesDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/ocr"
+        "rendersDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/renders"
       },
       "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
     },
