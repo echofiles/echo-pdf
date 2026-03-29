@@ -76,6 +76,7 @@ A clean consumer install should be able to:
 
 - install the published package artifact without patching package metadata
 - import each supported public entrypoint directly
+- execute the supported built local runtime path after install
 - typecheck NodeNext imports against the published declaration files
 
 The clean-consumer expectation is:
@@ -85,7 +86,8 @@ The clean-consumer expectation is:
    - `@echofiles/echo-pdf`
    - `@echofiles/echo-pdf/local`
 3. observe successful runtime import
-4. observe successful NodeNext typechecking
+4. execute the packaged local document/render runtime without patching private paths
+5. observe successful NodeNext typechecking
 
 This is the packaging-level guarantee for downstream adoption.
 
@@ -94,7 +96,7 @@ This is the packaging-level guarantee for downstream adoption.
 The repo already carries the corresponding smoke checks:
 
 - `tests/integration/npm-pack-import.integration.test.ts`
-  - verifies fresh import from a packed artifact
+  - verifies fresh import from a packed artifact and exercises the packaged local document/render runtime
 - `tests/integration/ts-nodenext-consumer.integration.test.ts`
   - verifies a fresh NodeNext consumer typechecks the public imports
 - `npm run test:import-smoke`

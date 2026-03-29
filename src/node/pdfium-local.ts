@@ -3,6 +3,9 @@
 import { encode as encodePng } from "@cf-wasm/png"
 import { init } from "@embedpdf/pdfium"
 import type { WrappedPdfiumModule } from "@embedpdf/pdfium"
+import { readFile, stat } from "node:fs/promises"
+import { createRequire } from "node:module"
+import path from "node:path"
 import type { EchoPdfConfig } from "../pdf-types.js"
 
 let moduleInstance: WrappedPdfiumModule | null = null
@@ -22,13 +25,39 @@ const ensureWasmFunctionShim = (): void => {
   ) => fn
 }
 
-const readLocalPdfiumWasm = async (): Promise<ArrayBuffer> => {
-  const [{ readFile }, { createRequire }] = await Promise.all([
-    import("node:fs/promises"),
-    import("node:module"),
-  ])
+const resolveLocalPdfiumWasmPath = async (): Promise<string> => {
   const require = createRequire(import.meta.url)
-  const bytes = await readFile(require.resolve("@embedpdf/pdfium/pdfium.wasm"))
+  const candidates: string[] = []
+
+  try {
+    candidates.push(require.resolve("@embedpdf/pdfium/pdfium.wasm"))
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? error.code : ""
+    if (!["ERR_MODULE_NOT_FOUND", "MODULE_NOT_FOUND", "ERR_PACKAGE_PATH_NOT_EXPORTED"].includes(String(code))) {
+      throw error
+    }
+  }
+
+  const pdfiumEntry = require.resolve("@embedpdf/pdfium")
+  candidates.push(path.join(path.dirname(pdfiumEntry), "pdfium.wasm"))
+
+  for (const candidate of candidates) {
+    try {
+      await stat(candidate)
+      return candidate
+    } catch {
+      // Keep trying known package-local locations before surfacing a hard runtime error.
+    }
+  }
+
+  throw new Error(
+    "Failed to resolve the packaged PDFium WebAssembly binary for the local runtime."
+  )
+}
+
+const readLocalPdfiumWasm = async (): Promise<ArrayBuffer> => {
+  const wasmPath = await resolveLocalPdfiumWasmPath()
+  const bytes = await readFile(wasmPath)
   return new Uint8Array(bytes).slice().buffer
 }
 

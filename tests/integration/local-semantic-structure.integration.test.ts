@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { access, mkdtemp, readFile } from "node:fs/promises"
+import { access, copyFile, cp, mkdtemp, readFile, symlink } from "node:fs/promises"
 import { createServer } from "node:http"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { writeSimplePdf } from "../helpers/write-simple-pdf.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -137,6 +137,32 @@ afterEach(async () => {
 })
 
 describe("local semantic document structure", () => {
+  it("supports the built semantic runtime from a dist checkout", async () => {
+    const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-semantic-"))
+    await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
+    await copyFile(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
+    await copyFile(path.join(rootDir, "echo-pdf.config.json"), path.join(checkoutDir, "echo-pdf.config.json"))
+    await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
+
+    const local = await import(pathToFileURL(path.join(checkoutDir, "dist", "local", "index.js")).href)
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-semantic-ws-"))
+    const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-semantic-pdf-"))
+    const semanticPdf = path.join(fixtureDir, "built-semantic.pdf")
+
+    await writeSimplePdf(semanticPdf, [
+      ["Document Guide", "1 Overview", "Overview body text"],
+      ["2 Usage", "Usage body text"],
+    ])
+
+    const semantic = await local.get_semantic_document_structure({ pdfPath: semanticPdf, workspaceDir }) as {
+      detector: string
+      root: { children?: Array<{ title?: string }> }
+    }
+
+    expect(semantic.detector).toBe("heading-heuristic-v1")
+    expect(semantic.root.children?.map((node) => node.title)).toEqual(["1 Overview", "2 Usage"])
+  })
+
   it("adds a semantic structure artifact without changing the page index contract", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-"))

@@ -9,6 +9,7 @@ import { promisify } from "node:util"
 const execFileAsync = promisify(execFile)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
+const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
 
 const run = async (cmd: string, args: string[], cwd: string): Promise<string> => {
   const { stdout, stderr } = await execFileAsync(cmd, args, { cwd, env: process.env })
@@ -19,7 +20,7 @@ const run = async (cmd: string, args: string[], cwd: string): Promise<string> =>
 }
 
 describe("npm pack import smoke", () => {
-  it("imports package root/local from packed artifact", async () => {
+  it("imports package root/local and executes the packaged local runtime", async () => {
     const packJson = await run("npm", ["pack", "--json"], rootDir)
     const parsed = JSON.parse(packJson) as Array<{ filename?: string }>
     const filename = parsed[0]?.filename
@@ -38,9 +39,15 @@ describe("npm pack import smoke", () => {
         "if (typeof local.get_semantic_document_structure !== 'function') throw new Error('local.get_semantic_document_structure missing')",
         "if (typeof local.get_page_render !== 'function') throw new Error('local.get_page_render missing')",
         "if (typeof root.get_page_render !== 'function') throw new Error('root.get_page_render missing')",
+        "const pdfPath = process.argv[1]",
+        "const workspaceDir = process.argv[2]",
+        "const doc = await local.get_document({ pdfPath, workspaceDir })",
+        "const render = await local.get_page_render({ pdfPath, workspaceDir, pageNumber: 1 })",
+        "if (!doc.pageCount) throw new Error('pageCount missing')",
+        "if (render.mimeType !== 'image/png') throw new Error('render mimeType mismatch')",
         "console.log('ok')",
       ].join(";")
-      const output = await run("node", ["--input-type=module", "-e", code], tempDir)
+      const output = await run("node", ["--input-type=module", "-e", code, fixturePdf, path.join(tempDir, "workspace")], tempDir)
       expect(output.trim()).toContain("ok")
     } finally {
       await rm(tempDir, { recursive: true, force: true })
