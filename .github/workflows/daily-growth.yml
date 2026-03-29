@@ -1,0 +1,43 @@
+name: Daily Growth
+
+on:
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Collect daily growth signals
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node ./eval/run-daily-growth.mjs
+
+      - name: Upload daily growth artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-growth-${{ github.run_id }}
+          path: |
+            eval/out/daily-growth/daily-growth.json
+            eval/out/daily-growth/daily-growth.md
+          if-no-files-found: error
