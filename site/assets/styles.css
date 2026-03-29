@@ -268,7 +268,6 @@ li {
 .callout code,
 .table-wrap code,
 .hero code,
-pre code,
 p code,
 li code {
   font-family: "SFMono-Regular", "JetBrains Mono", "Cascadia Code", monospace;
@@ -289,6 +288,16 @@ pre {
 }
 
 pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.card pre code,
+.panel pre code,
+.callout pre code,
+.table-wrap pre code,
+.hero pre code {
   padding: 0;
   background: transparent;
   color: inherit;
