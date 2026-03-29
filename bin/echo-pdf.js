@@ -335,7 +335,7 @@ const loadLocalDocumentApi = async () => {
     }
     throw new Error(
       "Source-checkout document dev mode requires Bun and src/local/index.ts. " +
-      "Use `npm run document:dev -- <subcommand> ...` from a source checkout."
+      "Use `npm run document:dev -- <command> ...` from a source checkout."
     )
   }
   try {
@@ -345,16 +345,112 @@ const loadLocalDocumentApi = async () => {
     if (code === "ERR_MODULE_NOT_FOUND") {
       throw new Error(
         "Local document commands require built artifacts in a source checkout. " +
-        "Run `npm run build` first, use `npm run document:dev -- <subcommand> ...` in a source checkout, or install the published package."
+        "Run `npm run build` first, use `npm run document:dev -- <command> ...` in a source checkout, or install the published package."
       )
     }
     throw error
   }
 }
 
+const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render", "ocr"]
+const LEGACY_DOCUMENT_SUBCOMMANDS = ["index", "get", "structure", "semantic", "page", "render", "ocr"]
+
+const isLegacyDocumentSubcommand = (value) => typeof value === "string" && LEGACY_DOCUMENT_SUBCOMMANDS.includes(value)
+
+const readDocumentPrimitiveArgs = (command, subcommand, rest) => {
+  if (command === "document" && isLegacyDocumentSubcommand(subcommand)) {
+    const primitive = subcommand === "index" || subcommand === "get" ? "document" : subcommand
+    return {
+      primitive,
+      pdfPath: rest[0],
+    }
+  }
+  return {
+    primitive: command,
+    pdfPath: command === "document" ? subcommand : rest[0],
+  }
+}
+
+const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
+  const local = await loadLocalDocumentApi()
+  const { primitive, pdfPath } = readDocumentPrimitiveArgs(command, subcommand, rest)
+  const workspaceDir = typeof flags.workspace === "string" ? flags.workspace : undefined
+  const forceRefresh = flags["force-refresh"] === true
+  const renderScale = typeof flags.scale === "string" ? Number(flags.scale) : undefined
+
+  if (typeof pdfPath !== "string" || pdfPath.length === 0 || pdfPath.startsWith("--")) {
+    throw new Error(`${primitive} requires a pdf path argument`)
+  }
+
+  if (primitive === "document") {
+    const data = await local.get_document({ pdfPath, workspaceDir, forceRefresh })
+    print(data)
+    return
+  }
+
+  if (primitive === "structure") {
+    const data = await local.get_document_structure({ pdfPath, workspaceDir, forceRefresh })
+    print(data)
+    return
+  }
+
+  if (primitive === "semantic") {
+    const data = await local.get_semantic_document_structure({
+      pdfPath,
+      workspaceDir,
+      forceRefresh,
+      provider: typeof flags.provider === "string" ? flags.provider : undefined,
+      model: typeof flags.model === "string" ? flags.model : undefined,
+    })
+    print(data)
+    return
+  }
+
+  const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
+  if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+    throw new Error(`${primitive} requires --page <positive integer>`)
+  }
+
+  if (primitive === "page") {
+    const data = await local.get_page_content({ pdfPath, workspaceDir, forceRefresh, pageNumber })
+    print(data)
+    return
+  }
+
+  if (primitive === "render") {
+    const data = await local.get_page_render({ pdfPath, workspaceDir, forceRefresh, pageNumber, renderScale })
+    print(data)
+    return
+  }
+
+  if (primitive === "ocr") {
+    const data = await local.get_page_ocr({
+      pdfPath,
+      workspaceDir,
+      forceRefresh,
+      pageNumber,
+      renderScale,
+      provider: typeof flags.provider === "string" ? flags.provider : undefined,
+      model: typeof flags.model === "string" ? flags.model : undefined,
+      prompt: typeof flags.prompt === "string" ? flags.prompt : undefined,
+    })
+    print(data)
+    return
+  }
+
+  throw new Error(`Unsupported local primitive command: ${primitive}`)
+}
+
 const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
   process.stdout.write(`Commands:\n`)
+  process.stdout.write(`  document <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`\nCompatibility / existing service commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
   process.stdout.write(`  dev [--port 8788] [--host 127.0.0.1]\n`)
   process.stdout.write(`  provider set --provider <${PROVIDER_SET_NAMES.join("|")}> --api-key <KEY> [--profile name]\n`)
@@ -367,9 +463,9 @@ const usage = () => {
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
   process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name] [--auto-upload]\n`)
-  process.stdout.write(`  document index <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document get <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  document semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  document ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
@@ -623,62 +719,9 @@ const main = async () => {
     return
   }
 
-  if (command === "document") {
-    const local = await loadLocalDocumentApi()
-    const pdfPath = rest[0]
-    const workspaceDir = typeof flags.workspace === "string" ? flags.workspace : undefined
-    const forceRefresh = flags["force-refresh"] === true
-    const renderScale = typeof flags.scale === "string" ? Number(flags.scale) : undefined
-    if (typeof pdfPath !== "string" || pdfPath.length === 0) {
-      throw new Error("document command requires a pdf path argument")
-    }
-    if (subcommand === "index" || subcommand === "get") {
-      const data = await local.get_document({ pdfPath, workspaceDir, forceRefresh })
-      print(data)
-      return
-    }
-    if (subcommand === "structure") {
-      const data = await local.get_document_structure({ pdfPath, workspaceDir, forceRefresh })
-      print(data)
-      return
-    }
-    if (subcommand === "page") {
-      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
-      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
-        throw new Error("document page requires --page <positive integer>")
-      }
-      const data = await local.get_page_content({ pdfPath, workspaceDir, forceRefresh, pageNumber })
-      print(data)
-      return
-    }
-    if (subcommand === "render") {
-      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
-      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
-        throw new Error("document render requires --page <positive integer>")
-      }
-      const data = await local.get_page_render({ pdfPath, workspaceDir, forceRefresh, pageNumber, renderScale })
-      print(data)
-      return
-    }
-    if (subcommand === "ocr") {
-      const pageNumber = typeof flags.page === "string" ? Number(flags.page) : NaN
-      if (!Number.isInteger(pageNumber) || pageNumber < 1) {
-        throw new Error("document ocr requires --page <positive integer>")
-      }
-      const data = await local.get_page_ocr({
-        pdfPath,
-        workspaceDir,
-        forceRefresh,
-        pageNumber,
-        renderScale,
-        provider: typeof flags.provider === "string" ? flags.provider : undefined,
-        model: typeof flags.model === "string" ? flags.model : undefined,
-        prompt: typeof flags.prompt === "string" ? flags.prompt : undefined,
-      })
-      print(data)
-      return
-    }
-    throw new Error("document command supports: index|get|structure|page|render|ocr")
+  if (LOCAL_PRIMITIVE_COMMANDS.includes(command) || (command === "document" && isLegacyDocumentSubcommand(subcommand))) {
+    await runLocalPrimitiveCommand(command, subcommand, rest, flags)
+    return
   }
 
   if (command === "call") {

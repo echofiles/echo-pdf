@@ -40,10 +40,10 @@ const runSourceCheckoutDocumentDev = async (repoDir: string, args: string[]): Pr
 }
 
 describe("local document CLI", () => {
-  itWithNode20("indexes and reads a PDF through document commands", async () => {
+  itWithNode20("reads a PDF through the six primitive commands", async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-"))
 
-    const { stdout: docRaw } = await runCli(rootDir, ["document", "get", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: docRaw } = await runCli(rootDir, ["document", fixturePdf, "--workspace", workspaceDir])
     const doc = JSON.parse(docRaw) as {
       documentId: string
       pageCount: number
@@ -55,7 +55,7 @@ describe("local document CLI", () => {
     expect(doc.pageCount).toBeGreaterThan(0)
     expect(doc.cacheStatus).toBe("fresh")
 
-    const { stdout: structureRaw } = await runCli(rootDir, ["document", "structure", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: structureRaw } = await runCli(rootDir, ["structure", fixturePdf, "--workspace", workspaceDir])
     const structure = JSON.parse(structureRaw) as {
       documentId: string
       root: {
@@ -65,7 +65,19 @@ describe("local document CLI", () => {
     expect(structure.documentId).toBe(doc.documentId)
     expect(structure.root.children?.[0]?.pageNumber).toBe(1)
 
-    const { stdout: pageRaw } = await runCli(rootDir, ["document", "page", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const { stdout: semanticRaw } = await runCli(rootDir, ["semantic", fixturePdf, "--workspace", workspaceDir])
+    const semantic = JSON.parse(semanticRaw) as {
+      documentId: string
+      pageIndexArtifactPath: string
+      root: {
+        type: string
+      }
+    }
+    expect(semantic.documentId).toBe(doc.documentId)
+    expect(semantic.pageIndexArtifactPath.endsWith("structure.json")).toBe(true)
+    expect(semantic.root.type).toBe("document")
+
+    const { stdout: pageRaw } = await runCli(rootDir, ["page", fixturePdf, "--page", "1", "--workspace", workspaceDir])
     const page = JSON.parse(pageRaw) as {
       documentId: string
       pageNumber: number
@@ -75,7 +87,7 @@ describe("local document CLI", () => {
     expect(page.pageNumber).toBe(1)
     expect(typeof page.text).toBe("string")
 
-    const { stdout: renderRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const { stdout: renderRaw } = await runCli(rootDir, ["render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
     const render = JSON.parse(renderRaw) as {
       pageNumber: number
       mimeType: string
@@ -86,13 +98,13 @@ describe("local document CLI", () => {
     expect(render.mimeType).toBe("image/png")
     expect(render.cacheStatus).toBe("fresh")
 
-    const { stdout: docSecondRaw } = await runCli(rootDir, ["document", "get", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: docSecondRaw } = await runCli(rootDir, ["document", fixturePdf, "--workspace", workspaceDir])
     const docSecond = JSON.parse(docSecondRaw) as {
       cacheStatus: "fresh" | "reused"
     }
     expect(docSecond.cacheStatus).toBe("reused")
 
-    const { stdout: renderSecondRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const { stdout: renderSecondRaw } = await runCli(rootDir, ["render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
     const renderSecond = JSON.parse(renderSecondRaw) as {
       cacheStatus: "fresh" | "reused"
       imagePath: string
@@ -104,6 +116,22 @@ describe("local document CLI", () => {
       documentId?: string
     }
     expect(stored.documentId).toBe(doc.documentId)
+  })
+
+  itWithNode20("keeps legacy document subcommands as compatibility aliases", async () => {
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-legacy-"))
+
+    const { stdout: docRaw } = await runCli(rootDir, ["document", "get", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: structureRaw } = await runCli(rootDir, ["document", "structure", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: semanticRaw } = await runCli(rootDir, ["document", "semantic", fixturePdf, "--workspace", workspaceDir])
+    const { stdout: pageRaw } = await runCli(rootDir, ["document", "page", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+    const { stdout: renderRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
+
+    expect(JSON.parse(docRaw).documentId).toBeTruthy()
+    expect(JSON.parse(structureRaw).root.type).toBe("document")
+    expect(JSON.parse(semanticRaw).root.type).toBe("document")
+    expect(JSON.parse(pageRaw).pageNumber).toBe(1)
+    expect(JSON.parse(renderRaw).mimeType).toBe("image/png")
   })
 
   itWithNode20AndBun("supports a source-checkout document workflow even when dist artifacts exist", async () => {
@@ -120,7 +148,7 @@ describe("local document CLI", () => {
       "utf-8"
     )
 
-    const { stdout } = await runSourceCheckoutDocumentDev(checkoutDir, ["get", fixturePdf, "--workspace", checkoutDir])
+    const { stdout } = await runSourceCheckoutDocumentDev(checkoutDir, ["document", fixturePdf, "--workspace", checkoutDir])
     const doc = JSON.parse(stdout.replace(/^>.*\n/gm, "").trim()) as {
       pageCount: number
       cacheStatus: "fresh" | "reused"

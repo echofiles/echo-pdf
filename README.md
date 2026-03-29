@@ -55,18 +55,21 @@
 
 ```bash
 npm i -g @echofiles/echo-pdf
-echo-pdf document index ./sample.pdf
-echo-pdf document structure ./sample.pdf
-echo-pdf document page ./sample.pdf --page 1
-echo-pdf document render ./sample.pdf --page 1
+echo-pdf document ./sample.pdf
+echo-pdf structure ./sample.pdf
+echo-pdf semantic ./sample.pdf
+echo-pdf page ./sample.pdf --page 1
+echo-pdf render ./sample.pdf --page 1
+echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini
 ```
 
 源码 checkout 的本地开发路径：
 
 ```bash
 npm install
-npm run document:dev -- get ./fixtures/smoke.pdf
+npm run document:dev -- document ./fixtures/smoke.pdf
 npm run document:dev -- structure ./fixtures/smoke.pdf
+npm run document:dev -- semantic ./fixtures/smoke.pdf
 npm run document:dev -- page ./fixtures/smoke.pdf --page 1
 ```
 
@@ -308,48 +311,62 @@ echo-pdf config set --key service.storage.maxFileBytes --value 10000000
 echo-pdf config set --key service.maxPagesPerRequest --value 20
 ```
 
-## 2.1 本地文档索引与读取
+## 2.1 六个核心 primitives
+
+本地 CLI 主命令面与 `@echofiles/echo-pdf/local` 的六个 primitives 一一对应：
+
+- `document <file.pdf>` -> `get_document`
+- `structure <file.pdf>` -> `get_document_structure`
+- `semantic <file.pdf>` -> `get_semantic_document_structure`
+- `page <file.pdf> --page <N>` -> `get_page_content`
+- `render <file.pdf> --page <N>` -> `get_page_render`
+- `ocr <file.pdf> --page <N>` -> `get_page_ocr`
+
+兼容边界：
+
+- 旧的 `document get|index|structure|semantic|page|render|ocr ...` 仍作为兼容别名保留
+- README 和 `--help` 现在优先展示这六个主命令，而不是旧的子命令树
 
 建立本地索引并输出 metadata：
 
 ```bash
-echo-pdf document index ./sample.pdf
-```
-
-读取 document metadata：
-
-```bash
-echo-pdf document get ./sample.pdf
+echo-pdf document ./sample.pdf
 ```
 
 读取结构树：
 
 ```bash
-echo-pdf document structure ./sample.pdf
+echo-pdf structure ./sample.pdf
+```
+
+读取语义结构层：
+
+```bash
+echo-pdf semantic ./sample.pdf
 ```
 
 读取指定页面内容：
 
 ```bash
-echo-pdf document page ./sample.pdf --page 1
+echo-pdf page ./sample.pdf --page 1
 ```
 
 生成页面渲染 artifact：
 
 ```bash
-echo-pdf document render ./sample.pdf --page 1 --scale 2
+echo-pdf render ./sample.pdf --page 1 --scale 2
 ```
 
 生成 OCR artifact（需要本地 provider key / model）：
 
 ```bash
-echo-pdf document ocr ./sample.pdf --page 1 --model gpt-4.1-mini
+echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini
 ```
 
 自定义 artifact workspace：
 
 ```bash
-echo-pdf document index ./sample.pdf --workspace ./.cache/echo-pdf
+echo-pdf document ./sample.pdf --workspace ./.cache/echo-pdf
 ```
 
 ## 3. MCP 使用（兼容保留，非本阶段重点）
