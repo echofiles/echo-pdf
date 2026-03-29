@@ -11,7 +11,7 @@
 ## Sample
 
 - source kind: `existing`
-- source path: `eval/public-samples/nist-sp-800-171r2.pdf`
+- source path: `samples/public-cache/nist-sp-800-171r2.pdf`
 - page(s): `14+`
 
 ## Reproduction

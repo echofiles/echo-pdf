@@ -13,7 +13,7 @@
     "platform": "darwin",
     "arch": "arm64",
     "hostname": "<local-host>",
-    "workspaceDir": "eval/examples/core-workspace",
+    "workspaceDir": "eval/out/examples/core.workspace",
     "envHints": {
       "semanticProvider": "",
       "semanticModel": "",
@@ -61,7 +61,7 @@
       "durationMs": 179,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -73,14 +73,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/core-workspace",
-        "documentDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad",
-        "documentJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/document.json",
-        "structureJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/structure.json",
-        "semanticStructureJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pagesDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/ocr"
+        "workspaceDir": "eval/out/examples/core.workspace",
+        "documentDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad",
+        "documentJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/document.json",
+        "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
+        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
+        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
       },
       "notes": "Representative public research paper for semantic structure comparisons."
     },
@@ -94,7 +94,7 @@
       "durationMs": 6,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -112,8 +112,8 @@
         "flattenedSectionCount": 22
       },
       "artifacts": {
-        "artifactPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/structure.json"
+        "artifactPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json"
       },
       "notes": "Representative public research paper for semantic structure comparisons."
     },
@@ -127,7 +127,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -163,7 +163,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -199,7 +199,7 @@
       "durationMs": 554,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -211,14 +211,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/core-workspace",
-        "documentDir": "eval/examples/core-workspace/documents/cb55555cc4fa90d7",
-        "documentJsonPath": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/document.json",
-        "structureJsonPath": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/structure.json",
-        "semanticStructureJsonPath": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
-        "pagesDir": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/pages",
-        "rendersDir": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/renders",
-        "ocrDir": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/ocr"
+        "workspaceDir": "eval/out/examples/core.workspace",
+        "documentDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7",
+        "documentJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/document.json",
+        "structureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
+        "pagesDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/pages",
+        "rendersDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/renders",
+        "ocrDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/ocr"
       },
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
     },
@@ -232,7 +232,7 @@
       "durationMs": 9,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -250,8 +250,8 @@
         "flattenedSectionCount": 63
       },
       "artifacts": {
-        "artifactPath": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/examples/core-workspace/documents/cb55555cc4fa90d7/structure.json"
+        "artifactPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/structure.json"
       },
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
     },
@@ -265,7 +265,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -301,7 +301,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -337,7 +337,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -349,14 +349,14 @@
         "cacheStatus": "reused"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/core-workspace",
-        "documentDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad",
-        "documentJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/document.json",
-        "structureJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/structure.json",
-        "semanticStructureJsonPath": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pagesDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/examples/core-workspace/documents/44cefe56c9b5dcad/ocr"
+        "workspaceDir": "eval/out/examples/core.workspace",
+        "documentDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad",
+        "documentJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/document.json",
+        "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
+        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
+        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
       },
       "notes": "Public research paper for OCR comparisons on dense multi-column text."
     },
@@ -370,7 +370,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -403,7 +403,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -436,7 +436,7 @@
       "durationMs": 1398,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -448,14 +448,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/core-workspace",
-        "documentDir": "eval/examples/core-workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "eval/examples/core-workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "eval/examples/core-workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "eval/examples/core-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "eval/examples/core-workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/examples/core-workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/examples/core-workspace/documents/0d2de462036fc194/ocr"
+        "workspaceDir": "eval/out/examples/core.workspace",
+        "documentDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194",
+        "documentJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/document.json",
+        "structureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pagesDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/pages",
+        "rendersDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/renders",
+        "ocrDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/ocr"
       },
       "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
     },
@@ -469,7 +469,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -502,7 +502,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {

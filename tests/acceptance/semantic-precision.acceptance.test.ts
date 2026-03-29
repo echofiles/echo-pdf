@@ -3,12 +3,13 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
+import { publicSamplePaths, repoOwnedSamplePaths } from "../../samples/index.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const paperPdf = path.join(rootDir, "eval", "public-samples", "arxiv-attention-is-all-you-need.pdf")
-const formPdf = path.join(rootDir, "eval", "public-samples", "irs-form-w4.pdf")
-const mixedTechnicalPdf = path.join(rootDir, "fixtures", "input.pdf")
+const paperPdf = publicSamplePaths.attentionPaperPdf
+const formPdf = publicSamplePaths.irsFormW4Pdf
+const mixedTechnicalPdf = repoOwnedSamplePaths.inputPdf
 
 const ensureSample = async (pdfPath: string, hint: string): Promise<void> => {
   try {
@@ -52,7 +53,7 @@ describe("semantic precision on real PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-form-"))
     await ensureSample(
       formPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample irs-form-w4` or prepare the canonical public sample locally."
+      "Run `npm run eval:fetch-public-samples -- --sample irs-form-w4` or prepare the shared public sample cache locally."
     )
 
     const semantic = await local.get_semantic_document_structure({ pdfPath: formPdf, workspaceDir }) as {
@@ -70,7 +71,7 @@ describe("semantic precision on real PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-paper-"))
     await ensureSample(
       paperPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the canonical public sample locally."
+      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
     )
 
     const semantic = await local.get_semantic_document_structure({ pdfPath: paperPdf, workspaceDir }) as {

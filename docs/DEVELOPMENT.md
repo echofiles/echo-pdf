@@ -54,6 +54,26 @@ Rules:
 - Do not weaken product scope to make tests easier.
 - Do not merge static, unit, and integration failures into one vague "test failed" statement. Report the layer.
 
+## Testing Architecture
+
+- `tests/unit/`
+  - fast gating checks for local logic
+- `tests/integration/`
+  - gating checks for packaging, runtime, CLI, and built-path behavior
+- `tests/acceptance/`
+  - a small number of high-value product gates on canonical real PDFs
+- `eval/`
+  - non-gating measurement, trend discovery, and issue handoff
+
+Shared sample ownership is repo-level:
+
+- `samples/repo-owned/`
+  - checked-in canonical PDFs for gating paths
+- `samples/public-cache/`
+  - fetched local cache of public PDFs shared by acceptance and eval
+- `samples/public-sources.json`
+  - fetch registry for the shared public cache
+
 ## Local-First Development
 
 - Prefer explicit local workflows over hosted assumptions.

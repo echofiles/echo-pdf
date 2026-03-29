@@ -5,12 +5,16 @@
 What lives here:
 
 - `manifests/`: suite definitions for `smoke`, `core`, `stress`, and `known-bad`
-- `public-sources.json`: registry of public sample PDFs used by the suites
-- `fetch-public-samples.mjs`: downloader that caches those public PDFs locally
+- `fetch-public-samples.mjs`: downloader that hydrates the shared public sample cache
 - `prompts/`: OCR prompt variants used by the runner
-- `samples/`: sample organization rules
 - `examples/`: checked-in example outputs and handoff examples
 - `run-local.mjs`: suite runner that executes local document, semantic-structure, and OCR evals
+
+Shared sample ownership lives outside `eval/`:
+
+- `samples/repo-owned/`: checked-in canonical PDFs used by release-gating tests
+- `samples/public-cache/`: fetched public PDF cache shared by acceptance tests and eval suites
+- `samples/public-sources.json`: registry of fetchable public PDFs
 
 Quick start:
 
@@ -36,7 +40,7 @@ Outputs:
 - default summary path: `eval/out/<suite>-<timestamp>.summary.json`
 - default workspace path: `eval/out/<suite>-<timestamp>.workspace/`
 - generated PDFs for manifest-backed cases: `eval/out/<suite>-<timestamp>.generated/`
-- cached public PDFs: `eval/public-samples/*.pdf`
+- shared cached public PDFs: `samples/public-cache/*.pdf`
 - daily growth collector output: `eval/out/daily-growth/daily-growth.json`
 - daily growth collector Markdown: `eval/out/daily-growth/daily-growth.md`
 
@@ -65,3 +69,4 @@ For operating rules and reporting format, use:
 - `docs/EVAL_FAILURE_TAXONOMY.md`
 - `docs/EVAL_ISSUE_HANDOFF.md`
 - `docs/EVAL_SAMPLE_ORGANIZATION.md`
+- `../samples/README.md`

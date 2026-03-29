@@ -32,7 +32,7 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      - name: Prepare canonical public PDF samples for semantic acceptance
+      - name: Prepare shared public sample cache for acceptance and eval-backed gates
         run: npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need,irs-form-w4
 
       - name: Acceptance tests

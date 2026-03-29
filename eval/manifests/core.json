@@ -59,7 +59,7 @@
       "description": "Representative public research paper for semantic structure comparisons.",
       "source": {
         "kind": "existing",
-        "path": "../public-samples/arxiv-attention-is-all-you-need.pdf"
+        "path": "../../samples/public-cache/arxiv-attention-is-all-you-need.pdf"
       },
       "documentExpectations": {
         "pageCount": 15
@@ -95,7 +95,7 @@
       "description": "Public CISA framework for semantic structure comparisons on section-heavy guidance.",
       "source": {
         "kind": "existing",
-        "path": "../public-samples/cisa-infrastructure-resilience-planning-framework.pdf"
+        "path": "../../samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf"
       },
       "documentExpectations": {
         "pageCount": 55
@@ -119,7 +119,7 @@
       "description": "Public research paper for OCR comparisons on dense multi-column text.",
       "source": {
         "kind": "existing",
-        "path": "../public-samples/arxiv-attention-is-all-you-need.pdf"
+        "path": "../../samples/public-cache/arxiv-attention-is-all-you-need.pdf"
       },
       "documentExpectations": {
         "pageCount": 15
@@ -143,7 +143,7 @@
       "description": "Public long-form IRS guidance for OCR comparisons on dense cover-page text.",
       "source": {
         "kind": "existing",
-        "path": "../public-samples/irs-publication-15t.pdf"
+        "path": "../../samples/public-cache/irs-publication-15t.pdf"
       },
       "documentExpectations": {
         "pageCount": 71

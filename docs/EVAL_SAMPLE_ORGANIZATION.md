@@ -1,33 +1,54 @@
 # Sample Organization Rules
 
-## Goals
+`echo-pdf` keeps test/eval purpose and sample ownership separate:
 
-Samples must be:
+- `tests/` owns release-gating verification
+- `eval/` owns non-gating measurement
+- `samples/` owns shared PDF assets for both layers
 
-- local-first
-- reproducible
-- auditable
-- comparable across model / prompt / budget profiles
+## Shared Sample Layer
+
+- `samples/repo-owned/`
+  - checked-in canonical PDFs versioned with the repo
+  - used where release-gating paths need stable local inputs
+- `samples/public-cache/`
+  - fetched local cache of official/public PDFs
+  - hydrated with `npm run eval:fetch-public-samples`
+  - shared by acceptance tests and eval suites
+- `samples/public-sources.json`
+  - registry of public documents and stable local filenames
 
 ## Rules
 
-1. Prefer public, officially hosted knowledge and guidance PDFs.
-2. Cache those PDFs locally with `eval/fetch-public-samples.mjs`.
-3. Keep deterministic synthetic cases only for gaps that cannot be represented by public documents.
-4. One `caseId` per behavior under test.
-5. Put expectations in manifests, not in free-form notes.
-6. Split suites by operational purpose, not by author preference.
+1. Prefer public, officially hosted knowledge and guidance PDFs when a behavior can be represented by a stable public source.
+2. Fetch shared public PDFs into `samples/public-cache/`; do not make product runtime depend on fetching them.
+3. Keep deterministic repo-owned PDFs in `samples/repo-owned/` when gating tests need checked-in canonical inputs.
+4. Keep deterministic synthetic cases only for gaps that cannot be represented by repo-owned or public documents.
+5. One `caseId` per behavior under test.
+6. Put expectations in manifests, not in free-form notes.
+7. Split suites by operational purpose, not by author preference.
 
-## Suite Fit
+## Verification Fit
+
+- `tests/unit/`
+  - fast logic checks only
+- `tests/integration/`
+  - packaging / runtime / CLI / built-path gating
+- `tests/acceptance/`
+  - a small number of high-value product gates on canonical real PDFs
+- `eval/`
+  - suite-based non-gating measurement (`smoke`, `core`, `stress`, `known-bad`)
+
+## Eval Suite Fit
 
 - `smoke`
-  Minimal deterministic cases. No provider dependency. Prefer real public dense docs.
+  - minimal deterministic cases, no provider dependency
 - `core`
-  Representative knowledge/guidance documents with stable expectations.
+  - representative knowledge/guidance documents with stable expectations
 - `stress`
-  Long-context, high-density, or budget-sensitive guidance documents.
+  - long-context, high-density, or budget-sensitive guidance documents
 - `known-bad`
-  Tracked unsupported layouts or behaviors.
+  - tracked unsupported layouts or behaviors
 
 ## Naming
 
@@ -40,7 +61,7 @@ Samples must be:
 Every run should leave:
 
 - manifest path
-- generated or source PDF path
+- source or generated PDF path
 - output workspace path
 - summary JSON path
 - artifact paths for semantic/OCR outputs

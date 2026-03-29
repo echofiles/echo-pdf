@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url"
 import { execFile, execFileSync } from "node:child_process"
 import { createServer } from "node:http"
 import { promisify } from "node:util"
+import { repoOwnedSamplePaths } from "../../samples/index.js"
 
 const execFileAsync = promisify(execFile)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
-const realFixturePdf = path.join(rootDir, "fixtures", "input.pdf")
+const fixturePdf = repoOwnedSamplePaths.smokePdf
+const realFixturePdf = repoOwnedSamplePaths.inputPdf
 const systemNodeMajor = Number(
   execFileSync("node", ["-p", "process.versions.node.split('.')[0]"], { encoding: "utf-8" }).trim()
 )

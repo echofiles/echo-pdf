@@ -2,11 +2,10 @@
 
 import fs from "node:fs/promises"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { publicSampleCacheDir, publicSampleRegistryPath } from "../samples/index.js"
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const registryPath = path.join(__dirname, "public-sources.json")
-const targetDir = path.join(__dirname, "public-samples")
+const registryPath = publicSampleRegistryPath
+const targetDir = publicSampleCacheDir
 
 const parseFlags = (argv) => {
   const flags = {}

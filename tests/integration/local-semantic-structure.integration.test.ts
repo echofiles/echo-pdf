@@ -5,13 +5,14 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { writeSimplePdf } from "../helpers/write-simple-pdf.js"
+import { publicSamplePaths, repoOwnedSamplePaths } from "../../samples/index.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const smokePdf = path.join(rootDir, "fixtures", "smoke.pdf")
-const mixedTechnicalPdf = path.join(rootDir, "fixtures", "input.pdf")
-const paperPdf = path.join(rootDir, "eval", "public-samples", "arxiv-attention-is-all-you-need.pdf")
-const formPdf = path.join(rootDir, "eval", "public-samples", "irs-form-w4.pdf")
+const smokePdf = repoOwnedSamplePaths.smokePdf
+const mixedTechnicalPdf = repoOwnedSamplePaths.inputPdf
+const paperPdf = publicSamplePaths.attentionPaperPdf
+const formPdf = publicSamplePaths.irsFormW4Pdf
 
 const inferProvider = (): string => {
   if (typeof process.env.ECHO_PDF_TEST_OCR_PROVIDER === "string" && process.env.ECHO_PDF_TEST_OCR_PROVIDER.trim().length > 0) {
