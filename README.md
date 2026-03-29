@@ -85,6 +85,8 @@ What these commands map to:
 - `semantic` -> `get_semantic_document_structure`
 - `page` -> `get_page_content`
 - `render` -> `get_page_render`
+- `tables` -> `get_page_tables_latex`
+- `formulas` -> `get_page_formulas_latex`
 
 By default, `echo-pdf` writes reusable artifacts into a local workspace:
 
@@ -101,6 +103,10 @@ By default, `echo-pdf` writes reusable artifacts into a local workspace:
     renders/
       0001.scale-2.json
       0001.scale-2.png
+    tables/
+      0001.scale-2.provider-openai.model-gpt-4.1-mini.prompt-<hash>.json
+    formulas/
+      0001.scale-2.provider-openai.model-gpt-4.1-mini.prompt-<hash>.json
 ```
 
 These artifacts are meant to be inspected, cached, and reused by downstream local tools.
@@ -115,6 +121,8 @@ import {
   get_semantic_document_structure,
   get_page_content,
   get_page_render,
+  get_page_tables_latex,
+  get_page_formulas_latex,
 } from "@echofiles/echo-pdf/local"
 
 const document = await get_document({ pdfPath: "./sample.pdf" })
@@ -126,6 +134,8 @@ const semantic = await get_semantic_document_structure({
 })
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1, scale: 2 })
+const tables = await get_page_tables_latex({ pdfPath: "./sample.pdf", pageNumber: 1, provider: "openai", model: "gpt-4.1-mini" })
+const formulas = await get_page_formulas_latex({ pdfPath: "./sample.pdf", pageNumber: 1, provider: "openai", model: "gpt-4.1-mini" })
 ```
 
 Notes:

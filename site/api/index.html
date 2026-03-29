@@ -38,6 +38,8 @@
               <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code>; requires provider + model and can target a local OpenAI-compatible server</td></tr>
               <tr><td><code>get_page_content</code></td><td>page text artifact</td><td><code>pages/&lt;page&gt;.json</code></td><td>page retrieval and semantic input</td></tr>
               <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse and VL input</td></tr>
+              <tr><td><code>get_page_tables_latex</code></td><td>LaTeX tabular artifacts</td><td><code>tables/&lt;page&gt;...json</code></td><td>structured table extraction; requires provider + model</td></tr>
+              <tr><td><code>get_page_formulas_latex</code></td><td>LaTeX math artifacts</td><td><code>formulas/&lt;page&gt;...json</code></td><td>displayed formula extraction; requires provider + model</td></tr>
             </tbody>
           </table>
         </section>
@@ -51,6 +53,8 @@
   get_semantic_document_structure,
   get_page_content,
   get_page_render,
+  get_page_tables_latex,
+  get_page_formulas_latex,
 } from "@echofiles/echo-pdf/local"</code></pre>
           </article>
           <article class="panel">

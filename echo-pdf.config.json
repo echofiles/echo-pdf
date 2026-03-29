@@ -8,7 +8,8 @@
   "agent": {
     "defaultProvider": "openai",
     "defaultModel": "",
-    "tablePrompt": "Detect all tabular structures from this PDF page image. Output only valid LaTeX tabular environments, no explanations, no markdown fences."
+    "tablePrompt": "Detect all tabular structures from this PDF page image. Output only valid LaTeX tabular environments, no explanations, no markdown fences.",
+    "formulaPrompt": ""
   },
   "providers": {
     "openai": {

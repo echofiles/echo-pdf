@@ -44,7 +44,11 @@ echo-pdf semantic ./sample.pdf
 # Local OpenAI-compatible example (Ollama / LM Studio / vLLM / LocalAI)
 echo-pdf provider set --provider ollama --api-key ""
 echo-pdf model set --provider ollama --model llava:13b
-echo-pdf semantic ./sample.pdf --provider ollama</code></pre>
+echo-pdf semantic ./sample.pdf --provider ollama
+
+# LaTeX-first table and formula extraction (provider-required)
+echo-pdf tables ./sample.pdf --page 1
+echo-pdf formulas ./sample.pdf --page 1</code></pre>
         </section>
 
         <section class="two-col" style="margin-top:28px;">

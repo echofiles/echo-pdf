@@ -212,6 +212,58 @@ Downstream use:
 - visual page inspection
 - VL input reuse without rerendering the same page
 
+### `tables/<page>.scale-<scale>.provider-<provider>.model-<model>.prompt-<hash>.json`
+
+Optional page-level table artifact (LaTeX-first).
+
+Required JSON fields:
+
+- `documentId`
+- `pageNumber`
+- `renderScale`
+- `sourceSizeBytes`
+- `sourceMtimeMs`
+- `provider`
+- `model`
+- `prompt`
+- `imagePath`
+- `pageArtifactPath`
+- `renderArtifactPath`
+- `artifactPath`
+- `generatedAt`
+- `tables` (array of `{ id, latexTabular, caption?, evidenceText? }`)
+
+Downstream use:
+
+- LaTeX tabular extraction from rendered page images
+- structured table reuse by downstream technical document agents
+
+### `formulas/<page>.scale-<scale>.provider-<provider>.model-<model>.prompt-<hash>.json`
+
+Optional page-level formula artifact (LaTeX-first).
+
+Required JSON fields:
+
+- `documentId`
+- `pageNumber`
+- `renderScale`
+- `sourceSizeBytes`
+- `sourceMtimeMs`
+- `provider`
+- `model`
+- `prompt`
+- `imagePath`
+- `pageArtifactPath`
+- `renderArtifactPath`
+- `artifactPath`
+- `generatedAt`
+- `formulas` (array of `{ id, latexMath, label?, evidenceText? }`)
+
+Downstream use:
+
+- LaTeX math extraction from rendered page images
+- structured formula reuse by downstream technical document agents
+
 ## Cache Semantics
 
 ### Baseline indexing reuse
@@ -239,6 +291,7 @@ Additional reuse rules:
 
 - render artifacts are keyed by page number and render scale
 - semantic artifacts are keyed by source snapshot plus `strategyKey`
+- table and formula artifacts are keyed by page number, render scale, provider, model, and prompt hash
 
 ## Traceability Guarantees
 
