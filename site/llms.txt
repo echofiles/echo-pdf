@@ -1,0 +1,32 @@
+# echo-pdf docs
+
+Site: https://pdf.echofile.ai/
+Product: local-first PDF context engine for AI agents
+Boundary: docs-only site; not a hosted PDF processing service
+
+Primary surfaces:
+- npm package: @echofiles/echo-pdf
+- local CLI: echo-pdf
+- local workspace artifacts: .echo-pdf-workspace/
+
+Core local primitives:
+- get_document
+- get_document_structure
+- get_semantic_document_structure
+- get_page_content
+- get_page_render
+- get_page_ocr
+
+Key docs:
+- Overview: https://pdf.echofile.ai/
+- API: https://pdf.echofile.ai/api/index.html
+- CLI: https://pdf.echofile.ai/cli/index.html
+- Page index: https://pdf.echofile.ai/concepts/page-index.html
+- Semantic structure: https://pdf.echofile.ai/concepts/semantic-structure.html
+- Workspace artifacts: https://pdf.echofile.ai/concepts/workspace-artifacts.html
+- Integrations: https://pdf.echofile.ai/integrations/index.html
+
+Non-goals:
+- hosted SaaS
+- MCP as primary entrypoint
+- domain-specific extraction logic
