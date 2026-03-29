@@ -51,6 +51,7 @@
     "eval:fetch-public-samples": "node ./eval/fetch-public-samples.mjs",
     "typecheck": "npm run check:runtime && tsc --noEmit",
     "test:unit": "npm run check:runtime && vitest run tests/unit",
+    "test:acceptance": "npm run check:runtime && npm run build && vitest run tests/acceptance",
     "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
     "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration",
     "test": "npm run test:unit && npm run test:integration",
