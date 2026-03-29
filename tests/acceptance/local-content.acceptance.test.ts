@@ -5,12 +5,13 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { describe, expect, it } from "vitest"
+import { publicSamplePaths, repoOwnedSamplePaths } from "../../samples/index.js"
 
 const execFileAsync = promisify(execFile)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const canonicalPagePdf = path.join(rootDir, "fixtures", "input.pdf")
-const canonicalSemanticPdf = path.join(rootDir, "eval", "public-samples", "arxiv-attention-is-all-you-need.pdf")
+const canonicalPagePdf = repoOwnedSamplePaths.inputPdf
+const canonicalSemanticPdf = publicSamplePaths.attentionPaperPdf
 
 const ensureAcceptanceInput = async (pdfPath: string, hint: string): Promise<void> => {
   try {
@@ -111,7 +112,7 @@ describe("content-level acceptance on real local PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-"))
     await ensureAcceptanceInput(
       canonicalSemanticPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the canonical public sample."
+      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the shared public sample cache."
     )
 
     const first = await local.get_semantic_document_structure({ pdfPath: canonicalSemanticPdf, workspaceDir }) as {

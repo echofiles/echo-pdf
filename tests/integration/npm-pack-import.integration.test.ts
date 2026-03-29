@@ -5,11 +5,12 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import { repoOwnedSamplePaths } from "../../samples/index.js"
 
 const execFileAsync = promisify(execFile)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
+const fixturePdf = repoOwnedSamplePaths.smokePdf
 
 const run = async (cmd: string, args: string[], cwd: string): Promise<string> => {
   const { stdout, stderr } = await execFileAsync(cmd, args, { cwd, env: process.env })

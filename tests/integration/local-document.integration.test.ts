@@ -3,10 +3,11 @@ import { copyFile, cp, mkdtemp, readFile, stat, symlink, writeFile } from "node:
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { repoOwnedSamplePaths } from "../../samples/index.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const fixturePdf = path.join(rootDir, "fixtures", "smoke.pdf")
+const fixturePdf = repoOwnedSamplePaths.smokePdf
 
 describe("local document workflow", () => {
   it("supports the built local runtime from a dist checkout", async () => {

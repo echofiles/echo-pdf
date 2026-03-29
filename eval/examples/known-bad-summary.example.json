@@ -13,7 +13,7 @@
     "platform": "darwin",
     "arch": "arm64",
     "hostname": "<local-host>",
-    "workspaceDir": "eval/examples/known-bad-workspace",
+    "workspaceDir": "eval/out/examples/known-bad.workspace",
     "envHints": {
       "semanticProvider": "",
       "semanticModel": "",
@@ -60,7 +60,7 @@
       "durationMs": 1532,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -72,14 +72,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/known-bad-workspace",
-        "documentDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/ocr"
+        "workspaceDir": "eval/out/examples/known-bad.workspace",
+        "documentDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194",
+        "documentJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/document.json",
+        "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pagesDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/pages",
+        "rendersDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/renders",
+        "ocrDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/ocr"
       },
       "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
     },
@@ -93,7 +93,7 @@
       "durationMs": 23,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -127,8 +127,8 @@
         "flattenedSectionCount": 18
       },
       "artifacts": {
-        "artifactPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/examples/known-bad-workspace/documents/0d2de462036fc194/structure.json"
+        "artifactPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/structure.json"
       },
       "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
     },
@@ -142,7 +142,7 @@
       "durationMs": 988,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
+        "pdfPath": "samples/public-cache/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -154,14 +154,14 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/examples/known-bad-workspace",
-        "documentDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70",
-        "documentJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/document.json",
-        "structureJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json",
-        "semanticStructureJsonPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pagesDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/ocr"
+        "workspaceDir": "eval/out/examples/known-bad.workspace",
+        "documentDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70",
+        "documentJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/document.json",
+        "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/structure.json",
+        "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pagesDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/pages",
+        "rendersDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/renders",
+        "ocrDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/ocr"
       },
       "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
     },
@@ -175,7 +175,7 @@
       "durationMs": 17,
       "source": {
         "kind": "existing",
-        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
+        "pdfPath": "samples/public-cache/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -204,8 +204,8 @@
         "flattenedSectionCount": 358
       },
       "artifacts": {
-        "artifactPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/examples/known-bad-workspace/documents/e8316eae43e9da70/structure.json"
+        "artifactPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/structure.json"
       },
       "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
     }

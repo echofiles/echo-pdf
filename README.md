@@ -143,6 +143,7 @@ Contract and product docs:
 - [Package entrypoints and integration guarantees](./docs/PACKAGING.md)
 - [Workspace artifact contract](./docs/WORKSPACE_CONTRACT.md)
 - [Development guide](./docs/DEVELOPMENT.md)
+- [Shared sample assets](./samples/README.md)
 - [Eval harness](./eval/README.md)
 
 Published docs site:
@@ -156,6 +157,7 @@ npm ci
 npm run build
 npm run typecheck
 npm run test:unit
+npm run test:acceptance
 npm run test:integration
 ```
 

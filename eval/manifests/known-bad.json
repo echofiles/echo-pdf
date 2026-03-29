@@ -19,7 +19,7 @@
       ],
       "source": {
         "kind": "existing",
-        "path": "../public-samples/irs-publication-15t.pdf"
+        "path": "../../samples/public-cache/irs-publication-15t.pdf"
       },
       "documentExpectations": {
         "pageCount": 71
@@ -46,7 +46,7 @@
       ],
       "source": {
         "kind": "existing",
-        "path": "../public-samples/nist-sp-800-171r2.pdf"
+        "path": "../../samples/public-cache/nist-sp-800-171r2.pdf"
       },
       "documentExpectations": {
         "pageCount": 114
