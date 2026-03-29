@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page Index | echo-pdf Docs</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a class="brand" href="../index.html"><span class="brand-mark">EP</span><span>echo-pdf docs</span></a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="../index.html">Overview</a>
+          <a href="../api/index.html">API</a>
+          <a href="../cli/index.html">CLI</a>
+          <a href="./page-index.html" aria-current="page">Concepts</a>
+          <a href="../integrations/index.html">Integrations</a>
+        </nav>
+      </header>
+      <main>
+        <section class="hero">
+          <span class="eyebrow">Concept</span>
+          <h1>Page index stays stable.</h1>
+          <p class="lead">
+            <code>get_document_structure()</code> is the stable page-index contract. It returns <code>document -&gt; pages[]</code>
+            and does not silently absorb semantic hierarchy.
+          </p>
+        </section>
+
+        <section class="two-col">
+          <article class="panel">
+            <h2>Why it exists</h2>
+            <ul>
+              <li>iterate pages deterministically</li>
+              <li>locate per-page artifacts under one document root</li>
+              <li>support downstream incremental reads without semantic assumptions</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h2>Artifact mapping</h2>
+            <pre><code>documents/&lt;documentId&gt;/
+  document.json
+  structure.json
+  pages/
+    0001.json
+    0002.json</code></pre>
+          </article>
+        </section>
+
+        <p class="section-label">Stable contract</p>
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Artifact</th><th>Purpose</th><th>Safe downstream assumption</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>document.json</code></td><td>source metadata</td><td>tracks source path, snapshot, page count, artifact roots</td></tr>
+              <tr><td><code>structure.json</code></td><td>page index</td><td><code>root.children</code> stays a page list, not a semantic tree</td></tr>
+              <tr><td><code>pages/0001.json</code></td><td>page content</td><td>contains page text, preview, and artifact path</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>No hidden promotion to semantics.</h3>
+          <p>
+            If you need headings or sections, use the semantic layer explicitly. The page index is intentionally flatter and more boring,
+            because downstream tooling depends on it being mechanically stable.
+          </p>
+        </section>
+      </main>
+      <footer class="footer"><div class="footer-grid"><div><p class="kicker">Next</p><ul><li><a href="./semantic-structure.html">Semantic structure layer</a></li><li><a href="./workspace-artifacts.html">Workspace artifacts</a></li></ul></div><div><p class="kicker">Local-first rule</p><p>This page documents artifacts written to the local workspace. It does not imply hosted processing.</p></div></div></footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>API Reference | echo-pdf Docs</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a class="brand" href="../index.html"><span class="brand-mark">EP</span><span>echo-pdf docs</span></a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="../index.html">Overview</a>
+          <a href="./index.html" aria-current="page">API</a>
+          <a href="../cli/index.html">CLI</a>
+          <a href="../concepts/page-index.html">Concepts</a>
+          <a href="../integrations/index.html">Integrations</a>
+        </nav>
+      </header>
+      <main>
+        <section class="hero">
+          <span class="eyebrow">API</span>
+          <h1>Six local primitives, one product surface.</h1>
+          <p class="lead">
+            The local package API is intentionally small. These six primitives are the core surface that downstream local agents and apps should build around.
+          </p>
+        </section>
+
+        <section class="table-wrap" style="margin-top:28px;">
+          <table>
+            <thead>
+              <tr><th>Primitive</th><th>Returns</th><th>Writes</th><th>Primary use</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>get_document</code></td><td>document metadata</td><td><code>document.json</code></td><td>source snapshot and document root</td></tr>
+              <tr><td><code>get_document_structure</code></td><td>stable page index</td><td><code>structure.json</code></td><td>iterate pages and locate page artifacts</td></tr>
+              <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code></td></tr>
+              <tr><td><code>get_page_content</code></td><td>page text artifact</td><td><code>pages/&lt;page&gt;.json</code></td><td>page retrieval and semantic input</td></tr>
+              <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse</td></tr>
+              <tr><td><code>get_page_ocr</code></td><td>OCR metadata</td><td><code>ocr/&lt;page&gt;.json</code></td><td>text recovery over rendered image input</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="two-col" style="margin-top:28px;">
+          <article class="panel">
+            <h2>Import surface</h2>
+            <pre><code>import {
+  get_document,
+  get_document_structure,
+  get_semantic_document_structure,
+  get_page_content,
+  get_page_render,
+  get_page_ocr,
+} from "@echofiles/echo-pdf/local"</code></pre>
+          </article>
+          <article class="panel">
+            <h2>Runtime expectation</h2>
+            <ul>
+              <li>Node.js <code>&gt;=20</code></li>
+              <li>ESM import support</li>
+              <li>local-first Node/Bun runtime</li>
+              <li>package <code>exports</code> aware consumer</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>Not the place for broad tool sprawl.</h3>
+          <p>
+            This reference is intentionally centered on six core primitives. Compatibility surfaces may remain elsewhere in the repo, but they are not the main API story of the local-first product.
+          </p>
+        </section>
+      </main>
+      <footer class="footer"><div class="footer-grid"><div><p class="kicker">Next</p><ul><li><a href="../cli/index.html">Map the same surface to CLI</a></li><li><a href="../integrations/index.html">See downstream integration guidance</a></li></ul></div><div><p class="kicker">Package contract</p><p>Public entrypoints and semver expectations are documented in <code>docs/PACKAGING.md</code>.</p></div></div></footer>
+    </div>
+  </body>
+</html>
