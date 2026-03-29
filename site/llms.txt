@@ -1,7 +1,7 @@
 # echo-pdf docs
 
 Site: https://pdf.echofile.ai/
-Product: local-first PDF context engine for AI agents
+Product: local-first, VL-first PDF context engine for AI agents
 Boundary: docs-only site; not a hosted PDF processing service
 
 Primary surfaces:
@@ -15,7 +15,6 @@ Core local primitives:
 - get_semantic_document_structure
 - get_page_content
 - get_page_render
-- get_page_ocr
 
 Key docs:
 - Overview: https://pdf.echofile.ai/

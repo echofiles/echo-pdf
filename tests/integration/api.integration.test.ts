@@ -258,7 +258,6 @@ describe("echo-pdf integration", () => {
       tools?: Array<{ name?: string }>
     }
     expect(catalog.tools?.map((t) => t.name)).toContain("pdf_extract_pages")
-    expect(catalog.tools?.map((t) => t.name)).toContain("pdf_ocr_pages")
     expect(catalog.tools?.map((t) => t.name)).toContain("pdf_tables_to_latex")
     expect(catalog.tools?.map((t) => t.name)).toContain("file_ops")
   })
@@ -440,7 +439,7 @@ describe("echo-pdf integration", () => {
     expect(text.length).toBe(0)
   })
 
-  it("runs real provider model list + ocr + tables when key is configured", async () => {
+  it("runs real provider model list + tables when key is configured", async () => {
     const provider = detectLlmProvider()
     if (!provider) {
       return
@@ -474,28 +473,6 @@ describe("echo-pdf integration", () => {
     const uploaded = await uploadPdf(uploadPath)
     const fileId = uploaded.fileId
     expect(fileId).toBeTruthy()
-
-    const ocrData = await postJson("/tools/call", {
-      name: "pdf_ocr_pages",
-      arguments: {
-        fileId,
-        pages: [1],
-        provider,
-        model,
-      },
-      provider,
-      model,
-      providerApiKeys: providerApiKeys(),
-    }) as {
-      data?: {
-        pages?: Array<{ text?: string }>
-      }
-    }
-    const ocrOutput = ocrData.data ?? null
-
-    expect(Array.isArray(ocrOutput.pages)).toBe(true)
-    expect(typeof ocrOutput.pages?.[0]?.text).toBe("string")
-    expect(ocrOutput.pages?.[0]?.text?.trim().length).toBeGreaterThan(0)
 
     const tableData = await postJson("/tools/call", {
       name: "pdf_tables_to_latex",

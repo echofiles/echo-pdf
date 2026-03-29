@@ -352,7 +352,7 @@ const loadLocalDocumentApi = async () => {
   }
 }
 
-const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render", "ocr"]
+const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render"]
 const REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE = {
   index: "document",
   get: "document",
@@ -360,7 +360,6 @@ const REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE = {
   semantic: "semantic",
   page: "page",
   render: "render",
-  ocr: "ocr",
 }
 
 const isRemovedDocumentAlias = (value) =>
@@ -439,21 +438,6 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
     return
   }
 
-  if (primitive === "ocr") {
-    const data = await local.get_page_ocr({
-      pdfPath,
-      workspaceDir,
-      forceRefresh,
-      pageNumber,
-      renderScale,
-      provider: typeof flags.provider === "string" ? flags.provider : undefined,
-      model: typeof flags.model === "string" ? flags.model : undefined,
-      prompt: typeof flags.prompt === "string" ? flags.prompt : undefined,
-    })
-    print(data)
-    return
-  }
-
   throw new Error(`Unsupported local primitive command: ${primitive}`)
 }
 
@@ -465,7 +449,6 @@ const usage = () => {
   process.stdout.write(`  semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`\nAdditional commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
   process.stdout.write(`  dev [--port 8788] [--host 127.0.0.1]\n`)
@@ -601,6 +584,12 @@ const main = async () => {
   if (command === "mcp-stdio") {
     await runMcpStdioCommand(typeof flags["service-url"] === "string" ? flags["service-url"] : undefined)
     return
+  }
+
+  if (command === "ocr") {
+    throw new Error(
+      "`echo-pdf ocr` was removed from the first-class CLI surface. OCR is migration-only and no longer a supported primary command."
+    )
   }
 
   if (command === "provider" && subcommand === "set") {

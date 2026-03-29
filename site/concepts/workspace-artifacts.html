@@ -23,7 +23,7 @@
           <span class="eyebrow">Concept</span>
           <h1>Workspace artifacts are part of the product surface.</h1>
           <p class="lead">
-            <code>.echo-pdf-workspace/</code> is not incidental cache dust. It is an inspectable local contract for downstream tools that need document, page, render, OCR, and semantic artifacts.
+            <code>.echo-pdf-workspace/</code> is not incidental cache dust. It is an inspectable local contract for downstream tools that need document, page, render, and semantic artifacts.
           </p>
         </section>
 
@@ -38,9 +38,14 @@
       0001.json
     renders/
       0001.scale-2.json
-      0001.scale-2.png
-    ocr/
-      0001.scale-2.provider-openai.model-gpt-4o.prompt-&lt;hash&gt;.json</code></pre>
+      0001.scale-2.png</code></pre>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>Legacy OCR artifacts are migration-only.</h3>
+          <p>
+            Older workspaces may still contain <code>ocr/</code> directories from pre-VL-first builds. They are not part of the current first-class workspace contract for new downstream integrations.
+          </p>
         </section>
 
         <section class="info-grid" style="margin-top:26px;">

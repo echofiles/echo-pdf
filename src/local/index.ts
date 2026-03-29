@@ -20,6 +20,9 @@ export interface LocalDocumentArtifactPaths {
   readonly semanticStructureJsonPath: string
   readonly pagesDir: string
   readonly rendersDir: string
+}
+
+interface InternalDocumentArtifactPaths extends LocalDocumentArtifactPaths {
   readonly ocrDir: string
 }
 
@@ -100,7 +103,7 @@ export interface LocalPageRenderArtifact {
   readonly cacheStatus: "fresh" | "reused"
 }
 
-export interface LocalPageOcrArtifact {
+interface LocalPageOcrArtifact {
   readonly documentId: string
   readonly pageNumber: number
   readonly renderScale: number
@@ -145,7 +148,7 @@ export interface LocalPageRenderRequest extends LocalPageContentRequest {
   readonly renderScale?: number
 }
 
-export interface LocalPageOcrRequest extends LocalPageRenderRequest {
+interface LocalPageOcrRequest extends LocalPageRenderRequest {
   readonly provider?: string
   readonly model?: string
   readonly prompt?: string
@@ -161,7 +164,7 @@ interface StoredDocumentRecord {
   readonly mtimeMs: number
   readonly pageCount: number
   readonly indexedAt: string
-  readonly artifactPaths: LocalDocumentArtifactPaths
+  readonly artifactPaths: InternalDocumentArtifactPaths
 }
 
 const defaultWorkspaceDir = (): string => path.resolve(process.cwd(), ".echo-pdf-workspace")
@@ -181,7 +184,7 @@ const scaleLabel = (value: number): string => sanitizeSegment(String(value))
 
 const pageLabel = (pageNumber: number): string => String(pageNumber).padStart(4, "0")
 
-const buildArtifactPaths = (workspaceDir: string, documentId: string): LocalDocumentArtifactPaths => {
+const buildArtifactPaths = (workspaceDir: string, documentId: string): InternalDocumentArtifactPaths => {
   const documentDir = path.join(workspaceDir, "documents", documentId)
   return {
     workspaceDir,
@@ -194,6 +197,16 @@ const buildArtifactPaths = (workspaceDir: string, documentId: string): LocalDocu
     ocrDir: path.join(documentDir, "ocr"),
   }
 }
+
+const toPublicArtifactPaths = (paths: InternalDocumentArtifactPaths): LocalDocumentArtifactPaths => ({
+  workspaceDir: paths.workspaceDir,
+  documentDir: paths.documentDir,
+  documentJsonPath: paths.documentJsonPath,
+  structureJsonPath: paths.structureJsonPath,
+  semanticStructureJsonPath: paths.semanticStructureJsonPath,
+  pagesDir: paths.pagesDir,
+  rendersDir: paths.rendersDir,
+})
 
 const buildRenderArtifactPaths = (
   paths: LocalDocumentArtifactPaths,
@@ -208,7 +221,7 @@ const buildRenderArtifactPaths = (
 }
 
 const buildOcrArtifactPath = (
-  paths: LocalDocumentArtifactPaths,
+  paths: InternalDocumentArtifactPaths,
   pageNumber: number,
   renderScale: number,
   provider: string,
@@ -274,7 +287,7 @@ const readJson = async <T>(targetPath: string): Promise<T> => {
   return JSON.parse(raw) as T
 }
 
-const loadStoredDocument = async (paths: LocalDocumentArtifactPaths): Promise<StoredDocumentRecord | null> => {
+const loadStoredDocument = async (paths: InternalDocumentArtifactPaths): Promise<StoredDocumentRecord | null> => {
   if (!await fileExists(paths.documentJsonPath)) return null
   const raw = await readJson<Omit<StoredDocumentRecord, "artifactPaths"> & { artifactPaths?: unknown }>(paths.documentJsonPath)
   return {
@@ -286,7 +299,7 @@ const loadStoredDocument = async (paths: LocalDocumentArtifactPaths): Promise<St
 const isReusableRecord = async (
   record: StoredDocumentRecord,
   sourceStats: { sizeBytes: number; mtimeMs: number },
-  paths: LocalDocumentArtifactPaths
+  paths: InternalDocumentArtifactPaths
 ): Promise<boolean> => {
   if (record.sizeBytes !== sourceStats.sizeBytes || record.mtimeMs !== sourceStats.mtimeMs) return false
   if (!await fileExists(paths.structureJsonPath)) return false
@@ -675,7 +688,10 @@ const indexDocumentInternal = async (
     indexedAt: structure.generatedAt,
     artifactPaths,
   }
-  await writeJson(artifactPaths.documentJsonPath, documentRecord)
+  await writeJson(artifactPaths.documentJsonPath, {
+    ...documentRecord,
+    artifactPaths: toPublicArtifactPaths(documentRecord.artifactPaths),
+  })
   return { record: documentRecord, reused: false }
 }
 
@@ -684,6 +700,7 @@ const toMetadata = (
   cacheStatus: "fresh" | "reused"
 ): LocalDocumentMetadata => ({
   ...record,
+  artifactPaths: toPublicArtifactPaths(record.artifactPaths),
   cacheStatus,
 })
 
@@ -753,7 +770,7 @@ export const get_page_content = async (request: LocalPageContentRequest): Promis
 export const get_page_render = async (request: LocalPageRenderRequest): Promise<LocalPageRenderArtifact> =>
   ensureRenderArtifact(request)
 
-export const get_page_ocr = async (request: LocalPageOcrRequest): Promise<LocalPageOcrArtifact> => {
+const getPageOcrMigrationOnly = async (request: LocalPageOcrRequest): Promise<LocalPageOcrArtifact> => {
   const config = resolveConfig(request.config)
   const env = resolveEnv(request.env)
   const { record } = await indexDocumentInternal(request)

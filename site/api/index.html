@@ -21,9 +21,9 @@
       <main>
         <section class="hero">
           <span class="eyebrow">API</span>
-          <h1>Six local primitives, one product surface.</h1>
+          <h1>VL-first local primitives, one product surface.</h1>
           <p class="lead">
-            The local package API is intentionally small. These six primitives are the core surface that downstream local agents and apps should build around.
+            The local package API is intentionally small. The mainline surface centers render, page understanding, semantic structure, and workspace artifacts.
           </p>
         </section>
 
@@ -37,8 +37,7 @@
               <tr><td><code>get_document_structure</code></td><td>stable page index</td><td><code>structure.json</code></td><td>iterate pages and locate page artifacts</td></tr>
               <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code></td></tr>
               <tr><td><code>get_page_content</code></td><td>page text artifact</td><td><code>pages/&lt;page&gt;.json</code></td><td>page retrieval and semantic input</td></tr>
-              <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse</td></tr>
-              <tr><td><code>get_page_ocr</code></td><td>OCR metadata</td><td><code>ocr/&lt;page&gt;.json</code></td><td>text recovery over rendered image input</td></tr>
+              <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse and VL input</td></tr>
             </tbody>
           </table>
         </section>
@@ -52,7 +51,6 @@
   get_semantic_document_structure,
   get_page_content,
   get_page_render,
-  get_page_ocr,
 } from "@echofiles/echo-pdf/local"</code></pre>
           </article>
           <article class="panel">
@@ -65,11 +63,10 @@
             </ul>
           </article>
         </section>
-
         <section class="callout warn" style="margin-top:32px;">
           <h3>Not the place for broad tool sprawl.</h3>
           <p>
-            This reference is intentionally centered on six core primitives. Compatibility surfaces may remain elsewhere in the repo, but they are not the main API story of the local-first product.
+            This reference is intentionally centered on the main VL-first primitives. Compatibility surfaces may remain elsewhere in the repo, but they are not the main API story of the local-first product.
           </p>
         </section>
       </main>

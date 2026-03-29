@@ -53,7 +53,7 @@ const runSourceCheckoutCliDev = async (repoDir: string, args: string[]): Promise
 }
 
 describe("local document CLI", () => {
-  itWithNode20("reads a PDF through the six primitive commands", async () => {
+  itWithNode20("reads a PDF through the five mainline primitives", async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-"))
 
     const { stdout: docRaw } = await runCli(rootDir, ["document", fixturePdf, "--workspace", workspaceDir])
@@ -131,7 +131,7 @@ describe("local document CLI", () => {
     expect(stored.documentId).toBe(doc.documentId)
   })
 
-  itWithNode20("prints help around the six top-level primitives only", async () => {
+  itWithNode20("prints help around the five top-level primitives only", async () => {
     const { stdout } = await runCli(rootDir, ["--help"])
 
     expect(stdout).toContain("Primary local primitive commands:")
@@ -140,10 +140,16 @@ describe("local document CLI", () => {
     expect(stdout).toContain("  semantic <file.pdf>")
     expect(stdout).toContain("  page <file.pdf> --page <N>")
     expect(stdout).toContain("  render <file.pdf> --page <N> [--scale N]")
-    expect(stdout).toContain("  ocr <file.pdf> --page <N> [--scale N]")
     expect(stdout).not.toContain("document get <file.pdf>")
     expect(stdout).not.toContain("document structure <file.pdf>")
     expect(stdout).not.toContain("document semantic <file.pdf>")
+  })
+
+  itWithNode20("rejects the removed ocr command with migration-only guidance", async () => {
+    const { stderr } = await runCliFailure(rootDir, ["ocr", fixturePdf, "--page", "1"])
+
+    expect(stderr).toContain("`echo-pdf ocr` was removed from the first-class CLI surface.")
+    expect(stderr).toContain("OCR is migration-only")
   })
 
   itWithNode20("rejects removed legacy document aliases with migration guidance", async () => {

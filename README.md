@@ -1,8 +1,8 @@
 # echo-pdf
 
-`echo-pdf` is a local-first PDF context engine for AI agents.
+`echo-pdf` is a local-first, vision-language-first PDF context engine for AI agents.
 
-It turns a local PDF into reusable CLI outputs, Node/Bun library primitives, and inspectable workspace artifacts that downstream tools can consume without reparsing the same file over and over again.
+It turns a local PDF into reusable CLI outputs, Node/Bun library primitives, and inspectable workspace artifacts for page rendering, page understanding, semantic structure, and downstream local reuse.
 
 ## What It Is
 
@@ -16,6 +16,7 @@ Primary product surfaces:
 Current focus:
 
 - local-first workflows
+- VL-first page understanding
 - stable page-level document primitives
 - reusable workspace artifacts
 - clean package entrypoints for downstream consumers
@@ -56,7 +57,6 @@ echo-pdf structure ./sample.pdf
 echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1 --scale 2
-echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini
 ```
 
 What these commands map to:
@@ -66,7 +66,6 @@ What these commands map to:
 - `semantic` -> `get_semantic_document_structure`
 - `page` -> `get_page_content`
 - `render` -> `get_page_render`
-- `ocr` -> `get_page_ocr`
 
 By default, `echo-pdf` writes reusable artifacts into a local workspace:
 
@@ -83,12 +82,9 @@ By default, `echo-pdf` writes reusable artifacts into a local workspace:
     renders/
       0001.scale-2.json
       0001.scale-2.png
-    ocr/
-      0001.scale-2.provider-openai.model-gpt-4o.prompt-<hash>.json
 ```
 
 These artifacts are meant to be inspected, cached, and reused by downstream local tools.
-
 ## Library Usage
 
 Use the local document primitives directly from Node/Bun:
@@ -100,7 +96,6 @@ import {
   get_semantic_document_structure,
   get_page_content,
   get_page_render,
-  get_page_ocr,
 } from "@echofiles/echo-pdf/local"
 
 const document = await get_document({ pdfPath: "./sample.pdf" })
@@ -108,20 +103,17 @@ const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
 const semantic = await get_semantic_document_structure({ pdfPath: "./sample.pdf" })
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1, scale: 2 })
-const ocr1 = await get_page_ocr({
-  pdfPath: "./sample.pdf",
-  pageNumber: 1,
-  provider: "openai",
-  model: "gpt-4.1-mini",
-})
 ```
 
 Notes:
 
 - `get_document_structure()` returns the stable page index: `document -> pages[]`
 - `get_semantic_document_structure()` returns a separate semantic structure layer; it does not replace `pages[]`
-- `get_page_render()` materializes a reusable PNG plus render metadata
-- `get_page_ocr()` writes an OCR artifact and requires a local provider/model configuration
+- `get_page_render()` materializes a reusable PNG plus render metadata and is the mainline visual input path
+
+Migration note:
+
+- older workspaces may still contain `ocr/*` artifacts from pre-VL-first builds, but they are no longer part of the supported first-class contract
 
 ## Public Package Entrypoints
 

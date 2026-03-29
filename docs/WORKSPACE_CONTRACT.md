@@ -4,6 +4,8 @@ This document defines the local workspace artifact contract for `echo-pdf`.
 
 It is the contract downstream local apps and operators may rely on when they read `.echo-pdf-workspace/` directly.
 
+The mainline artifact story in the current phase is document metadata, page artifacts, render artifacts, and semantic structure.
+
 ## Scope
 
 This contract covers:
@@ -43,9 +45,6 @@ Callers may override the root with `workspaceDir` or `--workspace`.
         0001.scale-2.json
         0001.scale-2.png
         ...
-      ocr/
-        0001.scale-2.provider-openai.model-gpt-4o.prompt-<hash>.json
-        ...
 ```
 
 Layout rules:
@@ -53,7 +52,11 @@ Layout rules:
 - `document.json`, `structure.json`, and `pages/*.json` are the required baseline artifacts after document indexing.
 - `semantic-structure.json` is materialized only after semantic extraction runs.
 - `renders/*` artifacts are materialized only after page rendering runs.
-- `ocr/*` artifacts are materialized only after OCR runs.
+
+Migration-only note:
+
+- older workspaces may still contain `ocr/*` artifacts produced by pre-VL-first builds
+- those legacy files are not part of the current first-class workspace contract and new downstream integrations should not depend on them
 
 ## Document Identity
 
@@ -209,38 +212,8 @@ The sibling `.png` file is the actual rendered image addressed by `imagePath`.
 Downstream use:
 
 - visual page inspection
-- OCR/image reuse without rerendering the same page
-
-### `ocr/<page>...json`
-
-Optional OCR artifact.
-
-Required fields:
-
-- `documentId`
-- `pageNumber`
-- `renderScale`
-- `sourceSizeBytes`
-- `sourceMtimeMs`
-- `provider`
-- `model`
-- `prompt`
-- `text`
-- `chars`
-- `imagePath`
-- `renderArtifactPath`
-- `artifactPath`
-- `generatedAt`
-
-The OCR filename must encode:
-
-- page number
-- render scale
-- provider
-- model
-- prompt hash
-
-The full prompt remains in the JSON artifact; downstream consumers should not reconstruct the prompt from the filename hash.
+- VL input reuse without rerendering the same page
+- optional OCR fallback/image reuse when that path is explicitly invoked
 
 ## Cache Semantics
 
@@ -255,20 +228,19 @@ The full prompt remains in the JSON artifact; downstream consumers should not re
 
 If any of those fail, the baseline document/page artifacts are rebuilt.
 
-### Render / OCR / Semantic reuse
+### Render / Semantic reuse
 
-Render, OCR, and semantic artifacts are reusable only when their source snapshot matches the current `document.json` snapshot.
+Render and semantic artifacts are reusable only when their source snapshot matches the current `document.json` snapshot.
 
 Implications:
 
-- if the PDF at the same path changes, stale render/OCR/semantic artifacts must not be reused
+- if the PDF at the same path changes, stale render/semantic artifacts must not be reused
 - reusing the same path with different bytes keeps the same `documentId`, but artifacts are refreshed against the new source snapshot
 - `forceRefresh` bypasses reuse and rewrites the addressed artifact
 
 Additional reuse rules:
 
 - render artifacts are keyed by page number and render scale
-- OCR artifacts are keyed by page number, render scale, provider, model, and prompt hash
 - semantic artifacts are keyed by source snapshot plus `strategyKey`
 
 ## Traceability Guarantees
@@ -279,7 +251,6 @@ Downstream consumers may rely on the following traceability chain:
 - `structure.json.root.children[*].artifactPath` points to page JSON artifacts
 - `semantic-structure.json.pageIndexArtifactPath` points back to `structure.json`
 - semantic section nodes may point back to `pages/<page>.json` via `pageArtifactPath`
-- OCR artifacts point back to their render metadata via `renderArtifactPath`
 - render metadata points to the actual PNG via `imagePath`
 
 ## Downstream-Safe Assumptions

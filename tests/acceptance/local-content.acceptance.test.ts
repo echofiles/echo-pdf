@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process"
-import { mkdtemp, readFile } from "node:fs/promises"
+import { access, mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -9,8 +9,16 @@ import { describe, expect, it } from "vitest"
 const execFileAsync = promisify(execFile)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, "../..")
-const inputPdf = path.join(rootDir, "fixtures", "input.pdf")
-const arxivPdf = path.join(rootDir, "eval", "public-samples", "arxiv-attention-is-all-you-need.pdf")
+const canonicalPagePdf = path.join(rootDir, "fixtures", "input.pdf")
+const canonicalSemanticPdf = path.join(rootDir, "eval", "public-samples", "arxiv-attention-is-all-you-need.pdf")
+
+const ensureAcceptanceInput = async (pdfPath: string, hint: string): Promise<void> => {
+  try {
+    await access(pdfPath)
+  } catch {
+    throw new Error(`Missing acceptance PDF: ${pdfPath}. ${hint}`)
+  }
+}
 
 const normalizeText = (value: string): string =>
   value
@@ -49,17 +57,18 @@ describe("content-level acceptance on real local PDFs", () => {
   it("extracts useful selected-page text from a real PDF and keeps the page artifact inspectable", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-page-"))
+    await ensureAcceptanceInput(canonicalPagePdf, "The committed fixture should exist in the repo.")
 
-    const structure = await local.get_document_structure({ pdfPath: inputPdf, workspaceDir }) as {
+    const structure = await local.get_document_structure({ pdfPath: canonicalPagePdf, workspaceDir }) as {
       root: { children?: Array<{ pageNumber?: number; artifactPath?: string }> }
     }
-    const first = await local.get_page_content({ pdfPath: inputPdf, workspaceDir, pageNumber: 1 }) as {
+    const first = await local.get_page_content({ pdfPath: canonicalPagePdf, workspaceDir, pageNumber: 1 }) as {
       pageNumber: number
       title: string
       text: string
       artifactPath: string
     }
-    const second = await local.get_page_content({ pdfPath: inputPdf, workspaceDir, pageNumber: 1 }) as {
+    const second = await local.get_page_content({ pdfPath: canonicalPagePdf, workspaceDir, pageNumber: 1 }) as {
       text: string
       artifactPath: string
     }
@@ -82,7 +91,7 @@ describe("content-level acceptance on real local PDFs", () => {
     expect(artifact.pageNumber).toBe(1)
     expect(typeof artifact.text).toBe("string")
 
-    const baseline = await readPdftotextPage(inputPdf, 1)
+    const baseline = await readPdftotextPage(canonicalPagePdf, 1)
     if (baseline) {
       const normalizedBaseline = normalizeText(baseline)
       const normalizedPage = normalizeText(first.text)
@@ -100,14 +109,18 @@ describe("content-level acceptance on real local PDFs", () => {
   it("surfaces real semantic headings from a local PDF instead of requiring layout noise to pass", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-"))
+    await ensureAcceptanceInput(
+      canonicalSemanticPdf,
+      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the canonical public sample."
+    )
 
-    const first = await local.get_semantic_document_structure({ pdfPath: arxivPdf, workspaceDir }) as {
+    const first = await local.get_semantic_document_structure({ pdfPath: canonicalSemanticPdf, workspaceDir }) as {
       cacheStatus: "fresh" | "reused"
       artifactPath: string
       pageIndexArtifactPath: string
       root: { children?: SemanticNode[] }
     }
-    const second = await local.get_semantic_document_structure({ pdfPath: arxivPdf, workspaceDir }) as {
+    const second = await local.get_semantic_document_structure({ pdfPath: canonicalSemanticPdf, workspaceDir }) as {
       cacheStatus: "fresh" | "reused"
       artifactPath: string
       root: { children?: SemanticNode[] }
@@ -137,8 +150,8 @@ describe("content-level acceptance on real local PDFs", () => {
     expect(artifactTitles).toContain("1 Introduction")
     expect(artifactTitles).toContain("3 Model Architecture")
 
-    const page2Baseline = await readPdftotextPage(arxivPdf, 2)
-    const page10Baseline = await readPdftotextPage(arxivPdf, 10)
+    const page2Baseline = await readPdftotextPage(canonicalSemanticPdf, 2)
+    const page10Baseline = await readPdftotextPage(canonicalSemanticPdf, 10)
     if (page2Baseline && page10Baseline) {
       expect(normalizeText(page2Baseline)).toContain("1 introduction")
       expect(normalizeText(page2Baseline)).toContain("3 model architecture")
