@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://pdf.echofile.ai/</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/api/index.html</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/cli/index.html</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/concepts/page-index.html</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/concepts/semantic-structure.html</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/concepts/workspace-artifacts.html</loc>
+  </url>
+  <url>
+    <loc>https://pdf.echofile.ai/integrations/index.html</loc>
+  </url>
+</urlset>

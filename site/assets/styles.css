@@ -146,7 +146,9 @@ body::before {
 .two-col,
 .cards,
 .metrics,
-.info-grid {
+.info-grid,
+.example-grid,
+.proof-grid {
   display: grid;
   gap: 20px;
 }
@@ -253,6 +255,53 @@ li {
 .cards,
 .info-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.example-grid {
+  grid-template-columns: 0.95fr 1.05fr;
+  margin-top: 26px;
+}
+
+.proof-grid {
+  grid-template-columns: 1.15fr 0.85fr;
+  margin-top: 26px;
+}
+
+.artifact-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.artifact-tree li {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.artifact-tree li span {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.proof-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.proof-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -40px -60px auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180, 83, 9, 0.18), transparent 68%);
 }
 
 .card ul,
@@ -371,6 +420,8 @@ pre code {
   .cards,
   .metrics,
   .info-grid,
+  .example-grid,
+  .proof-grid,
   .footer-grid {
     grid-template-columns: 1fr;
   }

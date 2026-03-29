@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>echo-pdf Docs</title>
     <meta name="description" content="Static docs for echo-pdf, a local-first PDF context engine for AI agents.">
+    <meta property="og:title" content="echo-pdf Docs | Local-first PDF context for agents">
+    <meta property="og:description" content="Install echo-pdf as a local package + CLI, generate workspace artifacts, and give agents stable PDF context without a hosted service.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pdf.echofile.ai/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="echo-pdf Docs | Local-first PDF context for agents">
+    <meta name="twitter:description" content="Docs-only site for the local-first echo-pdf package, CLI, and workspace artifact contract.">
     <link rel="stylesheet" href="./assets/styles.css">
   </head>
   <body>
@@ -40,12 +47,12 @@
               </div>
             </div>
             <div class="panel">
-              <p class="kicker">Primary surfaces</p>
+              <p class="kicker">What an agent gets back</p>
               <ul>
-                <li><code>@echofiles/echo-pdf</code> npm package</li>
-                <li><code>echo-pdf</code> local CLI</li>
-                <li><code>.echo-pdf-workspace/</code> inspectable artifacts</li>
-                <li>static docs site for install and contracts</li>
+                <li><code>document.json</code> with source snapshot and page count</li>
+                <li><code>structure.json</code> with a stable <code>document -&gt; pages[]</code> index</li>
+                <li><code>semantic-structure.json</code> when semantic extraction is requested</li>
+                <li>page JSON, render PNG, and OCR JSON artifacts under one workspace root</li>
               </ul>
               <p class="kicker" style="margin-top:20px;">Non-goals in this phase</p>
               <ul>
@@ -72,10 +79,10 @@
           </div>
         </section>
 
-        <p class="section-label">Quickstart</p>
-        <section class="two-col">
+        <p class="section-label">Agent-first happy path</p>
+        <section class="example-grid">
           <div class="panel">
-            <h2>Install and run locally</h2>
+            <h2>Minimal local run</h2>
             <pre><code>npm i -g @echofiles/echo-pdf
 
 echo-pdf document ./sample.pdf
@@ -86,12 +93,40 @@ echo-pdf render ./sample.pdf --page 1
 echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
           </div>
           <div class="panel">
-            <h2>What the local run gives you</h2>
+            <h2>Copyable output example</h2>
+            <pre><code>{
+  "documentId": "b1d2f6a8e9c4f013",
+  "artifactPaths": {
+    "documentJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/document.json",
+    "structureJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/structure.json",
+    "semanticStructureJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/semantic-structure.json",
+    "pagesDir": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/pages"
+  },
+  "pageCount": 12,
+  "cacheStatus": "fresh"
+}</code></pre>
+          </div>
+        </section>
+
+        <p class="section-label">Output proof</p>
+        <section class="proof-grid">
+          <article class="panel proof-card">
+            <h2>Artifact tree a human can read fast</h2>
+            <ul class="artifact-tree">
+              <li><span>document.json</span>source path, snapshot, page count, artifact roots</li>
+              <li><span>structure.json</span>stable page index for deterministic traversal</li>
+              <li><span>semantic-structure.json</span>heading / section layer, separate from <code>pages[]</code></li>
+              <li><span>renders/0001.scale-2.png</span>page render proof, ready for visual reuse</li>
+              <li><span>ocr/0001...json</span>OCR text plus traceability back to the render artifact</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h2>Why this is useful</h2>
             <ul>
-              <li>stable page index via <code>structure.json</code></li>
-              <li>optional semantic layer via <code>semantic-structure.json</code></li>
-              <li>page JSON, render PNG, and OCR JSON artifacts under one workspace root</li>
-              <li>cache reuse keyed by source snapshot and strategy metadata</li>
+              <li>the agent gets structured files, not just prose</li>
+              <li>the human sees concrete outputs before reading deep docs</li>
+              <li>downstream local tools can reuse the same workspace instead of reparsing PDFs</li>
+              <li>cache reuse stays explicit through source snapshot and strategy metadata</li>
             </ul>
           </div>
         </section>
@@ -161,9 +196,9 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
           <div>
             <p class="kicker">Repository docs</p>
             <ul>
-              <li><code>docs/PRODUCT.md</code></li>
-              <li><code>docs/PACKAGING.md</code></li>
-              <li><code>docs/WORKSPACE_CONTRACT.md</code></li>
+              <li><a href="https://github.com/JFHuang746/echo-pdf/blob/master/docs/PRODUCT.md">docs/PRODUCT.md</a></li>
+              <li><a href="https://github.com/JFHuang746/echo-pdf/blob/master/docs/PACKAGING.md">docs/PACKAGING.md</a></li>
+              <li><a href="https://github.com/JFHuang746/echo-pdf/blob/master/docs/WORKSPACE_CONTRACT.md">docs/WORKSPACE_CONTRACT.md</a></li>
             </ul>
           </div>
         </div>
