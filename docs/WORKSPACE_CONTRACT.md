@@ -4,7 +4,7 @@ This document defines the local workspace artifact contract for `echo-pdf`.
 
 It is the contract downstream local apps and operators may rely on when they read `.echo-pdf-workspace/` directly.
 
-The mainline artifact story in the current phase is document metadata, page artifacts, render artifacts, and semantic structure.
+The mainline artifact story in the current phase is document metadata, page artifacts, render artifacts, semantic structure, and LaTeX-first structured technical artifacts.
 
 ## Scope
 
@@ -45,6 +45,12 @@ Callers may override the root with `workspaceDir` or `--workspace`.
         0001.scale-2.json
         0001.scale-2.png
         ...
+      tables/
+        0006.scale-2.provider-openai.model-gpt-4_1-mini.prompt-<hash>.json
+        ...
+      formulas/
+        0004.scale-2.provider-openai.model-gpt-4_1-mini.prompt-<hash>.json
+        ...
 ```
 
 Layout rules:
@@ -52,6 +58,8 @@ Layout rules:
 - `document.json`, `structure.json`, and `pages/*.json` are the required baseline artifacts after document indexing.
 - `semantic-structure.json` is materialized only after semantic extraction runs.
 - `renders/*` artifacts are materialized only after page rendering runs.
+- `tables/*` artifacts are materialized only after page-level table extraction runs.
+- `formulas/*` artifacts are materialized only after page-level formula extraction runs.
 
 Migration-only note:
 
@@ -214,6 +222,68 @@ Downstream use:
 - visual page inspection
 - VL input reuse without rerendering the same page
 - optional OCR fallback/image reuse when that path is explicitly invoked
+
+### `tables/<page>.scale-<scale>.provider-<provider>.model-<model>.prompt-<hash>.json`
+
+Optional page-level structured table artifact.
+
+Required JSON fields:
+
+- `documentId`
+- `pageNumber`
+- `renderScale`
+- `sourceSizeBytes`
+- `sourceMtimeMs`
+- `provider`
+- `model`
+- `prompt`
+- `imagePath`
+- `pageArtifactPath`
+- `renderArtifactPath`
+- `artifactPath`
+- `generatedAt`
+- `tables`
+
+Each `tables[]` item must expose:
+
+- `id`
+- `latexTabular`
+
+Optional item fields:
+
+- `caption`
+- `evidenceText`
+
+### `formulas/<page>.scale-<scale>.provider-<provider>.model-<model>.prompt-<hash>.json`
+
+Optional page-level structured formula artifact.
+
+Required JSON fields:
+
+- `documentId`
+- `pageNumber`
+- `renderScale`
+- `sourceSizeBytes`
+- `sourceMtimeMs`
+- `provider`
+- `model`
+- `prompt`
+- `imagePath`
+- `pageArtifactPath`
+- `renderArtifactPath`
+- `artifactPath`
+- `generatedAt`
+- `formulas`
+
+Each `formulas[]` item must expose:
+
+- `id`
+- `latexMath`
+
+Optional item fields:
+
+- `label`
+- `evidenceText`
 
 ## Cache Semantics
 

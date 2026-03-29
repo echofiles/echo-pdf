@@ -2,7 +2,7 @@
 
 `echo-pdf` is a local-first, vision-language-first PDF context engine for AI agents.
 
-It turns a local PDF into reusable CLI outputs, Node/Bun library primitives, and inspectable workspace artifacts for page rendering, page understanding, semantic structure, and downstream local reuse.
+It turns a local PDF into reusable CLI outputs, Node/Bun library primitives, and inspectable workspace artifacts for page rendering, page understanding, semantic structure, LaTeX-first tables, LaTeX-first formulas, and downstream local reuse.
 
 ## What It Is
 
@@ -91,6 +91,10 @@ By default, `echo-pdf` writes reusable artifacts into a local workspace:
     renders/
       0001.scale-2.json
       0001.scale-2.png
+    tables/
+      0006.scale-2.provider-openai.model-gpt-4_1-mini.prompt-<hash>.json
+    formulas/
+      0004.scale-2.provider-openai.model-gpt-4_1-mini.prompt-<hash>.json
 ```
 
 These artifacts are meant to be inspected, cached, and reused by downstream local tools.
@@ -105,6 +109,8 @@ import {
   get_semantic_document_structure,
   get_page_content,
   get_page_render,
+  get_page_tables_latex,
+  get_page_formulas_latex,
 } from "@echofiles/echo-pdf/local"
 
 const document = await get_document({ pdfPath: "./sample.pdf" })
@@ -112,6 +118,8 @@ const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
 const semantic = await get_semantic_document_structure({ pdfPath: "./sample.pdf" })
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1, scale: 2 })
+const tables = await get_page_tables_latex({ pdfPath: "./paper.pdf", pageNumber: 6, provider: "openai", model: "gpt-4.1-mini" })
+const formulas = await get_page_formulas_latex({ pdfPath: "./paper.pdf", pageNumber: 4, provider: "openai", model: "gpt-4.1-mini" })
 ```
 
 Notes:
@@ -119,6 +127,8 @@ Notes:
 - `get_document_structure()` returns the stable page index: `document -> pages[]`
 - `get_semantic_document_structure()` returns a separate semantic structure layer; it does not replace `pages[]`
 - `get_page_render()` materializes a reusable PNG plus render metadata and is the mainline visual input path
+- `get_page_tables_latex()` materializes page-level LaTeX tabular artifacts with page/render traceability
+- `get_page_formulas_latex()` materializes page-level LaTeX math artifacts with page/render traceability
 
 Migration note:
 

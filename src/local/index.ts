@@ -20,6 +20,8 @@ export interface LocalDocumentArtifactPaths {
   readonly semanticStructureJsonPath: string
   readonly pagesDir: string
   readonly rendersDir: string
+  readonly tablesDir: string
+  readonly formulasDir: string
 }
 
 interface InternalDocumentArtifactPaths extends LocalDocumentArtifactPaths {
@@ -108,6 +110,56 @@ export interface LocalPageRenderArtifact {
   readonly cacheStatus: "fresh" | "reused"
 }
 
+export interface LocalTableArtifactItem {
+  readonly id: string
+  readonly latexTabular: string
+  readonly caption?: string
+  readonly evidenceText?: string
+}
+
+export interface LocalFormulaArtifactItem {
+  readonly id: string
+  readonly latexMath: string
+  readonly label?: string
+  readonly evidenceText?: string
+}
+
+export interface LocalPageTablesArtifact {
+  readonly documentId: string
+  readonly pageNumber: number
+  readonly renderScale: number
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
+  readonly provider: string
+  readonly model: string
+  readonly prompt: string
+  readonly imagePath: string
+  readonly pageArtifactPath: string
+  readonly renderArtifactPath: string
+  readonly artifactPath: string
+  readonly generatedAt: string
+  readonly tables: ReadonlyArray<LocalTableArtifactItem>
+  readonly cacheStatus: "fresh" | "reused"
+}
+
+export interface LocalPageFormulasArtifact {
+  readonly documentId: string
+  readonly pageNumber: number
+  readonly renderScale: number
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
+  readonly provider: string
+  readonly model: string
+  readonly prompt: string
+  readonly imagePath: string
+  readonly pageArtifactPath: string
+  readonly renderArtifactPath: string
+  readonly artifactPath: string
+  readonly generatedAt: string
+  readonly formulas: ReadonlyArray<LocalFormulaArtifactItem>
+  readonly cacheStatus: "fresh" | "reused"
+}
+
 interface LocalPageOcrArtifact {
   readonly documentId: string
   readonly pageNumber: number
@@ -151,6 +203,22 @@ export interface LocalSemanticDocumentRequest extends LocalDocumentRequest {
 
 export interface LocalPageRenderRequest extends LocalPageContentRequest {
   readonly renderScale?: number
+}
+
+export interface LocalPageTablesRequest extends LocalPageRenderRequest {
+  readonly provider?: string
+  readonly model?: string
+  readonly prompt?: string
+  readonly env?: Env
+  readonly providerApiKeys?: Record<string, string>
+}
+
+export interface LocalPageFormulasRequest extends LocalPageRenderRequest {
+  readonly provider?: string
+  readonly model?: string
+  readonly prompt?: string
+  readonly env?: Env
+  readonly providerApiKeys?: Record<string, string>
 }
 
 interface LocalPageOcrRequest extends LocalPageRenderRequest {
@@ -199,6 +267,8 @@ const buildArtifactPaths = (workspaceDir: string, documentId: string): InternalD
     semanticStructureJsonPath: path.join(documentDir, "semantic-structure.json"),
     pagesDir: path.join(documentDir, "pages"),
     rendersDir: path.join(documentDir, "renders"),
+    tablesDir: path.join(documentDir, "tables"),
+    formulasDir: path.join(documentDir, "formulas"),
     ocrDir: path.join(documentDir, "ocr"),
   }
 }
@@ -211,6 +281,8 @@ const toPublicArtifactPaths = (paths: InternalDocumentArtifactPaths): LocalDocum
   semanticStructureJsonPath: paths.semanticStructureJsonPath,
   pagesDir: paths.pagesDir,
   rendersDir: paths.rendersDir,
+  tablesDir: paths.tablesDir,
+  formulasDir: paths.formulasDir,
 })
 
 const buildRenderArtifactPaths = (
@@ -243,6 +315,24 @@ const buildOcrArtifactPath = (
   return path.join(paths.ocrDir, `${key}.json`)
 }
 
+const buildStructuredArtifactPath = (
+  baseDir: string,
+  pageNumber: number,
+  renderScale: number,
+  provider: string,
+  model: string,
+  prompt: string
+): string => {
+  const key = [
+    pageLabel(pageNumber),
+    `scale-${scaleLabel(renderScale)}`,
+    `provider-${sanitizeSegment(provider)}`,
+    `model-${sanitizeSegment(model)}`,
+    `prompt-${hashFragment(prompt, 10)}`,
+  ].join(".")
+  return path.join(baseDir, `${key}.json`)
+}
+
 const createPreview = (text: string): string => text.replace(/\s+/g, " ").trim().slice(0, 160)
 
 const createPageTitle = (pageNumber: number, text: string): string => {
@@ -272,6 +362,44 @@ const parseJsonObject = (value: string): unknown => {
     }
     throw new Error("semantic structure model output was not valid JSON")
   }
+}
+
+const normalizeTableItems = (value: unknown): LocalTableArtifactItem[] => {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item, index) => {
+    const table = item as {
+      latexTabular?: unknown
+      caption?: unknown
+      evidenceText?: unknown
+    }
+    const latexTabular = typeof table.latexTabular === "string" ? stripCodeFences(table.latexTabular).trim() : ""
+    if (!latexTabular.includes("\\begin{tabular}") || !latexTabular.includes("\\end{tabular}")) return []
+    return [{
+      id: `table-${index + 1}`,
+      latexTabular,
+      caption: typeof table.caption === "string" ? table.caption.trim() : undefined,
+      evidenceText: typeof table.evidenceText === "string" ? table.evidenceText.trim() : undefined,
+    }]
+  })
+}
+
+const normalizeFormulaItems = (value: unknown): LocalFormulaArtifactItem[] => {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item, index) => {
+    const formula = item as {
+      latexMath?: unknown
+      label?: unknown
+      evidenceText?: unknown
+    }
+    const latexMath = typeof formula.latexMath === "string" ? stripCodeFences(formula.latexMath).trim() : ""
+    if (!latexMath) return []
+    return [{
+      id: `formula-${index + 1}`,
+      latexMath,
+      label: typeof formula.label === "string" ? formula.label.trim() : undefined,
+      evidenceText: typeof formula.evidenceText === "string" ? formula.evidenceText.trim() : undefined,
+    }]
+  })
 }
 
 const resolveEnv = (env?: Env): Env => env ?? (process.env as unknown as Env)
@@ -487,6 +615,65 @@ const buildSemanticAggregationPrompt = (
   ].join("\n")
 }
 
+const buildTableExtractionPrompt = (
+  page: LocalPageContent,
+  renderScale: number
+): string => [
+  "You extract structured table artifacts from one rendered PDF page.",
+  "Primary evidence is the page image layout. Use the extracted page text only as supporting context.",
+  "Return JSON only.",
+  "Schema:",
+  "{",
+  '  "tables": [',
+  "    {",
+  '      "latexTabular": "\\\\begin{tabular}...\\\\end{tabular}",',
+  '      "caption": "string",',
+  '      "evidenceText": "short evidence string"',
+  "    }",
+  "  ]",
+  "}",
+  "Rules:",
+  "- Only emit actual tables visible on the page.",
+  "- latexTabular must contain valid LaTeX tabular markup.",
+  "- Do not emit prose paragraphs, equations, figure labels, or narrative lists as tables.",
+  "- Preserve the visible row/column structure.",
+  "- If no table is present, return {\"tables\":[]}.",
+  `Page number: ${page.pageNumber}`,
+  `Render scale: ${renderScale}`,
+  "",
+  "Extracted page text:",
+  page.text,
+].join("\n")
+
+const buildFormulaExtractionPrompt = (
+  page: LocalPageContent,
+  renderScale: number
+): string => [
+  "You extract structured formula artifacts from one rendered PDF page.",
+  "Primary evidence is the page image layout. Use the extracted page text only as supporting context.",
+  "Return JSON only.",
+  "Schema:",
+  "{",
+  '  "formulas": [',
+  "    {",
+  '      "latexMath": "latex math string",',
+  '      "label": "optional equation label",',
+  '      "evidenceText": "short evidence string"',
+  "    }",
+  "  ]",
+  "}",
+  "Rules:",
+  "- Only emit displayed formulas or clearly isolated mathematical expressions.",
+  "- latexMath must be valid LaTeX math content.",
+  "- Do not emit prose, captions, table cells, or units-only fragments as formulas.",
+  "- If no formula is present, return {\"formulas\":[]}.",
+  `Page number: ${page.pageNumber}`,
+  `Render scale: ${renderScale}`,
+  "",
+  "Extracted page text:",
+  page.text,
+].join("\n")
+
 const buildHeuristicSemanticArtifact = (
   record: StoredDocumentRecord,
   artifactPath: string,
@@ -547,6 +734,18 @@ const extractSemanticCandidatesFromRenderedPage = async (input: {
 const summarizeSemanticAgentFailure = (error: unknown): string => {
   const message = error instanceof Error ? error.message : String(error)
   return message.replace(/\s+/g, " ").trim().slice(0, 240) || "unknown agent semantic failure"
+}
+
+const resolveAgentSelection = (
+  config: EchoPdfConfig,
+  input: { provider?: string; model?: string }
+): { provider: string; model: string } => {
+  const provider = resolveProviderAlias(config, input.provider)
+  const model = resolveModelForProvider(config, provider, input.model)
+  if (!model) {
+    throw new Error(`model is required for VL-first structured artifacts; pass \`model\` or set agent.defaultModel for provider "${provider}"`)
+  }
+  return { provider, model }
 }
 
 const ensureSemanticStructureArtifact = async (
@@ -825,6 +1024,140 @@ export const get_page_content = async (request: LocalPageContentRequest): Promis
 
 export const get_page_render = async (request: LocalPageRenderRequest): Promise<LocalPageRenderArtifact> =>
   ensureRenderArtifact(request)
+
+export const get_page_tables_latex = async (
+  request: LocalPageTablesRequest
+): Promise<LocalPageTablesArtifact> => {
+  const env = resolveEnv(request.env)
+  const config = resolveConfig(request.config, env)
+  const { provider, model } = resolveAgentSelection(config, request)
+  const { record } = await indexDocumentInternal(request)
+  ensurePageNumber(record.pageCount, request.pageNumber)
+
+  const page = await get_page_content(request)
+  const renderArtifact = await ensureRenderArtifact(request)
+  const prompt = request.prompt?.trim() || "Extract all actual tables from this PDF page as LaTeX tabular."
+  const artifactPath = buildStructuredArtifactPath(
+    record.artifactPaths.tablesDir,
+    request.pageNumber,
+    renderArtifact.renderScale,
+    provider,
+    model,
+    prompt
+  )
+
+  if (!request.forceRefresh && await fileExists(artifactPath)) {
+    const cached = await readJson<Omit<LocalPageTablesArtifact, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
+    if (matchesSourceSnapshot(cached, record)) {
+      return {
+        ...cached,
+        cacheStatus: "reused",
+      }
+    }
+  }
+
+  const imageBytes = new Uint8Array(await readFile(renderArtifact.imagePath))
+  const imageDataUrl = toDataUrl(imageBytes, renderArtifact.mimeType)
+  const raw = await visionRecognize({
+    config,
+    env,
+    providerAlias: provider,
+    model,
+    prompt: `${buildTableExtractionPrompt(page, renderArtifact.renderScale)}\n\nTask override:\n${prompt}`,
+    imageDataUrl,
+    runtimeApiKeys: request.providerApiKeys,
+  })
+  const parsed = parseJsonObject(raw) as { tables?: unknown[] }
+  const tables = normalizeTableItems(parsed?.tables)
+  const artifact: Omit<LocalPageTablesArtifact, "cacheStatus"> = {
+    documentId: record.documentId,
+    pageNumber: request.pageNumber,
+    renderScale: renderArtifact.renderScale,
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
+    provider,
+    model,
+    prompt,
+    imagePath: renderArtifact.imagePath,
+    pageArtifactPath: page.artifactPath,
+    renderArtifactPath: renderArtifact.artifactPath,
+    artifactPath,
+    generatedAt: new Date().toISOString(),
+    tables,
+  }
+  await writeJson(artifactPath, artifact)
+  return {
+    ...artifact,
+    cacheStatus: "fresh",
+  }
+}
+
+export const get_page_formulas_latex = async (
+  request: LocalPageFormulasRequest
+): Promise<LocalPageFormulasArtifact> => {
+  const env = resolveEnv(request.env)
+  const config = resolveConfig(request.config, env)
+  const { provider, model } = resolveAgentSelection(config, request)
+  const { record } = await indexDocumentInternal(request)
+  ensurePageNumber(record.pageCount, request.pageNumber)
+
+  const page = await get_page_content(request)
+  const renderArtifact = await ensureRenderArtifact(request)
+  const prompt = request.prompt?.trim() || "Extract displayed formulas from this PDF page as LaTeX math."
+  const artifactPath = buildStructuredArtifactPath(
+    record.artifactPaths.formulasDir,
+    request.pageNumber,
+    renderArtifact.renderScale,
+    provider,
+    model,
+    prompt
+  )
+
+  if (!request.forceRefresh && await fileExists(artifactPath)) {
+    const cached = await readJson<Omit<LocalPageFormulasArtifact, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
+    if (matchesSourceSnapshot(cached, record)) {
+      return {
+        ...cached,
+        cacheStatus: "reused",
+      }
+    }
+  }
+
+  const imageBytes = new Uint8Array(await readFile(renderArtifact.imagePath))
+  const imageDataUrl = toDataUrl(imageBytes, renderArtifact.mimeType)
+  const raw = await visionRecognize({
+    config,
+    env,
+    providerAlias: provider,
+    model,
+    prompt: `${buildFormulaExtractionPrompt(page, renderArtifact.renderScale)}\n\nTask override:\n${prompt}`,
+    imageDataUrl,
+    runtimeApiKeys: request.providerApiKeys,
+  })
+  const parsed = parseJsonObject(raw) as { formulas?: unknown[] }
+  const formulas = normalizeFormulaItems(parsed?.formulas)
+  const artifact: Omit<LocalPageFormulasArtifact, "cacheStatus"> = {
+    documentId: record.documentId,
+    pageNumber: request.pageNumber,
+    renderScale: renderArtifact.renderScale,
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
+    provider,
+    model,
+    prompt,
+    imagePath: renderArtifact.imagePath,
+    pageArtifactPath: page.artifactPath,
+    renderArtifactPath: renderArtifact.artifactPath,
+    artifactPath,
+    generatedAt: new Date().toISOString(),
+    formulas,
+  }
+  await writeJson(artifactPath, artifact)
+  return {
+    ...artifact,
+    cacheStatus: "fresh",
+  }
+}
 
 const getPageOcrMigrationOnly = async (request: LocalPageOcrRequest): Promise<LocalPageOcrArtifact> => {
   const env = resolveEnv(request.env)

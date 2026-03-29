@@ -39,6 +39,8 @@ describe("ts nodenext consumer smoke", () => {
         "local.get_document",
         "local.get_semantic_document_structure",
         "local.get_page_render",
+        "local.get_page_tables_latex",
+        "local.get_page_formulas_latex",
         "worker",
         "",
       ].join("\n"))
