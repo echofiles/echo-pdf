@@ -154,6 +154,25 @@ const resolveDefaultModel = (profile, providerAlias) => {
   return PROJECT_DEFAULT_MODEL
 }
 
+const readEnvApiKey = (providerAlias) => {
+  const providerConfig = PROJECT_CONFIG.providers?.[providerAlias]
+  const keyName = providerConfig?.apiKeyEnv
+  if (typeof keyName !== "string" || keyName.trim().length === 0) return ""
+  const read = (name) => {
+    const value = process.env[name]
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : ""
+  }
+  const direct = read(keyName)
+  if (direct) return direct
+  if (keyName.endsWith("_API_KEY")) {
+    return read(keyName.replace(/_API_KEY$/, "_KEY"))
+  }
+  if (keyName.endsWith("_KEY")) {
+    return read(keyName.replace(/_KEY$/, "_API_KEY"))
+  }
+  return ""
+}
+
 const buildProviderApiKeys = (config, profileName) => {
   const profile = getProfile(config, profileName)
   const providerApiKeys = {}
@@ -163,6 +182,35 @@ const buildProviderApiKeys = (config, profileName) => {
     providerApiKeys[providerConfig.type] = apiKey
   }
   return providerApiKeys
+}
+
+const resolveLocalSemanticContext = (flags) => {
+  const config = loadConfig()
+  const profileName = getProfileName(config, flags.profile)
+  const profile = getProfile(config, profileName)
+  const provider = resolveProviderAlias(profile, flags.provider)
+  const model = typeof flags.model === "string" ? flags.model.trim() : resolveDefaultModel(profile, provider)
+  if (!model) {
+    throw new Error(
+      [
+        `semantic requires a configured model for provider "${provider}".`,
+        `Pass \`--model <model-id>\`, or run \`echo-pdf model set --provider ${provider} --model <model-id>${profileName ? ` --profile ${profileName}` : ""}\`.`,
+      ].join(" ")
+    )
+  }
+  const providerApiKeys = buildProviderApiKeys(config, profileName)
+  const configuredApiKey = typeof providerApiKeys[provider] === "string" ? providerApiKeys[provider].trim() : ""
+  if (!configuredApiKey && !readEnvApiKey(provider)) {
+    const apiKeyEnv = PROJECT_CONFIG.providers?.[provider]?.apiKeyEnv || "PROVIDER_API_KEY"
+    throw new Error(
+      [
+        `semantic requires an API key for provider "${provider}".`,
+        `Run \`echo-pdf provider set --provider ${provider} --api-key <KEY>${profileName ? ` --profile ${profileName}` : ""}\``,
+        `or export \`${apiKeyEnv}\` before running the VL-first semantic path.`,
+      ].join(" ")
+    )
+  }
+  return { profileName, provider, model, providerApiKeys }
 }
 
 const print = (data) => {
@@ -410,13 +458,20 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
   }
 
   if (primitive === "semantic") {
+    const semanticContext = resolveLocalSemanticContext(flags)
     const data = await local.get_semantic_document_structure({
       pdfPath,
       workspaceDir,
       forceRefresh,
-      provider: typeof flags.provider === "string" ? flags.provider : undefined,
-      model: typeof flags.model === "string" ? flags.model : undefined,
+      provider: semanticContext.provider,
+      model: semanticContext.model,
+      providerApiKeys: semanticContext.providerApiKeys,
     })
+    if (data?.fallback?.reason) {
+      process.stderr.write(
+        `[echo-pdf] semantic fell back from ${data.fallback.from} to ${data.fallback.to}: ${data.fallback.reason}\n`
+      )
+    }
     print(data)
     return
   }
@@ -446,7 +501,7 @@ const usage = () => {
   process.stdout.write(`Primary local primitive commands:\n`)
   process.stdout.write(`  document <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  semantic <file.pdf> [--provider alias] [--model model] [--profile name] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`\nAdditional commands:\n`)
