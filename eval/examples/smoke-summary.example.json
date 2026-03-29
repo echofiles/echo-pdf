@@ -1,0 +1,214 @@
+{
+  "summaryVersion": "echo-pdf.eval.run-summary.v1",
+  "generatedAt": "2026-03-29T01:25:29.900Z",
+  "suite": {
+    "suiteId": "smoke",
+    "description": "Fast local-first sanity checks on large public knowledge and guidance PDFs with no provider dependency.",
+    "manifestPath": "eval/manifests/smoke.json"
+  },
+  "environment": {
+    "cwd": "<repo-root>",
+    "repoRoot": "<repo-root>",
+    "node": "v20.20.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "hostname": "<local-host>",
+    "workspaceDir": "eval/examples/smoke-workspace",
+    "envHints": {
+      "semanticProvider": "",
+      "semanticModel": "",
+      "ocrProvider": "",
+      "ocrModel": ""
+    }
+  },
+  "totals": {
+    "caseCount": 4,
+    "runCount": 5,
+    "statuses": {
+      "passed": 5,
+      "failed": 0,
+      "blocked": 0,
+      "known-bad": 0,
+      "unexpected-pass": 0
+    },
+    "taxonomyCounts": {}
+  },
+  "representativeRuns": {
+    "passed": [
+      "smoke::document::public-guide-irs-publication-15t-document",
+      "smoke::document::public-paper-attention-semantic",
+      "smoke::semantic::semantic-heuristic-baseline::public-paper-attention-semantic"
+    ],
+    "failed": [],
+    "blocked": [],
+    "knownBad": [],
+    "unexpectedPass": []
+  },
+  "runs": [
+    {
+      "runId": "smoke::document::public-guide-irs-publication-15t-document",
+      "suiteId": "smoke",
+      "caseId": "public-guide-irs-publication-15t-document",
+      "kind": "document",
+      "configId": "document-baseline",
+      "status": "passed",
+      "durationMs": 1532,
+      "source": {
+        "kind": "existing",
+        "pdfPath": "eval/public-samples/irs-publication-15t.pdf",
+        "generated": false
+      },
+      "config": {
+        "mode": "document-baseline"
+      },
+      "failures": [],
+      "metrics": {
+        "pageCount": 71,
+        "cacheStatus": "fresh"
+      },
+      "artifacts": {
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/0d2de462036fc194/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/0d2de462036fc194/ocr"
+      },
+      "notes": "Public long-form IRS guidance stays indexable as a dense operational sample."
+    },
+    {
+      "runId": "smoke::document::public-paper-attention-semantic",
+      "suiteId": "smoke",
+      "caseId": "public-paper-attention-semantic",
+      "kind": "document",
+      "configId": "document-baseline",
+      "status": "passed",
+      "durationMs": 126,
+      "source": {
+        "kind": "existing",
+        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "generated": false
+      },
+      "config": {
+        "mode": "document-baseline"
+      },
+      "failures": [],
+      "metrics": {
+        "pageCount": 15,
+        "cacheStatus": "fresh"
+      },
+      "artifacts": {
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/ocr"
+      },
+      "notes": "Public multi-column paper keeps obvious numbered sections in the heuristic path."
+    },
+    {
+      "runId": "smoke::semantic::semantic-heuristic-baseline::public-paper-attention-semantic",
+      "suiteId": "smoke",
+      "caseId": "public-paper-attention-semantic",
+      "kind": "semantic",
+      "configId": "semantic-heuristic-baseline",
+      "status": "passed",
+      "durationMs": 5,
+      "source": {
+        "kind": "existing",
+        "pdfPath": "eval/public-samples/arxiv-attention-is-all-you-need.pdf",
+        "generated": false
+      },
+      "config": {
+        "provider": "",
+        "model": "",
+        "budget": null,
+        "budgetLabel": "n/a",
+        "notes": "Uses the built-in local semantic fallback without provider dependencies."
+      },
+      "failures": [],
+      "metrics": {
+        "detector": "heading-heuristic-v1",
+        "strategyKey": "heuristic::heading-heuristic-v1",
+        "rootSectionCount": 7,
+        "flattenedSectionCount": 22
+      },
+      "artifacts": {
+        "artifactPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
+        "pageIndexArtifactPath": "eval/examples/smoke-workspace/documents/44cefe56c9b5dcad/structure.json"
+      },
+      "notes": "Public multi-column paper keeps obvious numbered sections in the heuristic path."
+    },
+    {
+      "runId": "smoke::document::public-framework-cisa-irpf-document",
+      "suiteId": "smoke",
+      "caseId": "public-framework-cisa-irpf-document",
+      "kind": "document",
+      "configId": "document-baseline",
+      "status": "passed",
+      "durationMs": 530,
+      "source": {
+        "kind": "existing",
+        "pdfPath": "eval/public-samples/cisa-infrastructure-resilience-planning-framework.pdf",
+        "generated": false
+      },
+      "config": {
+        "mode": "document-baseline"
+      },
+      "failures": [],
+      "metrics": {
+        "pageCount": 55,
+        "cacheStatus": "fresh"
+      },
+      "artifacts": {
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/cb55555cc4fa90d7/ocr"
+      },
+      "notes": "Public CISA framework stays indexable as a large planning manual."
+    },
+    {
+      "runId": "smoke::document::public-guidance-nist-800-171-document",
+      "suiteId": "smoke",
+      "caseId": "public-guidance-nist-800-171-document",
+      "kind": "document",
+      "configId": "document-baseline",
+      "status": "passed",
+      "durationMs": 933,
+      "source": {
+        "kind": "existing",
+        "pdfPath": "eval/public-samples/nist-sp-800-171r2.pdf",
+        "generated": false
+      },
+      "config": {
+        "mode": "document-baseline"
+      },
+      "failures": [],
+      "metrics": {
+        "pageCount": 114,
+        "cacheStatus": "fresh"
+      },
+      "artifacts": {
+        "workspaceDir": "eval/examples/smoke-workspace",
+        "documentDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70",
+        "documentJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/document.json",
+        "structureJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/structure.json",
+        "semanticStructureJsonPath": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/semantic-structure.json",
+        "pagesDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/pages",
+        "rendersDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/renders",
+        "ocrDir": "eval/examples/smoke-workspace/documents/e8316eae43e9da70/ocr"
+      },
+      "notes": "Public NIST security guidance stays indexable as a very long dense document."
+    }
+  ]
+}

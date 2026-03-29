@@ -1,0 +1,98 @@
+{
+  "suiteId": "stress",
+  "description": "Long-document pressure runs for semantic chunking and OCR scale tradeoffs on large public guidance PDFs.",
+  "semanticConfigs": [
+    {
+      "id": "semantic-agent-standard",
+      "mode": "shipped-local-api",
+      "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+      "budgetLabel": "standard",
+      "budget": {
+        "chunkMaxChars": 4000,
+        "chunkOverlapChars": 300
+      }
+    },
+    {
+      "id": "semantic-agent-tight-budget",
+      "mode": "shipped-local-api",
+      "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+      "budgetLabel": "tight",
+      "budget": {
+        "chunkMaxChars": 900,
+        "chunkOverlapChars": 80
+      }
+    }
+  ],
+  "ocrConfigs": [
+    {
+      "id": "ocr-default-prompt-standard-scale",
+      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
+      "promptFile": "../prompts/ocr-default.txt",
+      "renderScale": 2,
+      "budgetLabel": "standard"
+    },
+    {
+      "id": "ocr-compact-prompt-tight-scale",
+      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
+      "promptFile": "../prompts/ocr-compact.txt",
+      "renderScale": 1.25,
+      "budgetLabel": "tight"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "public-guide-irs-publication-15t-semantic",
+      "description": "Long public guide for budget-sensitive semantic extraction.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/irs-publication-15t.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 71
+      },
+      "semanticConfigIds": [
+        "semantic-agent-standard",
+        "semantic-agent-tight-budget"
+      ],
+      "semanticExpectations": {
+        "minRootChildren": 3,
+        "requiredTitleSubstrings": [
+          "Percentage Method Tables",
+          "Wage Bracket Method Tables",
+          "Alternative Methods for Figuring Withholding"
+        ],
+        "forbiddenTitleSubstrings": [
+          "Publication 15-T (2026)"
+        ]
+      }
+    },
+    {
+      "caseId": "public-guidance-nist-800-171-ocr",
+      "description": "Very long NIST guidance front matter shows OCR prompt and render-budget sensitivity.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/nist-sp-800-171r2.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 114
+      },
+      "ocrConfigIds": [
+        "ocr-default-prompt-standard-scale",
+        "ocr-compact-prompt-tight-scale"
+      ],
+      "ocrExpectations": {
+        "pageNumber": 1,
+        "minChars": 250,
+        "requiredSubstrings": [
+          "Withdrawn NIST Technical Series Publication",
+          "Protecting Controlled Unclassified Information",
+          "NIST SP 800-171r2"
+        ]
+      }
+    }
+  ]
+}

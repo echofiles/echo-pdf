@@ -1,0 +1,166 @@
+{
+  "suiteId": "core",
+  "description": "Representative semantic-structure and OCR comparisons across public knowledge and guidance PDFs, models, prompts, and budgets.",
+  "semanticConfigs": [
+    {
+      "id": "semantic-heuristic-baseline",
+      "mode": "shipped-local-api",
+      "budgetLabel": "n/a",
+      "notes": "Heuristic-only fallback. No provider required."
+    },
+    {
+      "id": "semantic-agent-standard",
+      "mode": "shipped-local-api",
+      "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+      "budgetLabel": "standard",
+      "budget": {
+        "chunkMaxChars": 4000,
+        "chunkOverlapChars": 300
+      },
+      "notes": "Standard local semantic budget for provider-backed structure extraction."
+    },
+    {
+      "id": "semantic-agent-tight-budget",
+      "mode": "shipped-local-api",
+      "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+      "budgetLabel": "tight",
+      "budget": {
+        "chunkMaxChars": 1200,
+        "chunkOverlapChars": 120
+      },
+      "notes": "Budget-reduced semantic extraction to surface chunking sensitivity."
+    }
+  ],
+  "ocrConfigs": [
+    {
+      "id": "ocr-default-prompt-standard-scale",
+      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
+      "promptFile": "../prompts/ocr-default.txt",
+      "renderScale": 2,
+      "budgetLabel": "standard",
+      "notes": "Reference OCR run: fuller prompt and default render scale."
+    },
+    {
+      "id": "ocr-compact-prompt-tight-scale",
+      "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
+      "promptFile": "../prompts/ocr-compact.txt",
+      "renderScale": 1.5,
+      "budgetLabel": "tight",
+      "notes": "Prompt-compressed OCR run with lower image budget proxy."
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "public-paper-attention-semantic",
+      "description": "Representative public research paper for semantic structure comparisons.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/arxiv-attention-is-all-you-need.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 15
+      },
+      "semanticConfigIds": [
+        "semantic-heuristic-baseline",
+        "semantic-agent-standard",
+        "semantic-agent-tight-budget"
+      ],
+      "semanticExpectations": {
+        "minRootChildren": 5,
+        "requiredSections": [
+          {
+            "title": "1 Introduction",
+            "level": 1,
+            "pageNumber": 2
+          },
+          {
+            "title": "3 Model Architecture",
+            "level": 1,
+            "pageNumber": 2
+          },
+          {
+            "title": "7 Conclusion",
+            "level": 1,
+            "pageNumber": 10
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "public-framework-cisa-irpf-semantic",
+      "description": "Public CISA framework for semantic structure comparisons on section-heavy guidance.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/cisa-infrastructure-resilience-planning-framework.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 55
+      },
+      "semanticConfigIds": [
+        "semantic-heuristic-baseline",
+        "semantic-agent-standard",
+        "semantic-agent-tight-budget"
+      ],
+      "semanticExpectations": {
+        "minRootChildren": 5,
+        "requiredTitleSubstrings": [
+          "Section 1. Lay the Foundation",
+          "Section 3. Risk Assessment",
+          "0.1 INTRODUCTION"
+        ]
+      }
+    },
+    {
+      "caseId": "public-paper-attention-ocr",
+      "description": "Public research paper for OCR comparisons on dense multi-column text.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/arxiv-attention-is-all-you-need.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 15
+      },
+      "ocrConfigIds": [
+        "ocr-default-prompt-standard-scale",
+        "ocr-compact-prompt-tight-scale"
+      ],
+      "ocrExpectations": {
+        "pageNumber": 1,
+        "minChars": 300,
+        "requiredSubstrings": [
+          "Attention Is All You Need",
+          "Abstract",
+          "Ashish Vaswani"
+        ]
+      }
+    },
+    {
+      "caseId": "public-guide-irs-publication-15t-ocr",
+      "description": "Public long-form IRS guidance for OCR comparisons on dense cover-page text.",
+      "source": {
+        "kind": "existing",
+        "path": "../public-samples/irs-publication-15t.pdf"
+      },
+      "documentExpectations": {
+        "pageCount": 71
+      },
+      "ocrConfigIds": [
+        "ocr-default-prompt-standard-scale",
+        "ocr-compact-prompt-tight-scale"
+      ],
+      "ocrExpectations": {
+        "pageNumber": 1,
+        "minChars": 300,
+        "requiredSubstrings": [
+          "Publication 15-T",
+          "Federal",
+          "Contents"
+        ]
+      }
+    }
+  ]
+}

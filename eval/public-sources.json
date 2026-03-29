@@ -1,0 +1,40 @@
+{
+  "samples": [
+    {
+      "id": "irs-publication-15t",
+      "title": "IRS Publication 15-T (2026)",
+      "documentType": "government-guide",
+      "publisher": "Internal Revenue Service",
+      "url": "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
+      "localFilename": "irs-publication-15t.pdf",
+      "notes": "Long-form guide with TOC, running headers, and budget-sensitive structure extraction."
+    },
+    {
+      "id": "arxiv-attention-is-all-you-need",
+      "title": "Attention Is All You Need",
+      "documentType": "research-paper",
+      "publisher": "arXiv",
+      "url": "https://arxiv.org/pdf/1706.03762.pdf",
+      "localFilename": "arxiv-attention-is-all-you-need.pdf",
+      "notes": "Multi-column academic paper with explicit numbered sections."
+    },
+    {
+      "id": "nist-sp-800-171r2",
+      "title": "NIST SP 800-171 Revision 2",
+      "documentType": "security-guidance",
+      "publisher": "National Institute of Standards and Technology",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171r2.pdf",
+      "localFilename": "nist-sp-800-171r2.pdf",
+      "notes": "Long security guidance document with withdrawn notice, chapters, and appendix-style structure."
+    },
+    {
+      "id": "cisa-irpf",
+      "title": "Infrastructure Resilience Planning Framework (IRPF)",
+      "documentType": "operational-framework",
+      "publisher": "Cybersecurity and Infrastructure Security Agency",
+      "url": "https://www.cisa.gov/sites/default/files/2023-03/Infrastructure_Resilience_Planning_Framework_IRPF_508c.pdf",
+      "localFilename": "cisa-infrastructure-resilience-planning-framework.pdf",
+      "notes": "Operational planning framework with sectioned guidance and moderate layout noise."
+    }
+  ]
+}
