@@ -1,7 +1,7 @@
 {
   "name": "@echofiles/echo-pdf",
   "description": "Local-first PDF document component core with CLI, workspace artifacts, and reusable page primitives.",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
