@@ -23,7 +23,7 @@
           <span class="eyebrow">CLI</span>
           <h1>One command surface, same six primitives.</h1>
           <p class="lead">
-            The local CLI is aligned to the same six primitives as the package API. Use top-level commands for the mainline workflow; legacy aliases may remain for compatibility.
+            The local CLI is aligned to the same six primitives as the package API. Use the top-level primitive commands directly.
           </p>
         </section>
 
@@ -39,12 +39,12 @@ echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
 
         <section class="two-col" style="margin-top:28px;">
           <article class="panel">
-            <h2>Source checkout workflow</h2>
-            <pre><code>npm install
-npm run document:dev -- document ./fixtures/smoke.pdf
-npm run document:dev -- structure ./fixtures/smoke.pdf
-npm run document:dev -- semantic ./fixtures/smoke.pdf
-npm run document:dev -- page ./fixtures/smoke.pdf --page 1</code></pre>
+            <h2>Supported boundary</h2>
+            <ul>
+              <li>the public local CLI surface is the same six top-level primitives shown above</li>
+              <li>legacy <code>document ...</code> alias trees are not part of the supported docs path</li>
+              <li>workspace-writing local runs stay the mainline workflow</li>
+            </ul>
           </article>
           <article class="panel">
             <h2>What stays out of the way</h2>

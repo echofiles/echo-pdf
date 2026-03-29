@@ -334,8 +334,8 @@ const loadLocalDocumentApi = async () => {
       return import(LOCAL_DOCUMENT_SOURCE_ENTRY.href)
     }
     throw new Error(
-      "Source-checkout document dev mode requires Bun and src/local/index.ts. " +
-      "Use `npm run document:dev -- <command> ...` from a source checkout."
+      "Internal source-checkout CLI dev mode requires Bun and src/local/index.ts. " +
+      "Use `npm run cli:dev -- <primitive> ...` only from a source checkout."
     )
   }
   try {
@@ -344,8 +344,8 @@ const loadLocalDocumentApi = async () => {
     const code = error && typeof error === "object" ? error.code : ""
     if (code === "ERR_MODULE_NOT_FOUND") {
       throw new Error(
-        "Local document commands require built artifacts in a source checkout. " +
-        "Run `npm run build` first, use `npm run document:dev -- <command> ...` in a source checkout, or install the published package."
+        "Local primitive commands require built artifacts in a source checkout. " +
+        "Run `npm run build` first, use the internal `npm run cli:dev -- <primitive> ...` path in this repo, or install the published package."
       )
     }
     throw error
@@ -353,21 +353,37 @@ const loadLocalDocumentApi = async () => {
 }
 
 const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render", "ocr"]
-const LEGACY_DOCUMENT_SUBCOMMANDS = ["index", "get", "structure", "semantic", "page", "render", "ocr"]
+const REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE = {
+  index: "document",
+  get: "document",
+  structure: "structure",
+  semantic: "semantic",
+  page: "page",
+  render: "render",
+  ocr: "ocr",
+}
 
-const isLegacyDocumentSubcommand = (value) => typeof value === "string" && LEGACY_DOCUMENT_SUBCOMMANDS.includes(value)
+const isRemovedDocumentAlias = (value) =>
+  typeof value === "string" && Object.hasOwn(REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE, value)
+
+const removedDocumentAliasMessage = (alias) => {
+  const primitive = REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE[alias]
+  return `Legacy \`document ${alias}\` was removed. Use \`echo-pdf ${primitive} <file.pdf>\` instead.`
+}
 
 const readDocumentPrimitiveArgs = (command, subcommand, rest) => {
-  if (command === "document" && isLegacyDocumentSubcommand(subcommand)) {
-    const primitive = subcommand === "index" || subcommand === "get" ? "document" : subcommand
+  if (command === "document") {
+    if (isRemovedDocumentAlias(subcommand) && typeof rest[0] === "string" && !rest[0].startsWith("--")) {
+      throw new Error(removedDocumentAliasMessage(subcommand))
+    }
     return {
-      primitive,
-      pdfPath: rest[0],
+      primitive: "document",
+      pdfPath: subcommand,
     }
   }
   return {
     primitive: command,
-    pdfPath: command === "document" ? subcommand : rest[0],
+    pdfPath: rest[0],
   }
 }
 
@@ -443,14 +459,14 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
 
 const usage = () => {
   process.stdout.write(`echo-pdf CLI\n\n`)
-  process.stdout.write(`Commands:\n`)
+  process.stdout.write(`Primary local primitive commands:\n`)
   process.stdout.write(`  document <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`\nCompatibility / existing service commands:\n`)
+  process.stdout.write(`\nAdditional commands:\n`)
   process.stdout.write(`  init [--service-url URL]\n`)
   process.stdout.write(`  dev [--port 8788] [--host 127.0.0.1]\n`)
   process.stdout.write(`  provider set --provider <${PROVIDER_SET_NAMES.join("|")}> --api-key <KEY> [--profile name]\n`)
@@ -463,12 +479,6 @@ const usage = () => {
   process.stdout.write(`  model list [--profile name]\n`)
   process.stdout.write(`  tools\n`)
   process.stdout.write(`  call --tool <name> --args '<json>' [--provider alias] [--model model] [--profile name] [--auto-upload]\n`)
-  process.stdout.write(`  document get <file.pdf> [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  document structure <file.pdf> [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  document semantic <file.pdf> [--provider alias] [--model model] [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  document page <file.pdf> --page <N> [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  document render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
-  process.stdout.write(`  document ocr <file.pdf> --page <N> [--scale N] [--provider alias] [--model model] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  file upload <local.pdf>\n`)
   process.stdout.write(`  file get --file-id <id> --out <path>\n`)
   process.stdout.write(`  mcp initialize\n`)
@@ -719,7 +729,7 @@ const main = async () => {
     return
   }
 
-  if (LOCAL_PRIMITIVE_COMMANDS.includes(command) || (command === "document" && isLegacyDocumentSubcommand(subcommand))) {
+  if (LOCAL_PRIMITIVE_COMMANDS.includes(command)) {
     await runLocalPrimitiveCommand(command, subcommand, rest, flags)
     return
   }
