@@ -23,24 +23,30 @@
           <span class="eyebrow">CLI</span>
           <h1>One command surface, same VL-first core path.</h1>
           <p class="lead">
-            The local CLI centers the same mainline path as the package API: render, page understanding, semantic structure, and workspace artifacts.
+            The local CLI centers the same mainline path as the package API: document metadata, page access, render reuse, and provider-backed semantic structure.
           </p>
         </section>
 
         <section class="panel" style="margin-top:28px;">
-          <h2>Primary command mapping</h2>
+          <h2>Zero-config primitives</h2>
           <pre><code>echo-pdf document ./sample.pdf
 echo-pdf structure ./sample.pdf
-echo-pdf semantic ./sample.pdf
 echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1</code></pre>
+        </section>
+        <section class="panel" style="margin-top:28px;">
+          <h2>Provider-required semantic setup</h2>
+          <pre><code>echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
+echo-pdf model set --provider openai --model gpt-4.1-mini
+echo-pdf semantic ./sample.pdf</code></pre>
         </section>
 
         <section class="two-col" style="margin-top:28px;">
           <article class="panel">
             <h2>Supported boundary</h2>
             <ul>
-              <li>the public local CLI surface is document / structure / semantic / page / render</li>
+              <li><code>document</code>, <code>structure</code>, <code>page</code>, and <code>render</code> work without provider configuration</li>
+              <li><code>semantic</code> requires a configured provider and model before it runs</li>
               <li>legacy <code>document ...</code> alias trees are not part of the supported docs path</li>
               <li>workspace-writing local runs stay the mainline workflow</li>
             </ul>

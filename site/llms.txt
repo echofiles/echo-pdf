@@ -12,9 +12,14 @@ Primary surfaces:
 Core local primitives:
 - get_document
 - get_document_structure
-- get_semantic_document_structure
+- get_semantic_document_structure (requires provider and model)
 - get_page_content
 - get_page_render
+
+Provider-backed semantic CLI setup:
+- echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
+- echo-pdf model set --provider openai --model gpt-4.1-mini
+- echo-pdf semantic ./sample.pdf
 
 Key docs:
 - Overview: https://pdf.echofile.ai/
