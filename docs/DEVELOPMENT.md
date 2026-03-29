@@ -83,6 +83,17 @@ Shared sample ownership is repo-level:
 - `cli:dev` is an internal development helper only, not part of the public CLI/documentation surface.
 - Eval operations for issue `#42` live under `eval/` and `docs/EVAL_*.md`.
 
+## Local LLM Providers
+
+- `echo-pdf` already speaks OpenAI-compatible HTTP for provider-backed semantic extraction.
+- Local servers such as Ollama, llama.cpp, vLLM, LM Studio, and LocalAI can be configured by adding a provider with a localhost `baseUrl`.
+- For no-auth local servers, leave `apiKeyEnv` empty in `echo-pdf.config.json`; the runtime will skip the `Authorization` header instead of requiring a dummy key.
+- Example CLI flow:
+  - `echo-pdf provider set --provider ollama --api-key ""`
+  - `echo-pdf model set --provider ollama --model llava:13b`
+  - `echo-pdf semantic ./sample.pdf --provider ollama`
+- Semantic extraction still requires a vision-capable model. If the local model does not support image input, the provider error should propagate to the caller.
+
 ## Pull Request Expectations
 
 Every PR should state:

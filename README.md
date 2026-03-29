@@ -68,6 +68,16 @@ echo-pdf semantic ./sample.pdf
 
 `echo-pdf semantic` now uses the CLI profile's provider/model/api-key settings. If the selected provider or model is missing, it fails early with a clear setup error instead of quietly dropping back to a weaker path.
 
+For a local OpenAI-compatible LLM server, point a provider at `http://localhost:...` and leave `apiKeyEnv` empty in `echo-pdf.config.json`. Then configure the CLI profile without a dummy key:
+
+```bash
+echo-pdf provider set --provider ollama --api-key ""
+echo-pdf model set --provider ollama --model llava:13b
+echo-pdf semantic ./sample.pdf --provider ollama
+```
+
+This works for local OpenAI-compatible servers such as Ollama, llama.cpp, vLLM, LM Studio, or LocalAI, as long as the selected model supports vision input.
+
 What these commands map to:
 
 - `document` -> `get_document`
@@ -109,7 +119,11 @@ import {
 
 const document = await get_document({ pdfPath: "./sample.pdf" })
 const structure = await get_document_structure({ pdfPath: "./sample.pdf" })
-const semantic = await get_semantic_document_structure({ pdfPath: "./sample.pdf" })
+const semantic = await get_semantic_document_structure({
+  pdfPath: "./sample.pdf",
+  provider: "openai",
+  model: "gpt-4.1-mini",
+})
 const page1 = await get_page_content({ pdfPath: "./sample.pdf", pageNumber: 1 })
 const render1 = await get_page_render({ pdfPath: "./sample.pdf", pageNumber: 1, scale: 2 })
 ```

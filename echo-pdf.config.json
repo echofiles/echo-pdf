@@ -37,6 +37,15 @@
         "chatCompletionsPath": "/chat/completions",
         "modelsPath": "/models"
       }
+    },
+    "ollama": {
+      "type": "openai-compatible",
+      "apiKeyEnv": "",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "endpoints": {
+        "chatCompletionsPath": "/chat/completions",
+        "modelsPath": "/models"
+      }
     }
   }
 }
