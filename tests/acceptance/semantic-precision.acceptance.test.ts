@@ -44,6 +44,7 @@ describe("semantic precision on real PDFs", () => {
 
     expect(titles).not.toContain("10 kΩ")
     expect(titles).not.toContain("10 kΩ 10 kΩ")
+    expect(titles).not.toContain("1.6 kΩ")
   })
 
   it("suppresses incidental prose and worksheet fragments on forms", async () => {
