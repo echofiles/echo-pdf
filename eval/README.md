@@ -6,9 +6,8 @@ What lives here:
 
 - `manifests/`: suite definitions for `smoke`, `core`, `stress`, and `known-bad`
 - `fetch-public-samples.mjs`: downloader that hydrates the shared public sample cache
-- `prompts/`: OCR prompt variants used by the runner
 - `examples/`: checked-in example outputs and handoff examples
-- `run-local.mjs`: suite runner that executes local document, semantic-structure, and OCR evals
+- `run-local.mjs`: suite runner that executes local document and semantic-structure evals
 
 Shared sample ownership lives outside `eval/`:
 
@@ -29,8 +28,6 @@ Provider-backed comparisons are optional and local-only. Set env vars before run
 ```bash
 export ECHO_PDF_EVAL_SEMANTIC_PROVIDER=openai
 export ECHO_PDF_EVAL_SEMANTIC_MODEL=gpt-4.1-mini
-export ECHO_PDF_EVAL_OCR_PROVIDER=openai
-export ECHO_PDF_EVAL_OCR_MODEL=gpt-4.1-mini
 export OPENAI_API_KEY=...
 npm run eval:core
 ```

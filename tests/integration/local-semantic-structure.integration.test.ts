@@ -52,6 +52,8 @@ const loadTestConfig = async (): Promise<{
 
 const startSemanticTestProvider = async (options?: {
   failAggregation?: boolean
+  emptyCandidates?: boolean
+  emptySections?: boolean
 }): Promise<{
   baseUrl: string
   close: () => Promise<void>
@@ -81,6 +83,11 @@ const startSemanticTestProvider = async (options?: {
         : ""
 
     if (prompt.includes("You extract semantic heading candidates from one rendered PDF page.")) {
+      if (options?.emptyCandidates) {
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ candidates: [] }) } }] }))
+        return
+      }
       const pageNumber = Number(prompt.match(/Page number: (\d+)/)?.[1] ?? "0")
       const response =
         pageNumber === 1
@@ -97,10 +104,31 @@ const startSemanticTestProvider = async (options?: {
         res.end(JSON.stringify({ error: "aggregation failed for test" }))
         return
       }
+      if (options?.emptySections) {
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ sections: [] }) } }] }))
+        return
+      }
       const response = {
         sections: [
-          { title: "1 Overview", level: 1, pageNumber: 1, excerpt: "1 Overview", children: [] },
-          { title: "2 Usage", level: 1, pageNumber: 2, excerpt: "2 Usage", children: [] },
+          {
+            title: "1 Overview",
+            level: 1,
+            pageNumber: 1,
+            excerpt: "1 Overview",
+            children: [
+              { title: "1.1 Goals", level: 2, pageNumber: 1, excerpt: "1.1 Goals", children: [] },
+            ],
+          },
+          {
+            title: "2 Usage",
+            level: 1,
+            pageNumber: 2,
+            excerpt: "2 Usage",
+            children: [
+              { title: "2.1 Commands", level: 2, pageNumber: 2, excerpt: "2.1 Commands", children: [] },
+            ],
+          },
         ],
       }
       res.writeHead(200, { "content-type": "application/json" })
@@ -130,6 +158,40 @@ const startSemanticTestProvider = async (options?: {
 
 const semanticTestServers: Array<() => Promise<void>> = []
 
+const buildSemanticProviderConfig = async (
+  providerServer: { baseUrl: string },
+  providerAlias = "semantic_test",
+  model = "semantic-test-model"
+) => {
+  const config = await loadTestConfig() as import("../../src/pdf-types.js").EchoPdfConfig
+  const env = { ...process.env, ECHO_PDF_SEMANTIC_TEST_KEY: "test-key" } as import("../../src/types.js").Env
+  return {
+    providerAlias,
+    model,
+    env,
+    config: {
+      ...config,
+      agent: {
+        ...config.agent,
+        defaultProvider: providerAlias,
+        defaultModel: model,
+      },
+      providers: {
+        ...config.providers,
+        [providerAlias]: {
+          type: "openai",
+          apiKeyEnv: "ECHO_PDF_SEMANTIC_TEST_KEY",
+          baseUrl: providerServer.baseUrl,
+          endpoints: {
+            chatCompletionsPath: "/chat/completions",
+            modelsPath: "/models",
+          },
+        },
+      },
+    },
+  }
+}
+
 afterEach(async () => {
   while (semanticTestServers.length > 0) {
     const close = semanticTestServers.pop()
@@ -138,7 +200,7 @@ afterEach(async () => {
 })
 
 describe("local semantic document structure", () => {
-  it("supports the built semantic runtime from a dist checkout", async () => {
+  it("fails fast in the built semantic runtime when no provider/model is configured", async () => {
     const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-built-semantic-"))
     await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
     await copyFile(path.join(rootDir, "package.json"), path.join(checkoutDir, "package.json"))
@@ -155,13 +217,9 @@ describe("local semantic document structure", () => {
       ["2 Usage", "Usage body text"],
     ])
 
-    const semantic = await local.get_semantic_document_structure({ pdfPath: semanticPdf, workspaceDir }) as {
-      detector: string
-      root: { children?: Array<{ title?: string }> }
-    }
-
-    expect(semantic.detector).toBe("heading-heuristic-v1")
-    expect(semantic.root.children?.map((node) => node.title)).toEqual(["1 Overview", "2 Usage"])
+    await expect(local.get_semantic_document_structure({ pdfPath: semanticPdf, workspaceDir })).rejects.toThrow(
+      "semantic extraction requires a configured provider and model"
+    )
   })
 
   it("adds a semantic structure artifact without changing the page index contract", async () => {
@@ -169,6 +227,9 @@ describe("local semantic document structure", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-"))
     const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-pdf-"))
     const semanticPdf = path.join(fixtureDir, "semantic.pdf")
+    const providerServer = await startSemanticTestProvider()
+    semanticTestServers.push(providerServer.close)
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
 
     await writeSimplePdf(semanticPdf, [
       [
@@ -192,10 +253,18 @@ describe("local semantic document structure", () => {
     expect(pageIndex.root.children?.map((node) => node.type)).toEqual(["page", "page"])
     expect(pageIndex.root.children?.map((node) => node.pageNumber)).toEqual([1, 2])
 
-    const semantic = await local.get_semantic_document_structure({ pdfPath: semanticPdf, workspaceDir }) as {
+    const semantic = await local.get_semantic_document_structure({
+      pdfPath: semanticPdf,
+      workspaceDir,
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
+    }) as {
       cacheStatus: "fresh" | "reused"
       pageIndexArtifactPath: string
       artifactPath: string
+      detector: string
       root: {
         children?: Array<{
           title?: string
@@ -206,6 +275,7 @@ describe("local semantic document structure", () => {
       }
     }
     expect(semantic.cacheStatus).toBe("fresh")
+    expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.pageIndexArtifactPath.endsWith("structure.json")).toBe(true)
     expect(semantic.artifactPath.endsWith("semantic-structure.json")).toBe(true)
     expect(semantic.root.children?.[0]).toMatchObject({
@@ -229,7 +299,14 @@ describe("local semantic document structure", () => {
       pageNumber: 2,
     })
 
-    const semanticSecond = await local.get_semantic_document_structure({ pdfPath: semanticPdf, workspaceDir }) as {
+    const semanticSecond = await local.get_semantic_document_structure({
+      pdfPath: semanticPdf,
+      workspaceDir,
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
+    }) as {
       cacheStatus: "fresh" | "reused"
     }
     expect(semanticSecond.cacheStatus).toBe("reused")
@@ -238,18 +315,28 @@ describe("local semantic document structure", () => {
       detector?: string
       root?: { children?: unknown[] }
     }
-    expect(semanticJson.detector).toBe("heading-heuristic-v1")
+    expect(semanticJson.detector).toBe("agent-structured-v1")
     expect(Array.isArray(semanticJson.root?.children)).toBe(true)
   })
 
-  it("returns an empty semantic structure when no headings are detectable", async () => {
+  it("returns an empty semantic structure when the agent yields no reliable sections", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-empty-"))
+    const providerServer = await startSemanticTestProvider({ emptyCandidates: true, emptySections: true })
+    semanticTestServers.push(providerServer.close)
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
 
     const pageIndex = await local.get_document_structure({ pdfPath: smokePdf, workspaceDir }) as {
       root: { children?: unknown[] }
     }
-    const semantic = await local.get_semantic_document_structure({ pdfPath: smokePdf, workspaceDir }) as {
+    const semantic = await local.get_semantic_document_structure({
+      pdfPath: smokePdf,
+      workspaceDir,
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
+    }) as {
       root: { children?: unknown[] }
     }
 
@@ -269,51 +356,27 @@ describe("local semantic document structure", () => {
 
     const providerServer = await startSemanticTestProvider()
     semanticTestServers.push(providerServer.close)
-    const config = await loadTestConfig() as import("../../src/pdf-types.js").EchoPdfConfig
-    const providerAlias = "semantic_test"
-    const env = { ...process.env, ECHO_PDF_SEMANTIC_TEST_KEY: "test-key" } as import("../../src/types.js").Env
-    const configWithProvider = {
-      ...config,
-      agent: {
-        ...config.agent,
-        defaultProvider: providerAlias,
-        defaultModel: "semantic-test-model",
-      },
-      providers: {
-        ...config.providers,
-        [providerAlias]: {
-          type: "openai",
-          apiKeyEnv: "ECHO_PDF_SEMANTIC_TEST_KEY",
-          baseUrl: providerServer.baseUrl,
-          endpoints: {
-            chatCompletionsPath: "/chat/completions",
-            modelsPath: "/models",
-          },
-        },
-      },
-    }
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
 
     const semantic = await local.get_semantic_document_structure({
       pdfPath: semanticPdf,
       workspaceDir,
-      config: configWithProvider,
-      provider: providerAlias,
-      model: "semantic-test-model",
-      env,
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
     }) as {
       detector: string
       strategyKey: string
-      fallback?: { from: string; to: string; reason: string }
       root: { children?: Array<{ title?: string }> }
     }
 
     expect(semantic.detector).toBe("agent-structured-v1")
     expect(semantic.strategyKey).toContain("page-understanding-v1")
-    expect(semantic.fallback).toBeUndefined()
     expect(semantic.root.children?.map((node) => node.title)).toEqual(["1 Overview", "2 Usage"])
   })
 
-  it("makes heuristic fallback explicit when the agent semantic path fails", async () => {
+  it("propagates agent semantic failures instead of falling back heuristically", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-fallback-"))
     const fixtureDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-fallback-pdf-"))
@@ -325,52 +388,16 @@ describe("local semantic document structure", () => {
 
     const providerServer = await startSemanticTestProvider({ failAggregation: true })
     semanticTestServers.push(providerServer.close)
-    const config = await loadTestConfig() as import("../../src/pdf-types.js").EchoPdfConfig
-    const providerAlias = "semantic_test"
-    const env = { ...process.env, ECHO_PDF_SEMANTIC_TEST_KEY: "test-key" } as import("../../src/types.js").Env
-    const configWithProvider = {
-      ...config,
-      agent: {
-        ...config.agent,
-        defaultProvider: providerAlias,
-        defaultModel: "semantic-test-model",
-      },
-      providers: {
-        ...config.providers,
-        [providerAlias]: {
-          type: "openai",
-          apiKeyEnv: "ECHO_PDF_SEMANTIC_TEST_KEY",
-          baseUrl: providerServer.baseUrl,
-          endpoints: {
-            chatCompletionsPath: "/chat/completions",
-            modelsPath: "/models",
-          },
-        },
-      },
-    }
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
 
-    const semantic = await local.get_semantic_document_structure({
+    await expect(local.get_semantic_document_structure({
       pdfPath: semanticPdf,
       workspaceDir,
-      config: configWithProvider,
-      provider: providerAlias,
-      model: "semantic-test-model",
-      env,
-    }) as {
-      detector: string
-      strategyKey: string
-      fallback?: { from: string; to: string; reason: string }
-      root: { children?: Array<{ title?: string }> }
-    }
-
-    expect(semantic.detector).toBe("heading-heuristic-v1")
-    expect(semantic.strategyKey).toContain("agent-fallback::page-understanding-v1")
-    expect(semantic.fallback).toMatchObject({
-      from: "agent-structured-v1",
-      to: "heading-heuristic-v1",
-    })
-    expect(semantic.fallback?.reason).toContain("Text generation request failed: HTTP 500")
-    expect(semantic.root.children?.map((node) => node.title)).toEqual(["1 Overview", "2 Usage"])
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
+    })).rejects.toThrow("Text generation request failed: HTTP 500")
   })
 
   itWithSemanticEnv("uses runtime provider/model overrides instead of config defaults", async () => {

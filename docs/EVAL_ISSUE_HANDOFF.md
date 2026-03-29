@@ -29,13 +29,12 @@ node ./eval/run-local.mjs --suite <suite>
 ## Configuration
 
 - semantic provider/model: `<if applicable>`
-- OCR provider/model: `<if applicable>`
 - prompt: `<prompt file or hash>`
-- budget: `<chunk budget or render scale>`
+- budget: `<chunk budget>`
 
 ## Expected
 
-Describe the expected structure or OCR behavior.
+Describe the expected semantic/document behavior.
 
 ## Actual
 

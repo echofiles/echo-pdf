@@ -1,8 +1,23 @@
 {
   "name": "@echofiles/echo-pdf",
   "description": "Local-first PDF document component core with CLI, workspace artifacts, and reusable page primitives.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
+  "homepage": "https://pdf.echofile.ai/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echofiles/echo-pdf.git"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "pdf",
+    "local-first",
+    "ai-agent",
+    "semantic-structure",
+    "workspace-artifacts",
+    "cli",
+    "vision-language"
+  ],
   "publishConfig": {
     "access": "public"
   },

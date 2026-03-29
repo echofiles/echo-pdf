@@ -1,44 +1,41 @@
 {
   "summaryVersion": "echo-pdf.eval.run-summary.v1",
-  "generatedAt": "2026-03-29T01:25:30.125Z",
+  "generatedAt": "2026-03-29T13:55:55.266Z",
   "suite": {
     "suiteId": "core",
-    "description": "Representative semantic-structure and OCR comparisons across public knowledge and guidance PDFs, models, prompts, and budgets.",
-    "manifestPath": "eval/manifests/core.json"
+    "description": "Representative semantic-structure comparisons across public knowledge and guidance PDFs, models, and chunk budgets.",
+    "manifestPath": "<repo-root>/eval/manifests/core.json"
   },
   "environment": {
     "cwd": "<repo-root>",
     "repoRoot": "<repo-root>",
-    "node": "v20.20.1",
+    "node": "v22.22.0",
     "platform": "darwin",
     "arch": "arm64",
     "hostname": "<local-host>",
-    "workspaceDir": "eval/out/examples/core.workspace",
+    "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
     "envHints": {
       "semanticProvider": "",
-      "semanticModel": "",
-      "ocrProvider": "",
-      "ocrModel": ""
+      "semanticModel": ""
     }
   },
   "totals": {
-    "caseCount": 4,
-    "runCount": 14,
+    "caseCount": 2,
+    "runCount": 6,
     "statuses": {
-      "passed": 6,
+      "passed": 2,
       "failed": 0,
-      "blocked": 8,
+      "blocked": 4,
       "known-bad": 0,
       "unexpected-pass": 0
     },
     "taxonomyCounts": {
-      "ENV_PROVIDER_OR_MODEL_MISSING": 8
+      "ENV_PROVIDER_OR_MODEL_MISSING": 4
     }
   },
   "representativeRuns": {
     "passed": [
       "core::document::public-paper-attention-semantic",
-      "core::semantic::semantic-heuristic-baseline::public-paper-attention-semantic",
       "core::document::public-framework-cisa-irpf-semantic"
     ],
     "failed": [],
@@ -58,10 +55,10 @@
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 179,
+      "durationMs": 2,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -70,50 +67,16 @@
       "failures": [],
       "metrics": {
         "pageCount": 15,
-        "cacheStatus": "fresh"
+        "cacheStatus": "reused"
       },
       "artifacts": {
-        "workspaceDir": "eval/out/examples/core.workspace",
-        "documentDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad",
-        "documentJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/document.json",
-        "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
-      },
-      "notes": "Representative public research paper for semantic structure comparisons."
-    },
-    {
-      "runId": "core::semantic::semantic-heuristic-baseline::public-paper-attention-semantic",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-semantic",
-      "kind": "semantic",
-      "configId": "semantic-heuristic-baseline",
-      "status": "passed",
-      "durationMs": 6,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "provider": "",
-        "model": "",
-        "budget": null,
-        "budgetLabel": "n/a",
-        "notes": "Heuristic-only fallback. No provider required."
-      },
-      "failures": [],
-      "metrics": {
-        "detector": "heading-heuristic-v1",
-        "strategyKey": "heuristic::heading-heuristic-v1",
-        "rootSectionCount": 7,
-        "flattenedSectionCount": 22
-      },
-      "artifacts": {
-        "artifactPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json"
+        "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
+        "documentDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d",
+        "documentJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/document.json",
+        "structureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/structure.json",
+        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/semantic-structure.json",
+        "pagesDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/pages",
+        "rendersDir": "<repo-root>/eval/out/examples/core.workspace/documents/d6c88425e34c8c4d/renders"
       },
       "notes": "Representative public research paper for semantic structure comparisons."
     },
@@ -127,7 +90,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -163,7 +126,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/arxiv-attention-is-all-you-need.pdf",
         "generated": false
       },
       "config": {
@@ -196,10 +159,10 @@
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 554,
+      "durationMs": 1,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -208,50 +171,16 @@
       "failures": [],
       "metrics": {
         "pageCount": 55,
-        "cacheStatus": "fresh"
+        "cacheStatus": "reused"
       },
       "artifacts": {
-        "workspaceDir": "eval/out/examples/core.workspace",
-        "documentDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7",
-        "documentJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/document.json",
-        "structureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
-        "pagesDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/ocr"
-      },
-      "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
-    },
-    {
-      "runId": "core::semantic::semantic-heuristic-baseline::public-framework-cisa-irpf-semantic",
-      "suiteId": "core",
-      "caseId": "public-framework-cisa-irpf-semantic",
-      "kind": "semantic",
-      "configId": "semantic-heuristic-baseline",
-      "status": "passed",
-      "durationMs": 9,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
-        "generated": false
-      },
-      "config": {
-        "provider": "",
-        "model": "",
-        "budget": null,
-        "budgetLabel": "n/a",
-        "notes": "Heuristic-only fallback. No provider required."
-      },
-      "failures": [],
-      "metrics": {
-        "detector": "heading-heuristic-v1",
-        "strategyKey": "heuristic::heading-heuristic-v1",
-        "rootSectionCount": 52,
-        "flattenedSectionCount": 63
-      },
-      "artifacts": {
-        "artifactPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/out/examples/core.workspace/documents/cb55555cc4fa90d7/structure.json"
+        "workspaceDir": "<repo-root>/eval/out/examples/core.workspace",
+        "documentDir": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e",
+        "documentJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e/document.json",
+        "structureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e/structure.json",
+        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e/semantic-structure.json",
+        "pagesDir": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e/pages",
+        "rendersDir": "<repo-root>/eval/out/examples/core.workspace/documents/d76a4807f469762e/renders"
       },
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
     },
@@ -265,7 +194,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -301,7 +230,7 @@
       "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/cisa-infrastructure-resilience-planning-framework.pdf",
         "generated": false
       },
       "config": {
@@ -326,204 +255,6 @@
       "metrics": {},
       "artifacts": {},
       "notes": "Public CISA framework for semantic structure comparisons on section-heavy guidance."
-    },
-    {
-      "runId": "core::document::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "document",
-      "configId": "document-baseline",
-      "status": "passed",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "mode": "document-baseline"
-      },
-      "failures": [],
-      "metrics": {
-        "pageCount": 15,
-        "cacheStatus": "reused"
-      },
-      "artifacts": {
-        "workspaceDir": "eval/out/examples/core.workspace",
-        "documentDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad",
-        "documentJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/document.json",
-        "structureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/semantic-structure.json",
-        "pagesDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/44cefe56c9b5dcad/ocr"
-      },
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::ocr::ocr-default-prompt-standard-scale::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "ocr",
-      "configId": "ocr-default-prompt-standard-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-default-prompt-standard-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-default.txt",
-        "renderScale": 2,
-        "budgetLabel": "standard",
-        "notes": "Reference OCR run: fuller prompt and default render scale."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-default-prompt-standard-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::ocr::ocr-compact-prompt-tight-scale::public-paper-attention-ocr",
-      "suiteId": "core",
-      "caseId": "public-paper-attention-ocr",
-      "kind": "ocr",
-      "configId": "ocr-compact-prompt-tight-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/arxiv-attention-is-all-you-need.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-compact-prompt-tight-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-compact.txt",
-        "renderScale": 1.5,
-        "budgetLabel": "tight",
-        "notes": "Prompt-compressed OCR run with lower image budget proxy."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-compact-prompt-tight-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public research paper for OCR comparisons on dense multi-column text."
-    },
-    {
-      "runId": "core::document::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "document",
-      "configId": "document-baseline",
-      "status": "passed",
-      "durationMs": 1398,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "mode": "document-baseline"
-      },
-      "failures": [],
-      "metrics": {
-        "pageCount": 71,
-        "cacheStatus": "fresh"
-      },
-      "artifacts": {
-        "workspaceDir": "eval/out/examples/core.workspace",
-        "documentDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/core.workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/out/examples/core.workspace/documents/0d2de462036fc194/ocr"
-      },
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
-    },
-    {
-      "runId": "core::ocr::ocr-default-prompt-standard-scale::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "ocr",
-      "configId": "ocr-default-prompt-standard-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-default-prompt-standard-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-default.txt",
-        "renderScale": 2,
-        "budgetLabel": "standard",
-        "notes": "Reference OCR run: fuller prompt and default render scale."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-default-prompt-standard-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
-    },
-    {
-      "runId": "core::ocr::ocr-compact-prompt-tight-scale::public-guide-irs-publication-15t-ocr",
-      "suiteId": "core",
-      "caseId": "public-guide-irs-publication-15t-ocr",
-      "kind": "ocr",
-      "configId": "ocr-compact-prompt-tight-scale",
-      "status": "blocked",
-      "durationMs": 0,
-      "source": {
-        "kind": "existing",
-        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
-        "generated": false
-      },
-      "config": {
-        "id": "ocr-compact-prompt-tight-scale",
-        "providerEnv": "ECHO_PDF_EVAL_OCR_PROVIDER",
-        "modelEnv": "ECHO_PDF_EVAL_OCR_MODEL",
-        "promptFile": "../prompts/ocr-compact.txt",
-        "renderScale": 1.5,
-        "budgetLabel": "tight",
-        "notes": "Prompt-compressed OCR run with lower image budget proxy."
-      },
-      "failures": [
-        {
-          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
-          "layer": "infra",
-          "message": "Missing OCR provider/model for config ocr-compact-prompt-tight-scale."
-        }
-      ],
-      "metrics": {},
-      "artifacts": {},
-      "notes": "Public long-form IRS guidance for OCR comparisons on dense cover-page text."
     }
   ]
 }

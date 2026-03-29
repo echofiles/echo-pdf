@@ -142,7 +142,6 @@ Downstream use:
 
 - page text retrieval
 - semantic extraction input
-- direct page-level fallback when richer artifacts are unavailable
 
 ### `semantic-structure.json`
 
@@ -180,14 +179,13 @@ Each semantic section may expose:
 Detector requirements:
 
 - `detector` must identify the semantic extraction path that produced the artifact
-- current values are `agent-structured-v1` and `heading-heuristic-v1`
+- current value is `agent-structured-v1`
 - downstream consumers may branch on detector identity, but should handle unknown future detectors conservatively
 
 Strategy requirements:
 
 - `strategyKey` must change when the semantic extraction strategy changes in a way that affects artifact validity
 - for agent-based extraction, this includes provider/model and semantic extraction budget settings
-- for heuristic extraction, this identifies the heuristic strategy version
 
 ### `renders/<page>.scale-<scale>.json` and `.png`
 

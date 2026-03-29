@@ -64,4 +64,4 @@ Every run should leave:
 - source or generated PDF path
 - output workspace path
 - summary JSON path
-- artifact paths for semantic/OCR outputs
+- artifact paths for semantic outputs

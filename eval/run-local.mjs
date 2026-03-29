@@ -250,50 +250,6 @@ const compareSemantic = (semantic, expectations) => {
   }
 }
 
-const compareOcr = (ocr, expectations) => {
-  const failures = []
-  const text = typeof ocr.text === "string" ? ocr.text : ""
-
-  if (typeof expectations?.minChars === "number" && text.length < expectations.minChars) {
-    failures.push({
-      code: "OCR_TRUNCATED_TEXT",
-      layer: "ocr",
-      message: `Expected at least ${expectations.minChars} chars, got ${text.length}.`,
-    })
-  }
-
-  for (const required of Array.isArray(expectations?.requiredSubstrings) ? expectations.requiredSubstrings : []) {
-    if (!text.includes(required)) {
-      failures.push({
-        code: "OCR_TEXT_MISSING",
-        layer: "ocr",
-        message: `Missing OCR substring "${required}".`,
-      })
-    }
-  }
-
-  for (const forbidden of Array.isArray(expectations?.forbiddenSubstrings) ? expectations.forbiddenSubstrings : []) {
-    if (text.includes(forbidden)) {
-      failures.push({
-        code: "OCR_HALLUCINATED_TEXT",
-        layer: "ocr",
-        message: `Found forbidden OCR substring "${forbidden}".`,
-      })
-    }
-  }
-
-  return {
-    failures,
-    metrics: {
-      chars: text.length,
-      provider: ocr.provider,
-      model: ocr.model,
-      renderScale: ocr.renderScale,
-      promptHash: stableHash(ocr.prompt || ""),
-    },
-  }
-}
-
 const buildRepresentativeRuns = (runs, limit = 3) => {
   const pick = (status) => runs.filter((run) => run.status === status).slice(0, limit).map((run) => run.runId)
   return {
@@ -345,14 +301,6 @@ const materializeSource = async (manifestDir, suiteRunDir, caseDef) => {
   throw new Error(`Unsupported source definition for case ${caseDef.caseId}`)
 }
 
-const readPrompt = async (manifestDir, promptFile, inlinePrompt) => {
-  if (typeof inlinePrompt === "string" && inlinePrompt.trim().length > 0) return inlinePrompt.trim()
-  if (typeof promptFile === "string" && promptFile.trim().length > 0) {
-    return (await fs.readFile(path.resolve(manifestDir, promptFile), "utf-8")).trim()
-  }
-  return ""
-}
-
 const run = async () => {
   const flags = parseFlags(process.argv.slice(2))
   const suiteId = typeof flags.suite === "string" && flags.suite.trim().length > 0 ? flags.suite.trim() : "smoke"
@@ -381,7 +329,6 @@ const run = async () => {
 
   const local = await loadLocalDocumentApi()
   const semanticConfigById = new Map((manifest.semanticConfigs || []).map((config) => [config.id, config]))
-  const ocrConfigById = new Map((manifest.ocrConfigs || []).map((config) => [config.id, config]))
   const runs = []
   const taxonomyCounts = {}
   const statusCounts = {
@@ -515,91 +462,6 @@ const run = async () => {
       incrementCount(statusCounts, status)
       for (const failure of failures) incrementCount(taxonomyCounts, failure.code)
     }
-
-    for (const configId of caseDef.ocrConfigIds || []) {
-      const config = ocrConfigById.get(configId)
-      if (!config) throw new Error(`Unknown ocr configId "${configId}" in suite "${manifest.suiteId}"`)
-      const provider = resolveString(config.provider, config.providerEnv)
-      const model = resolveString(config.model, config.modelEnv)
-      const missingProviderOrModel = !provider || !model
-      if (missingProviderOrModel) {
-        const failure = {
-          code: "ENV_PROVIDER_OR_MODEL_MISSING",
-          layer: "infra",
-          message: `Missing OCR provider/model for config ${configId}.`,
-        }
-        runs.push({
-          runId: `${manifest.suiteId}::ocr::${configId}::${caseDef.caseId}`,
-          suiteId: manifest.suiteId,
-          caseId: caseDef.caseId,
-          kind: "ocr",
-          configId,
-          status: "blocked",
-          durationMs: 0,
-          source,
-          config,
-          failures: [failure],
-          metrics: {},
-          artifacts: {},
-          notes: caseDef.description,
-        })
-        incrementCount(statusCounts, "blocked")
-        incrementCount(taxonomyCounts, failure.code)
-        continue
-      }
-
-      const startedAt = Date.now()
-      const prompt = await readPrompt(manifestDir, config.promptFile, config.prompt)
-      let ocr
-      let failures = []
-      try {
-        ocr = await local.get_page_ocr({
-          pdfPath: source.pdfPath,
-          workspaceDir: suiteRunDir.workspaceDir,
-          pageNumber: caseDef.ocrExpectations?.pageNumber || 1,
-          provider,
-          model,
-          prompt,
-          renderScale: typeof config.renderScale === "number" ? config.renderScale : undefined,
-        })
-        failures = compareOcr(ocr, caseDef.ocrExpectations).failures
-      } catch (error) {
-        failures = [classifyThrownError(error)]
-      }
-
-      const status = resolveRunStatus(expectedOutcome, failures, caseDef.expectedFailureCodes)
-      const ocrMetrics = ocr ? compareOcr(ocr, caseDef.ocrExpectations).metrics : {}
-
-      runs.push({
-        runId: `${manifest.suiteId}::ocr::${configId}::${caseDef.caseId}`,
-        suiteId: manifest.suiteId,
-        caseId: caseDef.caseId,
-        kind: "ocr",
-        configId,
-        status,
-        durationMs: Date.now() - startedAt,
-        source,
-        config: {
-          provider,
-          model,
-          budgetLabel: config.budgetLabel || "",
-          renderScale: config.renderScale || "",
-          promptHash: stableHash(prompt),
-          promptFile: config.promptFile || "",
-          notes: config.notes || "",
-        },
-        failures,
-        metrics: ocrMetrics,
-        artifacts: ocr ? {
-          artifactPath: ocr.artifactPath,
-          renderArtifactPath: ocr.renderArtifactPath,
-          imagePath: ocr.imagePath,
-        } : {},
-        notes: caseDef.description,
-      })
-      incrementCount(statusCounts, status)
-      for (const failure of failures) incrementCount(taxonomyCounts, failure.code)
-    }
   }
 
   const summary = {
@@ -621,8 +483,6 @@ const run = async () => {
       envHints: {
         semanticProvider: process.env.ECHO_PDF_EVAL_SEMANTIC_PROVIDER || "",
         semanticModel: process.env.ECHO_PDF_EVAL_SEMANTIC_MODEL || "",
-        ocrProvider: process.env.ECHO_PDF_EVAL_OCR_PROVIDER || "",
-        ocrModel: process.env.ECHO_PDF_EVAL_OCR_MODEL || "",
       },
     },
     totals: {

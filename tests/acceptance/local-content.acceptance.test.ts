@@ -13,6 +13,22 @@ const rootDir = path.resolve(__dirname, "../..")
 const canonicalPagePdf = repoOwnedSamplePaths.inputPdf
 const canonicalSemanticPdf = publicSamplePaths.attentionPaperPdf
 
+const inferProvider = (): string => {
+  if (typeof process.env.ECHO_PDF_TEST_OCR_PROVIDER === "string" && process.env.ECHO_PDF_TEST_OCR_PROVIDER.trim().length > 0) {
+    return process.env.ECHO_PDF_TEST_OCR_PROVIDER.trim()
+  }
+  if (process.env.OPENAI_API_KEY) return "openai"
+  if (process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY) return "openrouter"
+  if (process.env.VERCEL_AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_KEY) return "vercel_gateway"
+  return ""
+}
+
+const provider = inferProvider()
+const model = typeof process.env.ECHO_PDF_TEST_SEMANTIC_MODEL === "string" && process.env.ECHO_PDF_TEST_SEMANTIC_MODEL.trim().length > 0
+  ? process.env.ECHO_PDF_TEST_SEMANTIC_MODEL.trim()
+  : (typeof process.env.ECHO_PDF_TEST_OCR_MODEL === "string" ? process.env.ECHO_PDF_TEST_OCR_MODEL.trim() : "")
+const itWithSemanticEnv = provider && model ? it : it.skip
+
 const ensureAcceptanceInput = async (pdfPath: string, hint: string): Promise<void> => {
   try {
     await access(pdfPath)
@@ -107,7 +123,7 @@ describe("content-level acceptance on real local PDFs", () => {
     }
   })
 
-  it("surfaces real semantic headings from a local PDF instead of requiring layout noise to pass", async () => {
+  itWithSemanticEnv("surfaces real semantic headings from a local PDF instead of requiring layout noise to pass", async () => {
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-"))
     await ensureAcceptanceInput(
@@ -115,13 +131,23 @@ describe("content-level acceptance on real local PDFs", () => {
       "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the shared public sample cache."
     )
 
-    const first = await local.get_semantic_document_structure({ pdfPath: canonicalSemanticPdf, workspaceDir }) as {
+    const first = await local.get_semantic_document_structure({
+      pdfPath: canonicalSemanticPdf,
+      workspaceDir,
+      provider,
+      model,
+    }) as {
       cacheStatus: "fresh" | "reused"
       artifactPath: string
       pageIndexArtifactPath: string
       root: { children?: SemanticNode[] }
     }
-    const second = await local.get_semantic_document_structure({ pdfPath: canonicalSemanticPdf, workspaceDir }) as {
+    const second = await local.get_semantic_document_structure({
+      pdfPath: canonicalSemanticPdf,
+      workspaceDir,
+      provider,
+      model,
+    }) as {
       cacheStatus: "fresh" | "reused"
       artifactPath: string
       root: { children?: SemanticNode[] }
