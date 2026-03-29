@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Semantic Structure | echo-pdf Docs</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a class="brand" href="../index.html"><span class="brand-mark">EP</span><span>echo-pdf docs</span></a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="../index.html">Overview</a>
+          <a href="../api/index.html">API</a>
+          <a href="../cli/index.html">CLI</a>
+          <a href="./semantic-structure.html" aria-current="page">Concepts</a>
+          <a href="../integrations/index.html">Integrations</a>
+        </nav>
+      </header>
+      <main>
+        <section class="hero">
+          <span class="eyebrow">Concept</span>
+          <h1>Semantic structure is a separate layer.</h1>
+          <p class="lead">
+            <code>get_semantic_document_structure()</code> writes <code>semantic-structure.json</code> alongside the page index.
+            It adds heading and section structure without changing the shape of <code>pages[]</code>.
+          </p>
+        </section>
+        <section class="cards">
+          <article class="card">
+            <h3>Primary path</h3>
+            <p>Agent-first extraction using local provider/model configuration.</p>
+            <p><code>detector = agent-structured-v1</code></p>
+          </article>
+          <article class="card">
+            <h3>Fallback path</h3>
+            <p>Conservative heuristic fallback when no model is configured or extraction fails.</p>
+            <p><code>detector = heading-heuristic-v1</code></p>
+          </article>
+          <article class="card">
+            <h3>Downstream rule</h3>
+            <p>Read detector and strategy metadata before assuming semantic richness or cache reuse.</p>
+          </article>
+        </section>
+
+        <p class="section-label">Metadata that matters</p>
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Why it exists</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>detector</code></td><td>identifies which semantic extraction path produced the artifact</td></tr>
+              <tr><td><code>strategyKey</code></td><td>changes when provider, model, or extraction budget changes enough to invalidate reuse</td></tr>
+              <tr><td><code>pageIndexArtifactPath</code></td><td>links the semantic layer back to the stable page index</td></tr>
+              <tr><td><code>pageArtifactPath</code></td><td>lets section nodes point back to the originating page artifact</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>Still not domain logic.</h3>
+          <p>
+            The semantic layer is general document structure. It should not encode datasheet-specific, EDA-specific, or other downstream product semantics.
+          </p>
+        </section>
+      </main>
+      <footer class="footer"><div class="footer-grid"><div><p class="kicker">Next</p><ul><li><a href="./page-index.html">Page index</a></li><li><a href="./workspace-artifacts.html">Workspace artifacts</a></li></ul></div><div><p class="kicker">Boundary</p><p>Semantics are local-first and artifact-backed. This page is docs-only and does not imply any remote extraction service.</p></div></div></footer>
+    </div>
+  </body>
+</html>

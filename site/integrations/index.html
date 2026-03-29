@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Integrations | echo-pdf Docs</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a class="brand" href="../index.html"><span class="brand-mark">EP</span><span>echo-pdf docs</span></a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="../index.html">Overview</a>
+          <a href="../api/index.html">API</a>
+          <a href="../cli/index.html">CLI</a>
+          <a href="../concepts/page-index.html">Concepts</a>
+          <a href="./index.html" aria-current="page">Integrations</a>
+        </nav>
+      </header>
+      <main>
+        <section class="hero">
+          <span class="eyebrow">Integrations</span>
+          <h1>Use echo-pdf as a local document component.</h1>
+          <p class="lead">
+            Downstream products should treat <code>echo-pdf</code> as a general local PDF component that produces package APIs, CLI outputs, and workspace artifacts.
+            Product-specific policy belongs outside this repo.
+          </p>
+        </section>
+
+        <section class="cards" style="margin-top:28px;">
+          <article class="card">
+            <h3>Recommended adoption path</h3>
+            <ul>
+              <li>install the npm package</li>
+              <li>use the six local primitives or aligned CLI commands</li>
+              <li>consume artifacts from the local workspace</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>What downstream code may rely on</h3>
+            <ul>
+              <li>public package entrypoints</li>
+              <li>stable page index contract</li>
+              <li>workspace artifact layout and traceability metadata</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>What downstream code should not assume</h3>
+            <ul>
+              <li>deep imports into internals</li>
+              <li>hosted service behavior</li>
+              <li>MCP as the product center of gravity</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="panel" style="margin-top:28px;">
+          <h2>Local integration shape</h2>
+          <pre><code>local PDF
+  -> echo-pdf package / CLI
+  -> .echo-pdf-workspace artifacts
+  -> downstream local app or agent
+  -> product-specific logic outside echo-pdf</code></pre>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>No hosted implication.</h3>
+          <p>
+            This integration guidance is intentionally local-first. The docs site is not advertising a hosted API, managed tenancy, or browser-side PDF processing service.
+          </p>
+        </section>
+      </main>
+      <footer class="footer"><div class="footer-grid"><div><p class="kicker">Related docs</p><ul><li><a href="../concepts/workspace-artifacts.html">Workspace artifact contract</a></li><li><a href="../api/index.html">Primitive API reference</a></li><li><a href="../cli/index.html">CLI workflows</a></li></ul></div><div><p class="kicker">Product boundary</p><p><code>echo-pdf</code> stays a general document component. Downstream domain logic belongs elsewhere.</p></div></div></footer>
+    </div>
+  </body>
+</html>

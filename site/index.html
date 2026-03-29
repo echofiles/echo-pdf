@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>echo-pdf Docs</title>
+    <meta name="description" content="Static docs for echo-pdf, a local-first PDF context engine for AI agents.">
+    <link rel="stylesheet" href="./assets/styles.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">EP</span>
+          <span>echo-pdf docs</span>
+        </a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="./index.html" aria-current="page">Overview</a>
+          <a href="./api/index.html">API</a>
+          <a href="./cli/index.html">CLI</a>
+          <a href="./concepts/page-index.html">Concepts</a>
+          <a href="./integrations/index.html">Integrations</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <span class="eyebrow">Docs only, not a service</span>
+          <div class="hero-grid">
+            <div>
+              <h1>Local-first PDF context for agents.</h1>
+              <p class="lead">
+                <code>echo-pdf</code> turns local PDFs into reusable package APIs, CLI outputs, and workspace artifacts.
+                This site explains the product boundary and local workflows. It does not expose hosted PDF processing.
+              </p>
+              <div class="actions">
+                <a class="button primary" href="./cli/index.html">Start with the CLI</a>
+                <a class="button" href="./api/index.html">Read the 6 primitives</a>
+                <a class="button" href="./integrations/index.html">Integration contract</a>
+              </div>
+            </div>
+            <div class="panel">
+              <p class="kicker">Primary surfaces</p>
+              <ul>
+                <li><code>@echofiles/echo-pdf</code> npm package</li>
+                <li><code>echo-pdf</code> local CLI</li>
+                <li><code>.echo-pdf-workspace/</code> inspectable artifacts</li>
+                <li>static docs site for install and contracts</li>
+              </ul>
+              <p class="kicker" style="margin-top:20px;">Non-goals in this phase</p>
+              <ul>
+                <li>hosted SaaS or multi-tenant platform work</li>
+                <li>treating MCP as the main entrypoint</li>
+                <li>turning the site into an online playground</li>
+                <li>datasheet / EDA or other domain-specific logic</li>
+              </ul>
+            </div>
+          </div>
+          <div class="metrics">
+            <div class="metric card">
+              <strong>6</strong>
+              <p>core document primitives, mirrored by the local CLI and package API.</p>
+            </div>
+            <div class="metric card">
+              <strong>3</strong>
+              <p>main product surfaces: package, CLI, workspace artifacts.</p>
+            </div>
+            <div class="metric card">
+              <strong>0</strong>
+              <p>hosted promises. This site documents a local product, not a remote service.</p>
+            </div>
+          </div>
+        </section>
+
+        <p class="section-label">Quickstart</p>
+        <section class="two-col">
+          <div class="panel">
+            <h2>Install and run locally</h2>
+            <pre><code>npm i -g @echofiles/echo-pdf
+
+echo-pdf document ./sample.pdf
+echo-pdf structure ./sample.pdf
+echo-pdf semantic ./sample.pdf
+echo-pdf page ./sample.pdf --page 1
+echo-pdf render ./sample.pdf --page 1
+echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini</code></pre>
+          </div>
+          <div class="panel">
+            <h2>What the local run gives you</h2>
+            <ul>
+              <li>stable page index via <code>structure.json</code></li>
+              <li>optional semantic layer via <code>semantic-structure.json</code></li>
+              <li>page JSON, render PNG, and OCR JSON artifacts under one workspace root</li>
+              <li>cache reuse keyed by source snapshot and strategy metadata</li>
+            </ul>
+          </div>
+        </section>
+
+        <p class="section-label">Information architecture</p>
+        <section class="cards">
+          <article class="card">
+            <h3>Concepts</h3>
+            <p>Understand the page index, semantic structure layer, and workspace artifact contract.</p>
+            <div class="actions">
+              <a class="button" href="./concepts/page-index.html">Page index</a>
+              <a class="button" href="./concepts/semantic-structure.html">Semantic structure</a>
+              <a class="button" href="./concepts/workspace-artifacts.html">Workspace artifacts</a>
+            </div>
+          </article>
+          <article class="card">
+            <h3>API</h3>
+            <p>Read the six local-first primitives and how they map to the artifact model.</p>
+            <div class="actions">
+              <a class="button" href="./api/index.html">API reference</a>
+            </div>
+          </article>
+          <article class="card">
+            <h3>CLI</h3>
+            <p>Use the same six primitives from the command line, with a clear source-checkout workflow.</p>
+            <div class="actions">
+              <a class="button" href="./cli/index.html">CLI reference</a>
+            </div>
+          </article>
+        </section>
+
+        <p class="section-label">Product boundary</p>
+        <section class="info-grid">
+          <article class="card">
+            <h3>What this site is for</h3>
+            <p>Explain install, contracts, local-first workflows, and the shape of the public product.</p>
+          </article>
+          <article class="card">
+            <h3>What this site is not</h3>
+            <p>An online PDF processor, hosted dashboard, account surface, or remote API playground.</p>
+          </article>
+          <article class="card">
+            <h3>How downstream products should read it</h3>
+            <p>Use it as the docs layer for a local component. Build product-specific logic outside <code>echo-pdf</code>.</p>
+          </article>
+        </section>
+
+        <section class="callout warn" style="margin-top:32px;">
+          <h3>Compatibility surfaces are secondary.</h3>
+          <p>
+            Worker and MCP surfaces may still exist in the repo for compatibility, but they are not the main adoption path in this phase.
+            The homepage, concepts, API, and CLI sections intentionally keep the center of gravity on local package + CLI + artifacts.
+          </p>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="footer-grid">
+          <div>
+            <p class="kicker">Continue reading</p>
+            <ul>
+              <li><a href="./api/index.html">Six primitive API reference</a></li>
+              <li><a href="./cli/index.html">CLI command mapping</a></li>
+              <li><a href="./integrations/index.html">Integration guidance for local downstream apps</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="kicker">Repository docs</p>
+            <ul>
+              <li><code>docs/PRODUCT.md</code></li>
+              <li><code>docs/PACKAGING.md</code></li>
+              <li><code>docs/WORKSPACE_CONTRACT.md</code></li>
+            </ul>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
