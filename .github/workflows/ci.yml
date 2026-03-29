@@ -32,6 +32,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Acceptance tests
+        run: npm run test:acceptance
+
       - name: Import smoke tests (npm package behavior guard)
         run: npm run test:import-smoke
 

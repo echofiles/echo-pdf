@@ -54,7 +54,7 @@
     "test:acceptance": "npm run check:runtime && npm run build && vitest run tests/acceptance",
     "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
     "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration",
-    "test": "npm run test:unit && npm run test:integration",
+    "test": "npm run test:unit && npm run test:acceptance && npm run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
     "prepublishOnly": "npm run build && npm run typecheck && npm run test"
   },
