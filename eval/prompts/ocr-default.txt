@@ -1,0 +1,7 @@
+Transcribe all legible page text in reading order.
+
+Rules:
+- Return plain text only.
+- Preserve headings and line breaks when they are visually clear.
+- Do not summarize, normalize, or infer missing text.
+- If a token is unreadable, keep the surrounding text and omit only the unreadable token.
