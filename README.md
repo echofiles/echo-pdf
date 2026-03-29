@@ -45,6 +45,7 @@
 进一步的定位说明见：
 
 - [`docs/PRODUCT.md`](./docs/PRODUCT.md)
+- [`docs/WORKSPACE_CONTRACT.md`](./docs/WORKSPACE_CONTRACT.md)
 - [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 
 ## Local-first workflow
@@ -95,6 +96,8 @@ npm run document:dev -- page ./fixtures/smoke.pdf --page 1
 ```
 
 这些 artifacts 会在 PDF 未变化时被复用，便于本地下游产品（例如 echo-datasheet）做增量读取。
+
+正式的 workspace layout、cache/invalidation、detector/strategy metadata、以及下游可依赖边界，见 [`docs/WORKSPACE_CONTRACT.md`](./docs/WORKSPACE_CONTRACT.md)。
 
 ## Local library/client API
 
