@@ -63,21 +63,10 @@ echo-pdf render ./sample.pdf --page 1
 echo-pdf ocr ./sample.pdf --page 1 --model gpt-4.1-mini
 ```
 
-源码 checkout 的本地开发路径：
-
-```bash
-npm install
-npm run document:dev -- document ./fixtures/smoke.pdf
-npm run document:dev -- structure ./fixtures/smoke.pdf
-npm run document:dev -- semantic ./fixtures/smoke.pdf
-npm run document:dev -- page ./fixtures/smoke.pdf --page 1
-```
-
 说明：
 
 - 发布包 / 已构建 checkout：`echo-pdf document ...` 继续走 `dist/`
-- 源码 checkout 且还没 build：使用 `npm run document:dev -- ...`
-- `document:dev` 只用于本地开发；它会显式优先加载 `src/local/index.ts`，即使仓库里仍然存在旧 `dist/`
+- 仓库内部如需 source-checkout CLI 调试，走 `docs/DEVELOPMENT.md` 中记录的开发路径；它不属于公开 CLI 命令面
 - 发布包和正常 `echo-pdf document ...` 仍然只走 `dist/`
 
 默认会在当前目录写入可检查的 workspace：
@@ -322,10 +311,10 @@ echo-pdf config set --key service.maxPagesPerRequest --value 20
 - `render <file.pdf> --page <N>` -> `get_page_render`
 - `ocr <file.pdf> --page <N>` -> `get_page_ocr`
 
-兼容边界：
+CLI 边界：
 
-- 旧的 `document get|index|structure|semantic|page|render|ocr ...` 仍作为兼容别名保留
-- README 和 `--help` 现在优先展示这六个主命令，而不是旧的子命令树
+- 对外支持的本地 document 命令面只有这六个顶层 primitives
+- 旧的 `document get|index|structure|semantic|page|render|ocr ...` 兼容别名已移除
 
 建立本地索引并输出 metadata：
 

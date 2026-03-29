@@ -31,8 +31,21 @@ const runCli = async (repoDir: string, args: string[]): Promise<{ stdout: string
   return { stdout, stderr }
 }
 
-const runSourceCheckoutDocumentDev = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
-  const { stdout, stderr } = await execFileAsync("npm", ["run", "document:dev", "--", ...args], {
+const runCliFailure = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
+  try {
+    await runCli(repoDir, args)
+  } catch (error) {
+    const failure = error as { stdout?: string; stderr?: string }
+    return {
+      stdout: failure.stdout ?? "",
+      stderr: failure.stderr ?? "",
+    }
+  }
+  throw new Error(`Expected CLI failure for args: ${args.join(" ")}`)
+}
+
+const runSourceCheckoutCliDev = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
+  const { stdout, stderr } = await execFileAsync("npm", ["run", "cli:dev", "--", ...args], {
     cwd: repoDir,
     env: process.env,
   })
@@ -118,23 +131,29 @@ describe("local document CLI", () => {
     expect(stored.documentId).toBe(doc.documentId)
   })
 
-  itWithNode20("keeps legacy document subcommands as compatibility aliases", async () => {
-    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-legacy-"))
+  itWithNode20("prints help around the six top-level primitives only", async () => {
+    const { stdout } = await runCli(rootDir, ["--help"])
 
-    const { stdout: docRaw } = await runCli(rootDir, ["document", "get", fixturePdf, "--workspace", workspaceDir])
-    const { stdout: structureRaw } = await runCli(rootDir, ["document", "structure", fixturePdf, "--workspace", workspaceDir])
-    const { stdout: semanticRaw } = await runCli(rootDir, ["document", "semantic", fixturePdf, "--workspace", workspaceDir])
-    const { stdout: pageRaw } = await runCli(rootDir, ["document", "page", fixturePdf, "--page", "1", "--workspace", workspaceDir])
-    const { stdout: renderRaw } = await runCli(rootDir, ["document", "render", fixturePdf, "--page", "1", "--workspace", workspaceDir])
-
-    expect(JSON.parse(docRaw).documentId).toBeTruthy()
-    expect(JSON.parse(structureRaw).root.type).toBe("document")
-    expect(JSON.parse(semanticRaw).root.type).toBe("document")
-    expect(JSON.parse(pageRaw).pageNumber).toBe(1)
-    expect(JSON.parse(renderRaw).mimeType).toBe("image/png")
+    expect(stdout).toContain("Primary local primitive commands:")
+    expect(stdout).toContain("  document <file.pdf>")
+    expect(stdout).toContain("  structure <file.pdf>")
+    expect(stdout).toContain("  semantic <file.pdf>")
+    expect(stdout).toContain("  page <file.pdf> --page <N>")
+    expect(stdout).toContain("  render <file.pdf> --page <N> [--scale N]")
+    expect(stdout).toContain("  ocr <file.pdf> --page <N> [--scale N]")
+    expect(stdout).not.toContain("document get <file.pdf>")
+    expect(stdout).not.toContain("document structure <file.pdf>")
+    expect(stdout).not.toContain("document semantic <file.pdf>")
   })
 
-  itWithNode20AndBun("supports a source-checkout document workflow even when dist artifacts exist", async () => {
+  itWithNode20("rejects removed legacy document aliases with migration guidance", async () => {
+    const { stderr } = await runCliFailure(rootDir, ["document", "get", fixturePdf])
+
+    expect(stderr).toContain("Legacy `document get` was removed.")
+    expect(stderr).toContain("Use `echo-pdf document <file.pdf>` instead.")
+  })
+
+  itWithNode20AndBun("supports the internal source-checkout cli:dev workflow even when dist artifacts exist", async () => {
     const checkoutDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-source-"))
     await cp(path.join(rootDir, "bin"), path.join(checkoutDir, "bin"), { recursive: true })
     await cp(path.join(rootDir, "dist"), path.join(checkoutDir, "dist"), { recursive: true })
@@ -144,11 +163,11 @@ describe("local document CLI", () => {
     await symlink(path.join(rootDir, "node_modules"), path.join(checkoutDir, "node_modules"), "dir")
     await writeFile(
       path.join(checkoutDir, "dist", "local", "index.js"),
-      'throw new Error("dist local entry should not load in document:dev");\n',
+      'throw new Error("dist local entry should not load in cli:dev");\n',
       "utf-8"
     )
 
-    const { stdout } = await runSourceCheckoutDocumentDev(checkoutDir, ["document", fixturePdf, "--workspace", checkoutDir])
+    const { stdout } = await runSourceCheckoutCliDev(checkoutDir, ["document", fixturePdf, "--workspace", checkoutDir])
     const doc = JSON.parse(stdout.replace(/^>.*\n/gm, "").trim()) as {
       pageCount: number
       cacheStatus: "fresh" | "reused"

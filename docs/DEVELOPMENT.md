@@ -60,6 +60,8 @@ Rules:
 - Prefer explicit local workflows over hosted assumptions.
 - Local artifacts should be inspectable and reusable.
 - Repeated local runs should reuse prior artifacts/workspace when reasonable.
+- Repo-internal source-checkout CLI debugging can use `npm run cli:dev -- <primitive> ...`.
+- `cli:dev` is an internal development helper only, not part of the public CLI/documentation surface.
 - Eval operations for issue `#42` live under `eval/` and `docs/EVAL_*.md`.
 
 ## Pull Request Expectations
