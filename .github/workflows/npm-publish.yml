@@ -9,27 +9,22 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
           registry-url: "https://registry.npmjs.org"
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-      - name: Verify npm auth token
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "NPM_TOKEN secret is empty or unavailable"
-            exit 1
-          fi
-          npm whoami
+
       - name: Check if version already exists
         id: pkg
         run: |
@@ -43,7 +38,36 @@ jobs:
           else
             echo "should_publish=true" >> "$GITHUB_OUTPUT"
           fi
-      - run: npm publish --access public
+
+      - name: Install dependencies
+        if: steps.pkg.outputs.should_publish == 'true'
+        run: npm ci
+
+      - name: Runtime check
+        if: steps.pkg.outputs.should_publish == 'true'
+        run: npm run check:runtime
+
+      - name: Typecheck
+        if: steps.pkg.outputs.should_publish == 'true'
+        run: npm run typecheck
+
+      - name: Test
+        if: steps.pkg.outputs.should_publish == 'true'
+        run: npm test
+
+      - name: Verify npm auth token
         if: steps.pkg.outputs.should_publish == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "NPM_TOKEN secret is empty or unavailable"
+            exit 1
+          fi
+          npm whoami
+
+      - name: Publish package
+        if: steps.pkg.outputs.should_publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
