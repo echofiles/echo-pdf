@@ -15,7 +15,7 @@ const outDir = process.env.ECHO_PDF_DAILY_OUT_DIR
 const npmCacheDir = path.join(os.tmpdir(), "echo-pdf-daily-growth-npm-cache")
 
 const docsBaseUrl = String(process.env.ECHO_PDF_DAILY_DOCS_URL || "https://pdf.echofile.ai").replace(/\/+$/, "")
-const repository = String(process.env.GITHUB_REPOSITORY || "JFHuang746/echo-pdf")
+const repository = String(process.env.GITHUB_REPOSITORY || "echofiles/echo-pdf")
 const [owner, repo] = repository.split("/")
 let githubToken = process.env.GITHUB_TOKEN?.trim() || ""
 const now = new Date().toISOString()
