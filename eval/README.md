@@ -37,6 +37,19 @@ Outputs:
 - default workspace path: `eval/out/<suite>-<timestamp>.workspace/`
 - generated PDFs for manifest-backed cases: `eval/out/<suite>-<timestamp>.generated/`
 - cached public PDFs: `eval/public-samples/*.pdf`
+- daily growth collector output: `eval/out/daily-growth/daily-growth.json`
+- daily growth collector Markdown: `eval/out/daily-growth/daily-growth.md`
+
+Daily growth artifacts:
+
+- `daily-growth.json`
+  - `docsSite`: docs-site health and machine-consumable discovery signal collection
+  - `npm`: registry visibility and version signal collection
+  - `repo`: open issue/PR counts plus recent merged PRs and closed issues
+  - `smoke`: minimal build/install/import/CLI smoke status from a fresh consumer
+- `daily-growth.md`
+  - human-readable rendering of the same collected signals
+  - includes metric-meaning notes so operators can read the report without opening the JSON
 
 The runner is intentionally local-first:
 
