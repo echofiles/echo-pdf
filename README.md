@@ -1,6 +1,25 @@
 # echo-pdf
 
-`echo-pdf` 当前阶段定位为本地优先的 document component core，支持：
+`echo-pdf` 当前阶段定位为本地优先的 PDF context engine for AI agents。
+
+一句话定义：
+
+- 把本地 PDF 处理成可复用的 CLI outputs、library primitives 和 workspace artifacts，供本机 agent/app 继续消费。
+
+当前主线产品形态：
+
+- npm package：`@echofiles/echo-pdf`
+- CLI：`echo-pdf ...`
+- 本地 workspace artifacts：`.echo-pdf-workspace/...`
+- 文档站：仅用于说明安装、CLI、artifacts 和集成契约，不提供在线处理服务
+
+目标用户与主要用法：
+
+- 需要在本机或本地开发环境处理 PDF 的 agent / IDE / app 开发者
+- 需要稳定页级 primitives、document context 和可缓存 artifacts 的下游集成方
+- 需要 clean consumer import + CLI workflow 的本地组件使用方
+
+当前阶段能力：
 
 - 页面提取：把 PDF 指定页渲染为图片
 - OCR：识别页面文本
@@ -14,11 +33,19 @@
 - 本地 CLI
 - 本地 library/client API
 - 本地 workspace artifacts
+- clean-consumer npm package
 
 当前阶段非重点：
 
-- MCP 扩展
+- MCP 扩展或把 MCP 作为主入口
 - Hosted SaaS / multi-tenant 平台能力
+- 把网站做成在线 PDF 服务
+- datasheet / EDA 等领域特化逻辑
+
+进一步的定位说明见：
+
+- [`docs/PRODUCT.md`](./docs/PRODUCT.md)
+- [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 
 ## Local-first workflow
 
@@ -200,7 +227,10 @@ console.log(result)
 - 对公开 API 的破坏性变更只会在 major 版本发布
 - 新增导出、参数扩展（向后兼容）会在 minor/patch 发布
 
-## 1. Existing service surfaces（compatibility）
+## 1. Compatibility surfaces（deferred / not primary）
+
+以下内容是当前仓库中兼容保留的入口，不是本阶段主线产品形态。
+主线仍然是 npm package + CLI + local workspace artifacts；网站只是文档站，不是在线服务。
 
 请先确定你的线上地址（Worker 域名）。文档里用：
 
