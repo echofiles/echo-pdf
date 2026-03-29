@@ -84,10 +84,13 @@ const encodeSse = (event: string, data: unknown): Uint8Array => {
   return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
 }
 
-const isValidOperation = (value: unknown): value is PdfOperationRequest["operation"] =>
-  value === "extract_pages" || value === "ocr_pages" || value === "tables_to_latex"
+type PublicPdfOperation = "extract_pages" | "tables_to_latex"
+type PublicPdfOperationRequest = Omit<PdfOperationRequest, "operation"> & { readonly operation: PublicPdfOperation }
 
-const toPdfOperation = (input: Record<string, unknown>, defaultProvider: string): PdfOperationRequest => ({
+const isValidOperation = (value: unknown): value is PublicPdfOperation =>
+  value === "extract_pages" || value === "tables_to_latex"
+
+const toPdfOperation = (input: Record<string, unknown>, defaultProvider: string): PublicPdfOperationRequest => ({
   operation: isValidOperation(input.operation) ? input.operation : "extract_pages",
   fileId: typeof input.fileId === "string" ? input.fileId : undefined,
   url: typeof input.url === "string" ? input.url : undefined,
@@ -104,13 +107,12 @@ const toPdfOperation = (input: Record<string, unknown>, defaultProvider: string)
   prompt: typeof input.prompt === "string" ? input.prompt : undefined,
 })
 
-const toolNameByOperation: Record<PdfOperationRequest["operation"], string> = {
+const toolNameByOperation: Record<PublicPdfOperation, string> = {
   extract_pages: "pdf_extract_pages",
-  ocr_pages: "pdf_ocr_pages",
   tables_to_latex: "pdf_tables_to_latex",
 }
 
-const operationArgsFromRequest = (request: PdfOperationRequest): JsonObject => {
+const operationArgsFromRequest = (request: PublicPdfOperationRequest): JsonObject => {
   const args: JsonObject = {
     pages: request.pages as unknown as JsonObject["pages"],
   }
@@ -194,7 +196,7 @@ export default {
           preferredProvider,
           typeof body.model === "string" ? body.model : undefined
         )
-        if (name === "pdf_ocr_pages" || name === "pdf_tables_to_latex") {
+        if (name === "pdf_tables_to_latex") {
           if (typeof args.provider !== "string" || args.provider.length === 0) {
             args.provider = preferredProvider
           }
@@ -238,7 +240,7 @@ export default {
       if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
-        return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)
+        return json({ error: "Invalid operation. Must be one of: extract_pages, tables_to_latex" }, 400)
       }
       const requestPayload = toPdfOperation(body, config.agent.defaultProvider)
       try {
@@ -259,7 +261,7 @@ export default {
       if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status)
       const body = await readJson(request)
       if (Object.hasOwn(body, "operation") && !isValidOperation(body.operation)) {
-        return json({ error: "Invalid operation. Must be one of: extract_pages, ocr_pages, tables_to_latex" }, 400)
+        return json({ error: "Invalid operation. Must be one of: extract_pages, tables_to_latex" }, 400)
       }
       const requestPayload = toPdfOperation(body, config.agent.defaultProvider)
       const stream = new TransformStream<Uint8Array, Uint8Array>()

@@ -85,8 +85,6 @@ By default, `echo-pdf` writes reusable artifacts into a local workspace:
 ```
 
 These artifacts are meant to be inspected, cached, and reused by downstream local tools.
-Optional compatibility/fallback artifacts such as `ocr/*` may also appear after their specific primitive runs, but they are not the mainline product story.
-
 ## Library Usage
 
 Use the local document primitives directly from Node/Bun:
@@ -112,7 +110,10 @@ Notes:
 - `get_document_structure()` returns the stable page index: `document -> pages[]`
 - `get_semantic_document_structure()` returns a separate semantic structure layer; it does not replace `pages[]`
 - `get_page_render()` materializes a reusable PNG plus render metadata and is the mainline visual input path
-- `get_page_ocr()` still exists as a compatibility/fallback primitive, but it is not the primary product direction
+
+Migration note:
+
+- older workspaces may still contain `ocr/*` artifacts from pre-VL-first builds, but they are no longer part of the supported first-class contract
 
 ## Public Package Entrypoints
 

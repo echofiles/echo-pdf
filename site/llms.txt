@@ -16,9 +16,6 @@ Core local primitives:
 - get_page_content
 - get_page_render
 
-Compatibility / fallback primitive:
-- get_page_ocr
-
 Key docs:
 - Overview: https://pdf.echofile.ai/
 - API: https://pdf.echofile.ai/api/index.html

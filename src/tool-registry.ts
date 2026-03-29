@@ -72,48 +72,6 @@ const toolDefinitions: ReadonlyArray<ToolDefinition> = [
   },
   {
     schema: {
-      name: "pdf_ocr_pages",
-      description: "OCR specific PDF pages using configured multimodal model.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          fileId: { type: "string" },
-          url: { type: "string" },
-          base64: { type: "string" },
-          filename: { type: "string" },
-          pages: { type: "array", items: { type: "integer" } },
-          renderScale: { type: "number" },
-          provider: { type: "string" },
-          model: { type: "string" },
-          prompt: { type: "string" },
-        },
-        required: ["pages"],
-      },
-      source: { kind: "local", toolName: "pdf.ocr_pages" },
-    },
-    run: async (ctx, args) => {
-      const req: PdfOperationRequest = {
-        operation: "ocr_pages",
-        fileId: readString(args, "fileId"),
-        url: readString(args, "url"),
-        base64: readString(args, "base64"),
-        filename: readString(args, "filename"),
-        pages: asNumberArray(args.pages),
-        renderScale: typeof args.renderScale === "number" ? args.renderScale : undefined,
-        provider: readString(args, "provider"),
-        model: readString(args, "model") ?? "",
-        prompt: readString(args, "prompt"),
-        providerApiKeys: ctx.providerApiKeys,
-        returnMode: "inline",
-      }
-      return runPdfAgent(ctx.config, ctx.env, req, {
-        fileStore: ctx.fileStore,
-        trace: ctx.trace,
-      })
-    },
-  },
-  {
-    schema: {
       name: "pdf_tables_to_latex",
       description: "Recognize tables from pages and return LaTeX tabular output.",
       inputSchema: {

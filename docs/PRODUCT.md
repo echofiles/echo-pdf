@@ -40,7 +40,9 @@ The mainline product path is:
 - semantic structure
 - workspace artifacts
 
-OCR may remain in the repo as a compatibility or fallback path, but it no longer defines the primary product direction or the main capability story.
+OCR is no longer a first-class product surface. Public CLI, local package API, and worker tool surfaces now center the VL-first path above.
+
+Short-term compatibility residue may still exist internally in the repo to avoid a broad runtime rewrite in this issue, but that residue is migration-only and not part of the supported public product surface.
 
 ## Non-Goals For This Phase
 
