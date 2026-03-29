@@ -57,13 +57,8 @@ export interface LocalSemanticStructureNode {
 export interface LocalSemanticDocumentStructure {
   readonly documentId: string
   readonly generatedAt: string
-  readonly detector: "agent-structured-v1" | "heading-heuristic-v1"
+  readonly detector: "agent-structured-v1"
   readonly strategyKey: string
-  readonly fallback?: {
-    readonly from: "agent-structured-v1"
-    readonly to: "heading-heuristic-v1"
-    readonly reason: string
-  }
   readonly sourceSizeBytes: number
   readonly sourceMtimeMs: number
   readonly pageIndexArtifactPath: string

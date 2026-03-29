@@ -272,20 +272,14 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
   if (primitive === "semantic") {
     const semanticContext = resolveLocalSemanticContext(flags)
     const local = await loadLocalDocumentApi()
-    const data = await local.get_semantic_document_structure({
+    print(await local.get_semantic_document_structure({
       pdfPath,
       workspaceDir,
       forceRefresh,
       provider: semanticContext.provider,
       model: semanticContext.model,
       providerApiKeys: semanticContext.providerApiKeys,
-    })
-    if (data?.fallback?.reason) {
-      process.stderr.write(
-        `[echo-pdf] semantic fell back from ${data.fallback.from} to ${data.fallback.to}: ${data.fallback.reason}\n`
-      )
-    }
-    print(data)
+    }))
     return
   }
 

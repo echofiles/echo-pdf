@@ -1,19 +1,19 @@
 {
   "summaryVersion": "echo-pdf.eval.run-summary.v1",
-  "generatedAt": "2026-03-29T01:25:29.899Z",
+  "generatedAt": "2026-03-29T13:39:57.273Z",
   "suite": {
     "suiteId": "known-bad",
-    "description": "Tracked unsupported or unstable patterns that should remain visible in public guidance-document evals.",
-    "manifestPath": "eval/manifests/known-bad.json"
+    "description": "Tracked unsupported or unstable patterns that should remain visible in provider-backed semantic evals.",
+    "manifestPath": "<repo-root>/eval/manifests/known-bad.json"
   },
   "environment": {
     "cwd": "<repo-root>",
     "repoRoot": "<repo-root>",
-    "node": "v20.20.1",
+    "node": "v22.22.0",
     "platform": "darwin",
     "arch": "arm64",
     "hostname": "<local-host>",
-    "workspaceDir": "eval/out/examples/known-bad.workspace",
+    "workspaceDir": "<repo-root>/eval/out/examples/known-bad.workspace",
     "envHints": {
       "semanticProvider": "",
       "semanticModel": "",
@@ -27,40 +27,39 @@
     "statuses": {
       "passed": 2,
       "failed": 0,
-      "blocked": 0,
-      "known-bad": 2,
+      "blocked": 2,
+      "known-bad": 0,
       "unexpected-pass": 0
     },
     "taxonomyCounts": {
-      "SEMANTIC_MISSING_SECTION": 2,
-      "SEMANTIC_FORBIDDEN_SECTION": 3
+      "ENV_PROVIDER_OR_MODEL_MISSING": 2
     }
   },
   "representativeRuns": {
     "passed": [
-      "known-bad::document::public-guide-irs-publication-15t-heuristic-contents-noise",
-      "known-bad::document::public-guidance-nist-800-171-heuristic-running-header-noise"
+      "known-bad::document::public-guide-irs-publication-15t-semantic-contents-noise",
+      "known-bad::document::public-guidance-nist-800-171-semantic-running-header-noise"
     ],
     "failed": [],
-    "blocked": [],
-    "knownBad": [
-      "known-bad::semantic::semantic-heuristic-baseline::public-guide-irs-publication-15t-heuristic-contents-noise",
-      "known-bad::semantic::semantic-heuristic-baseline::public-guidance-nist-800-171-heuristic-running-header-noise"
+    "blocked": [
+      "known-bad::semantic::semantic-agent-standard::public-guide-irs-publication-15t-semantic-contents-noise",
+      "known-bad::semantic::semantic-agent-standard::public-guidance-nist-800-171-semantic-running-header-noise"
     ],
+    "knownBad": [],
     "unexpectedPass": []
   },
   "runs": [
     {
-      "runId": "known-bad::document::public-guide-irs-publication-15t-heuristic-contents-noise",
+      "runId": "known-bad::document::public-guide-irs-publication-15t-semantic-contents-noise",
       "suiteId": "known-bad",
-      "caseId": "public-guide-irs-publication-15t-heuristic-contents-noise",
+      "caseId": "public-guide-irs-publication-15t-semantic-contents-noise",
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 1532,
+      "durationMs": 1519,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
@@ -72,77 +71,62 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/out/examples/known-bad.workspace",
-        "documentDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194",
-        "documentJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/document.json",
-        "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pagesDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/pages",
-        "rendersDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/renders",
-        "ocrDir": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/ocr"
+        "workspaceDir": "<repo-root>/eval/out/examples/known-bad.workspace",
+        "documentDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47",
+        "documentJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47/document.json",
+        "structureJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47/structure.json",
+        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47/semantic-structure.json",
+        "pagesDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47/pages",
+        "rendersDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/f6ba63f92fdc1f47/renders"
       },
-      "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
+      "notes": "Provider-backed semantic extraction should keep TOC and running-header noise visible until the semantic prompt/path improves."
     },
     {
-      "runId": "known-bad::semantic::semantic-heuristic-baseline::public-guide-irs-publication-15t-heuristic-contents-noise",
+      "runId": "known-bad::semantic::semantic-agent-standard::public-guide-irs-publication-15t-semantic-contents-noise",
       "suiteId": "known-bad",
-      "caseId": "public-guide-irs-publication-15t-heuristic-contents-noise",
+      "caseId": "public-guide-irs-publication-15t-semantic-contents-noise",
       "kind": "semantic",
-      "configId": "semantic-heuristic-baseline",
-      "status": "known-bad",
-      "durationMs": 23,
+      "configId": "semantic-agent-standard",
+      "status": "blocked",
+      "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/irs-publication-15t.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/irs-publication-15t.pdf",
         "generated": false
       },
       "config": {
-        "provider": "",
-        "model": "",
-        "budget": null,
-        "budgetLabel": "n/a",
-        "notes": ""
+        "id": "semantic-agent-standard",
+        "mode": "shipped-local-api",
+        "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+        "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+        "budgetLabel": "standard",
+        "budget": {
+          "chunkMaxChars": 4000,
+          "chunkOverlapChars": 300
+        }
       },
       "failures": [
         {
-          "code": "SEMANTIC_MISSING_SECTION",
-          "layer": "semantic",
-          "message": "Missing semantic section title containing \"Percentage Method Tables\"."
-        },
-        {
-          "code": "SEMANTIC_MISSING_SECTION",
-          "layer": "semantic",
-          "message": "Missing semantic section title containing \"Wage Bracket Method Tables\"."
-        },
-        {
-          "code": "SEMANTIC_FORBIDDEN_SECTION",
-          "layer": "semantic",
-          "message": "Found forbidden semantic section containing \"Publication 15-T (2026)\"."
+          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
+          "layer": "infra",
+          "message": "Missing semantic provider/model for config semantic-agent-standard."
         }
       ],
-      "metrics": {
-        "detector": "heading-heuristic-v1",
-        "strategyKey": "heuristic::heading-heuristic-v1",
-        "rootSectionCount": 17,
-        "flattenedSectionCount": 18
-      },
-      "artifacts": {
-        "artifactPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/out/examples/known-bad.workspace/documents/0d2de462036fc194/structure.json"
-      },
-      "notes": "The heuristic path currently confuses TOC and running headers on a long public guide."
+      "metrics": {},
+      "artifacts": {},
+      "notes": "Provider-backed semantic extraction should keep TOC and running-header noise visible until the semantic prompt/path improves."
     },
     {
-      "runId": "known-bad::document::public-guidance-nist-800-171-heuristic-running-header-noise",
+      "runId": "known-bad::document::public-guidance-nist-800-171-semantic-running-header-noise",
       "suiteId": "known-bad",
-      "caseId": "public-guidance-nist-800-171-heuristic-running-header-noise",
+      "caseId": "public-guidance-nist-800-171-semantic-running-header-noise",
       "kind": "document",
       "configId": "document-baseline",
       "status": "passed",
-      "durationMs": 988,
+      "durationMs": 1109,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/nist-sp-800-171r2.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
@@ -154,60 +138,50 @@
         "cacheStatus": "fresh"
       },
       "artifacts": {
-        "workspaceDir": "eval/out/examples/known-bad.workspace",
-        "documentDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70",
-        "documentJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/document.json",
-        "structureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/structure.json",
-        "semanticStructureJsonPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pagesDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/pages",
-        "rendersDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/renders",
-        "ocrDir": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/ocr"
+        "workspaceDir": "<repo-root>/eval/out/examples/known-bad.workspace",
+        "documentDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a",
+        "documentJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a/document.json",
+        "structureJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a/structure.json",
+        "semanticStructureJsonPath": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a/semantic-structure.json",
+        "pagesDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a/pages",
+        "rendersDir": "<repo-root>/eval/out/examples/known-bad.workspace/documents/d4616ad82c1dc73a/renders"
       },
-      "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
+      "notes": "Provider-backed semantic extraction should keep running-header and errata noise visible until the semantic prompt/path improves."
     },
     {
-      "runId": "known-bad::semantic::semantic-heuristic-baseline::public-guidance-nist-800-171-heuristic-running-header-noise",
+      "runId": "known-bad::semantic::semantic-agent-standard::public-guidance-nist-800-171-semantic-running-header-noise",
       "suiteId": "known-bad",
-      "caseId": "public-guidance-nist-800-171-heuristic-running-header-noise",
+      "caseId": "public-guidance-nist-800-171-semantic-running-header-noise",
       "kind": "semantic",
-      "configId": "semantic-heuristic-baseline",
-      "status": "known-bad",
-      "durationMs": 17,
+      "configId": "semantic-agent-standard",
+      "status": "blocked",
+      "durationMs": 0,
       "source": {
         "kind": "existing",
-        "pdfPath": "samples/public-cache/nist-sp-800-171r2.pdf",
+        "pdfPath": "<repo-root>/samples/public-cache/nist-sp-800-171r2.pdf",
         "generated": false
       },
       "config": {
-        "provider": "",
-        "model": "",
-        "budget": null,
-        "budgetLabel": "n/a",
-        "notes": ""
+        "id": "semantic-agent-standard",
+        "mode": "shipped-local-api",
+        "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+        "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+        "budgetLabel": "standard",
+        "budget": {
+          "chunkMaxChars": 4000,
+          "chunkOverlapChars": 300
+        }
       },
       "failures": [
         {
-          "code": "SEMANTIC_FORBIDDEN_SECTION",
-          "layer": "semantic",
-          "message": "Found forbidden semantic section containing \"CHAPTER ONE PAGE\"."
-        },
-        {
-          "code": "SEMANTIC_FORBIDDEN_SECTION",
-          "layer": "semantic",
-          "message": "Found forbidden semantic section containing \"This publication is available free of charge\"."
+          "code": "ENV_PROVIDER_OR_MODEL_MISSING",
+          "layer": "infra",
+          "message": "Missing semantic provider/model for config semantic-agent-standard."
         }
       ],
-      "metrics": {
-        "detector": "heading-heuristic-v1",
-        "strategyKey": "heuristic::heading-heuristic-v1",
-        "rootSectionCount": 116,
-        "flattenedSectionCount": 358
-      },
-      "artifacts": {
-        "artifactPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/semantic-structure.json",
-        "pageIndexArtifactPath": "eval/out/examples/known-bad.workspace/documents/e8316eae43e9da70/structure.json"
-      },
-      "notes": "The heuristic path currently overfits running headers and errata text on long NIST guidance."
+      "metrics": {},
+      "artifacts": {},
+      "notes": "Provider-backed semantic extraction should keep running-header and errata noise visible until the semantic prompt/path improves."
     }
   ]
 }

@@ -1,11 +1,11 @@
-# [SEMANTIC_FORBIDDEN_SECTION] Heuristic promoted running headers in NIST guidance
+# [SEMANTIC_FORBIDDEN_SECTION] Provider-backed semantic extraction promoted running headers in NIST guidance
 
 ## Context
 
 - suite: `known-bad`
-- runId: `known-bad::semantic::semantic-heuristic-baseline::public-guidance-nist-800-171-heuristic-running-header-noise`
-- caseId: `public-guidance-nist-800-171-heuristic-running-header-noise`
-- configId: `semantic-heuristic-baseline`
+- runId: `known-bad::semantic::semantic-agent-standard::public-guidance-nist-800-171-semantic-running-header-noise`
+- caseId: `public-guidance-nist-800-171-semantic-running-header-noise`
+- configId: `semantic-agent-standard`
 - local-only: `yes`
 
 ## Sample
@@ -23,10 +23,10 @@ node ./eval/run-local.mjs --suite known-bad
 
 ## Configuration
 
-- semantic provider/model: `n/a`
+- semantic provider/model: `provider-backed`
 - OCR provider/model: `n/a`
 - prompt: `runtime semantic prompt`
-- budget: `heuristic fallback`
+- budget: `standard`
 
 ## Expected
 
@@ -46,4 +46,4 @@ The semantic artifact emitted titles such as `CHAPTER ONE PAGE 1 This publicatio
 
 ## Suggested Next Step
 
-- Add header/footer suppression before heuristic heading detection or narrow the heuristic to reject repeated running-header patterns.
+- Tighten the provider-backed semantic prompt/path so repeated running-header text is rejected before section assembly.

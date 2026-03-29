@@ -1,17 +1,23 @@
 {
   "suiteId": "known-bad",
-  "description": "Tracked unsupported or unstable patterns that should remain visible in public guidance-document evals.",
+  "description": "Tracked unsupported or unstable patterns that should remain visible in provider-backed semantic evals.",
   "semanticConfigs": [
     {
-      "id": "semantic-heuristic-baseline",
+      "id": "semantic-agent-standard",
       "mode": "shipped-local-api",
-      "budgetLabel": "n/a"
+      "providerEnv": "ECHO_PDF_EVAL_SEMANTIC_PROVIDER",
+      "modelEnv": "ECHO_PDF_EVAL_SEMANTIC_MODEL",
+      "budgetLabel": "standard",
+      "budget": {
+        "chunkMaxChars": 4000,
+        "chunkOverlapChars": 300
+      }
     }
   ],
   "cases": [
     {
-      "caseId": "public-guide-irs-publication-15t-heuristic-contents-noise",
-      "description": "The heuristic path currently confuses TOC and running headers on a long public guide.",
+      "caseId": "public-guide-irs-publication-15t-semantic-contents-noise",
+      "description": "Provider-backed semantic extraction should keep TOC and running-header noise visible until the semantic prompt/path improves.",
       "expectedOutcome": "known-bad",
       "expectedFailureCodes": [
         "SEMANTIC_MISSING_SECTION",
@@ -25,7 +31,7 @@
         "pageCount": 71
       },
       "semanticConfigIds": [
-        "semantic-heuristic-baseline"
+        "semantic-agent-standard"
       ],
       "semanticExpectations": {
         "requiredTitleSubstrings": [
@@ -38,8 +44,8 @@
       }
     },
     {
-      "caseId": "public-guidance-nist-800-171-heuristic-running-header-noise",
-      "description": "The heuristic path currently overfits running headers and errata text on long NIST guidance.",
+      "caseId": "public-guidance-nist-800-171-semantic-running-header-noise",
+      "description": "Provider-backed semantic extraction should keep running-header and errata noise visible until the semantic prompt/path improves.",
       "expectedOutcome": "known-bad",
       "expectedFailureCodes": [
         "SEMANTIC_FORBIDDEN_SECTION"
@@ -52,7 +58,7 @@
         "pageCount": 114
       },
       "semanticConfigIds": [
-        "semantic-heuristic-baseline"
+        "semantic-agent-standard"
       ],
       "semanticExpectations": {
         "forbiddenTitleSubstrings": [

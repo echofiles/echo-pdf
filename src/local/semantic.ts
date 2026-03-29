@@ -5,13 +5,11 @@ import path from "node:path"
 import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
 import { toDataUrl } from "../file-utils.js"
 import { generateText, visionRecognize } from "../provider-client.js"
-import { buildSemanticSectionTree } from "../node/semantic-local.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
 import type { Env } from "../types.js"
 import { ensureRenderArtifact, indexDocumentInternal } from "./document.js"
 import {
   fileExists,
-  hashFragment,
   matchesSourceSnapshot,
   matchesStrategyKey,
   pageLabel,
@@ -176,30 +174,23 @@ const buildSemanticAggregationPrompt = (
   ].join("\n")
 }
 
-const buildHeuristicSemanticArtifact = (
-  record: StoredDocumentRecord,
-  artifactPath: string,
-  sections: ReadonlyArray<LocalSemanticStructureNode>,
-  fallback?: LocalSemanticDocumentStructure["fallback"]
-): Omit<LocalSemanticDocumentStructure, "cacheStatus"> => ({
-  documentId: record.documentId,
-  generatedAt: new Date().toISOString(),
-  detector: "heading-heuristic-v1",
-  strategyKey: fallback
-    ? `agent-fallback::page-understanding-v1::${hashFragment(fallback.reason, 10)}`
-    : "heuristic::heading-heuristic-v1",
-  ...(fallback ? { fallback } : {}),
-  sourceSizeBytes: record.sizeBytes,
-  sourceMtimeMs: record.mtimeMs,
-  pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
-  artifactPath,
-  root: {
-    id: `semantic-${record.documentId}`,
-    type: "document",
-    title: record.filename,
-    children: sections,
-  },
-})
+const resolveSemanticAgentContext = (
+  config: EchoPdfConfig,
+  request: LocalSemanticDocumentRequest
+): { provider: string; model: string } => {
+  const provider = resolveProviderAlias(config, request.provider)
+  const model = resolveModelForProvider(config, provider, request.model)
+  if (!provider || !model) {
+    throw new Error(
+      [
+        "semantic extraction requires a configured provider and model.",
+        "Pass `provider` and `model` to `get_semantic_document_structure()`",
+        "or configure them first with `echo-pdf provider use --provider <alias>` and `echo-pdf model set --provider <alias> --model <model-id>`.",
+      ].join(" ")
+    )
+  }
+  return { provider, model }
+}
 
 const extractSemanticCandidatesFromRenderedPage = async (input: {
   page: LocalPageContent
@@ -233,11 +224,6 @@ const extractSemanticCandidatesFromRenderedPage = async (input: {
     .filter((candidate): candidate is SemanticAgentCandidate => candidate !== null)
 }
 
-const summarizeSemanticAgentFailure = (error: unknown): string => {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.replace(/\s+/g, " ").trim().slice(0, 240) || "unknown agent semantic failure"
-}
-
 const ensureSemanticStructureArtifact = async (
   request: LocalSemanticDocumentRequest
 ): Promise<LocalSemanticDocumentStructure> => {
@@ -246,21 +232,9 @@ const ensureSemanticStructureArtifact = async (
   const { record } = await indexDocumentInternal(request)
   const artifactPath = record.artifactPaths.semanticStructureJsonPath
   const semanticBudget = resolveSemanticExtractionBudget(request.semanticExtraction)
-  let provider = ""
-  let model = ""
-  try {
-    provider = resolveProviderAlias(config, request.provider)
-    model = provider ? resolveModelForProvider(config, provider) : ""
-  } catch {
-    provider = ""
-    model = ""
-  }
-  if (provider) {
-    model = resolveModelForProvider(config, provider, request.model)
-  }
-  const strategyKey = model
-    ? `agent::page-understanding-v1::${provider}::${model}::${config.service.defaultRenderScale}::${semanticBudget.pageSelection}::${semanticBudget.chunkMaxChars}::${semanticBudget.chunkOverlapChars}`
-    : "heuristic::heading-heuristic-v1"
+  const { provider, model } = resolveSemanticAgentContext(config, request)
+  const strategyKey =
+    `agent::page-understanding-v1::${provider}::${model}::${config.service.defaultRenderScale}::${semanticBudget.pageSelection}::${semanticBudget.chunkMaxChars}::${semanticBudget.chunkOverlapChars}`
   if (!request.forceRefresh && await fileExists(artifactPath)) {
     const cached = await readJson<Omit<LocalSemanticDocumentStructure, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
     if (matchesSourceSnapshot(cached, record) && matchesStrategyKey(cached, strategyKey)) {
@@ -279,67 +253,49 @@ const ensureSemanticStructureArtifact = async (
   }
   const pageArtifactPaths = new Map(pages.map((page) => [page.pageNumber, page.artifactPath]))
 
-  let artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus">
-  if (model) {
-    try {
-      const candidateMap = new Map<string, SemanticAgentCandidate>()
-      for (const page of pages) {
-        const candidates = await extractSemanticCandidatesFromRenderedPage({
-          page,
-          request,
-          config,
-          env,
-          provider,
-          model,
-        })
-        for (const candidate of candidates) {
-          const key = `${candidate.pageNumber}:${candidate.level}:${candidate.title}`
-          const existing = candidateMap.get(key)
-          if (!existing || candidate.confidence > existing.confidence) {
-            candidateMap.set(key, candidate)
-          }
-        }
+  const candidateMap = new Map<string, SemanticAgentCandidate>()
+  for (const page of pages) {
+    const candidates = await extractSemanticCandidatesFromRenderedPage({
+      page,
+      request,
+      config,
+      env,
+      provider,
+      model,
+    })
+    for (const candidate of candidates) {
+      const key = `${candidate.pageNumber}:${candidate.level}:${candidate.title}`
+      const existing = candidateMap.get(key)
+      if (!existing || candidate.confidence > existing.confidence) {
+        candidateMap.set(key, candidate)
       }
-      const aggregated = await generateText({
-        config,
-        env,
-        providerAlias: provider,
-        model,
-        prompt: buildSemanticAggregationPrompt(record, [...candidateMap.values()]),
-        runtimeApiKeys: request.providerApiKeys,
-      })
-      const parsed = parseJsonObject(aggregated) as { sections?: unknown }
-      const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
-      artifact = {
-        documentId: record.documentId,
-        generatedAt: new Date().toISOString(),
-        detector: "agent-structured-v1",
-        strategyKey,
-        sourceSizeBytes: record.sizeBytes,
-        sourceMtimeMs: record.mtimeMs,
-        pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
-        artifactPath,
-        root: {
-          id: `semantic-${record.documentId}`,
-          type: "document",
-          title: record.filename,
-          children: sections,
-        },
-      }
-    } catch (error) {
-      artifact = buildHeuristicSemanticArtifact(
-        record,
-        artifactPath,
-        buildSemanticSectionTree(pages),
-        {
-          from: "agent-structured-v1",
-          to: "heading-heuristic-v1",
-          reason: summarizeSemanticAgentFailure(error),
-        }
-      )
     }
-  } else {
-    artifact = buildHeuristicSemanticArtifact(record, artifactPath, buildSemanticSectionTree(pages))
+  }
+  const aggregated = await generateText({
+    config,
+    env,
+    providerAlias: provider,
+    model,
+    prompt: buildSemanticAggregationPrompt(record, [...candidateMap.values()]),
+    runtimeApiKeys: request.providerApiKeys,
+  })
+  const parsed = parseJsonObject(aggregated) as { sections?: unknown }
+  const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
+  const artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus"> = {
+    documentId: record.documentId,
+    generatedAt: new Date().toISOString(),
+    detector: "agent-structured-v1",
+    strategyKey,
+    sourceSizeBytes: record.sizeBytes,
+    sourceMtimeMs: record.mtimeMs,
+    pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
+    artifactPath,
+    root: {
+      id: `semantic-${record.documentId}`,
+      type: "document",
+      title: record.filename,
+      children: sections,
+    },
   }
 
   await writeJson(artifactPath, artifact)

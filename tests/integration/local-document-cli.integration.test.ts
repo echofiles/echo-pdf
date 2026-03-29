@@ -293,14 +293,12 @@ describe("local document CLI", () => {
     const { stdout, stderr } = await runCli(rootDir, ["semantic", realFixturePdf, "--workspace", workspaceDir], env)
     const semantic = JSON.parse(stdout) as {
       detector: string
-      fallback?: { reason: string }
       strategyKey: string
       root: { children?: Array<{ title?: string }> }
     }
 
     expect(stderr.trim()).toBe("")
     expect(semantic.detector).toBe("agent-structured-v1")
-    expect(semantic.fallback).toBeUndefined()
     expect(semantic.strategyKey).toContain("page-understanding-v1")
     expect(semantic.root.children?.[0]?.title).toBe("1 Overview")
   })

@@ -1,14 +1,6 @@
 {
   "suiteId": "smoke",
   "description": "Fast local-first sanity checks on large public knowledge and guidance PDFs with no provider dependency.",
-  "semanticConfigs": [
-    {
-      "id": "semantic-heuristic-baseline",
-      "mode": "shipped-local-api",
-      "budgetLabel": "n/a",
-      "notes": "Uses the built-in local semantic fallback without provider dependencies."
-    }
-  ],
   "cases": [
     {
       "caseId": "public-guide-irs-publication-15t-document",
@@ -23,39 +15,13 @@
     },
     {
       "caseId": "public-paper-attention-semantic",
-      "description": "Public multi-column paper keeps obvious numbered sections in the heuristic path.",
+      "description": "Public multi-column paper remains part of the smoke document-index coverage.",
       "source": {
         "kind": "existing",
         "path": "../../samples/public-cache/arxiv-attention-is-all-you-need.pdf"
       },
       "documentExpectations": {
         "pageCount": 15
-      },
-      "semanticConfigIds": [
-        "semantic-heuristic-baseline"
-      ],
-      "semanticExpectations": {
-        "allowedDetectors": [
-          "heading-heuristic-v1"
-        ],
-        "minRootChildren": 5,
-        "requiredSections": [
-          {
-            "title": "1 Introduction",
-            "level": 1,
-            "pageNumber": 2
-          },
-          {
-            "title": "3 Model Architecture",
-            "level": 1,
-            "pageNumber": 2
-          },
-          {
-            "title": "7 Conclusion",
-            "level": 1,
-            "pageNumber": 10
-          }
-        ]
       }
     },
     {
