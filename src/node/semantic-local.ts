@@ -40,10 +40,89 @@ const excerptFor = (value: string): string => normalizeLine(value).slice(0, 160)
 
 const hasTocSuffix = (value: string): boolean => /(?:\.{2,}|\s{2,}|\t)\d+$/.test(value)
 const hasTrailingPageNumber = (value: string): boolean => /\s\d+$/.test(value)
+const sentenceTerminal = /[.!?。；;：:]$/
+const headingStopwords = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "by",
+  "for",
+  "from",
+  "if",
+  "in",
+  "into",
+  "is",
+  "of",
+  "on",
+  "or",
+  "otherwise",
+  "the",
+  "to",
+  "unless",
+  "with",
+])
 
 const isContentsHeading = (value: string): boolean => {
   const normalized = normalizeLine(value).toLowerCase()
   return normalized === "contents" || normalized === "table of contents" || normalized === "目录"
+}
+
+const hasStrongHeadingText = (value: string): boolean =>
+  /[A-Za-z]{3,}/.test(value) || /[\u4E00-\u9FFF]{2,}/.test(value)
+
+const isShortAllCapsLabel = (value: string): boolean => {
+  const normalized = normalizeLine(value)
+  const tokens = normalized
+    .split(/\s+/)
+    .map((token) => token.replace(/[^A-Za-z]/g, ""))
+    .filter(Boolean)
+  if (tokens.length !== 1) return false
+  const [token] = tokens
+  if (!token) return false
+  return token.length <= 4 && /^[A-Z]+$/.test(token)
+}
+
+const isMeasurementLikeFragment = (value: string): boolean => {
+  const normalized = normalizeLine(value)
+  if (!normalized) return false
+  if (hasStrongHeadingText(normalized)) return false
+  return /\d/.test(normalized)
+}
+
+const isTableHeaderLike = (value: string): boolean => {
+  const normalized = normalizeLine(value)
+  const alphaTokens = normalized.split(/\s+/).filter((token) => /[A-Za-z]/.test(token))
+  if (alphaTokens.length < 4) return false
+  const lowerCaseCount = alphaTokens.filter((token) => /[a-z]/.test(token)).length
+  const tableSignals = alphaTokens.filter((token) => /\(\d+\)|[A-Z]{3,}/.test(token)).length
+  return lowerCaseCount === 0 && tableSignals >= 3
+}
+
+const isRepeatingLabelLike = (value: string): boolean => {
+  const normalized = normalizeLine(value)
+  const alphaTokens = normalized
+    .split(/\s+/)
+    .filter((token) => /[A-Za-z]/.test(token))
+    .map((token) => token.replace(/[^A-Za-z]/g, ""))
+    .filter(Boolean)
+  if (alphaTokens.length < 2) return false
+  if (alphaTokens.some((token) => /[a-z]/.test(token))) return false
+  const uniqueTokenCount = new Set(alphaTokens).size
+  return uniqueTokenCount < alphaTokens.length
+}
+
+const isSentenceLike = (value: string): boolean => {
+  const normalized = normalizeLine(value)
+  if (!normalized) return false
+  const lower = normalized.toLowerCase()
+  const tokens = lower.split(/\s+/).filter(Boolean)
+  const stopwordCount = tokens.filter((token) => headingStopwords.has(token)).length
+  if (sentenceTerminal.test(normalized) && tokens.length >= 3) return true
+  return tokens.length >= 7 && stopwordCount / tokens.length >= 0.35
 }
 
 const detectHeading = (line: string): { title: string; level: number } | null => {
@@ -62,11 +141,17 @@ const detectHeading = (line: string): { title: string; level: number } | null =>
     if (hasTrailingPageNumber(normalized)) return null
     if (!/^[A-Za-z\u4E00-\u9FFF第（(]/.test(title)) return null
     if (/^(GHz|MHz|Kbps|Mbps|Hz|kHz|mA|V|W)\b/i.test(title)) return null
-    if (/[。；;：:]$/.test(title)) return null
+    if (sentenceTerminal.test(title)) return null
     if (Number.isFinite(topLevelNumber) && topLevelNumber > 20) return null
     if (/^[A-Z]+\d+$/.test(title)) return null
     if (level === 1 && title.length > 40) return null
     if (level === 1 && /[，,×—]/.test(title)) return null
+    if (!hasStrongHeadingText(title)) return null
+    if (topLevelNumber === 0 && isShortAllCapsLabel(title)) return null
+    if (isMeasurementLikeFragment(title)) return null
+    if (isSentenceLike(title)) return null
+    if (isTableHeaderLike(title)) return null
+    if (isRepeatingLabelLike(title)) return null
     return {
       title: `${numberPath} ${title}`.trim(),
       level,
@@ -84,6 +169,13 @@ const detectHeading = (line: string): { title: string; level: number } | null =>
 
   const english = normalized.match(/^(Chapter|Section|Part|Appendix)\b[:\s-]*(.+)?$/i)
   if (english) {
+    const tail = normalizeLine(english[2] || "")
+    if (!tail) return null
+    if (!/^[A-Z0-9(IVX第]/.test(tail)) return null
+    if (!hasStrongHeadingText(tail)) return null
+    if (isSentenceLike(tail)) return null
+    if (isTableHeaderLike(normalized)) return null
+    if (isRepeatingLabelLike(tail)) return null
     return {
       title: normalized,
       level: /section/i.test(english[1] || "") ? 2 : 1,

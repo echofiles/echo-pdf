@@ -19,6 +19,15 @@
       "notes": "Multi-column academic paper with explicit numbered sections."
     },
     {
+      "id": "irs-form-w4",
+      "title": "Form W-4",
+      "documentType": "government-form",
+      "publisher": "Internal Revenue Service",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw4.pdf",
+      "localFilename": "irs-form-w4.pdf",
+      "notes": "Form-style PDF with worksheet fragments and incidental prose that should not be promoted to semantic sections."
+    },
+    {
       "id": "nist-sp-800-171r2",
       "title": "NIST SP 800-171 Revision 2",
       "documentType": "security-guidance",

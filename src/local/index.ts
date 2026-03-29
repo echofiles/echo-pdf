@@ -70,6 +70,11 @@ export interface LocalSemanticDocumentStructure {
   readonly generatedAt: string
   readonly detector: "agent-structured-v1" | "heading-heuristic-v1"
   readonly strategyKey: string
+  readonly fallback?: {
+    readonly from: "agent-structured-v1"
+    readonly to: "heading-heuristic-v1"
+    readonly reason: string
+  }
   readonly sourceSizeBytes: number
   readonly sourceMtimeMs: number
   readonly pageIndexArtifactPath: string
@@ -328,6 +333,14 @@ const matchesStrategyKey = (
   strategyKey: string
 ): boolean => artifact.strategyKey === strategyKey
 
+type SemanticAgentCandidate = {
+  title: string
+  level: number
+  pageNumber: number
+  excerpt?: string
+  confidence: number
+}
+
 const resolveSemanticExtractionBudget = (
   input?: LocalSemanticDocumentRequest["semanticExtraction"]
 ): { pageSelection: "all"; chunkMaxChars: number; chunkOverlapChars: number } => ({
@@ -340,32 +353,31 @@ const resolveSemanticExtractionBudget = (
     : 300,
 })
 
-const splitSemanticTextIntoChunks = (
-  text: string,
-  budget: { chunkMaxChars: number; chunkOverlapChars: number }
-): string[] => {
-  const normalized = text.trim()
-  if (!normalized) return []
-  if (normalized.length <= budget.chunkMaxChars) return [normalized]
-
-  const chunks: string[] = []
-  let start = 0
-  while (start < normalized.length) {
-    const idealEnd = Math.min(normalized.length, start + budget.chunkMaxChars)
-    let end = idealEnd
-    if (idealEnd < normalized.length) {
-      const newlineBreak = normalized.lastIndexOf("\n", idealEnd)
-      const sentenceBreak = normalized.lastIndexOf("。", idealEnd)
-      const whitespaceBreak = normalized.lastIndexOf(" ", idealEnd)
-      end = Math.max(newlineBreak, sentenceBreak, whitespaceBreak, start + Math.floor(budget.chunkMaxChars * 0.7))
-      if (end <= start) end = idealEnd
-    }
-    const chunk = normalized.slice(start, end).trim()
-    if (chunk) chunks.push(chunk)
-    if (end >= normalized.length) break
-    start = Math.max(end - budget.chunkOverlapChars, start + 1)
+const normalizeSemanticAgentCandidate = (
+  value: unknown,
+  pageNumber: number
+): SemanticAgentCandidate | null => {
+  const candidate = value as {
+    title?: unknown
+    level?: unknown
+    excerpt?: unknown
+    confidence?: unknown
   }
-  return chunks
+  const title = typeof candidate?.title === "string" ? candidate.title.trim() : ""
+  const level = typeof candidate?.level === "number" && Number.isInteger(candidate.level) && candidate.level > 0
+    ? candidate.level
+    : 0
+  const confidence = typeof candidate?.confidence === "number" && Number.isFinite(candidate.confidence)
+    ? Math.max(0, Math.min(1, candidate.confidence))
+    : 0
+  if (!title || level <= 0 || confidence < 0.6) return null
+  return {
+    title,
+    level,
+    pageNumber,
+    excerpt: typeof candidate?.excerpt === "string" ? candidate.excerpt.trim() : undefined,
+    confidence,
+  }
 }
 
 const toSemanticTree = (
@@ -401,13 +413,13 @@ const toSemanticTree = (
   return nodes
 }
 
-const buildSemanticPrompt = (
-  pageNumber: number,
-  chunkIndex: number,
-  chunkText: string
+const buildSemanticPageUnderstandingPrompt = (
+  page: LocalPageContent,
+  renderScale: number
 ): string => {
   return [
-    "You extract heading/section candidates from one document text segment.",
+    "You extract semantic heading candidates from one rendered PDF page.",
+    "Primary evidence is the page image layout. Use the extracted page text only as supporting context.",
     "Return JSON only.",
     "Schema:",
     "{",
@@ -416,19 +428,22 @@ const buildSemanticPrompt = (
     '      "title": "string",',
     '      "level": 1,',
     '      "excerpt": "short evidence string",',
+    '      "confidence": 0.0',
     "    }",
     "  ]",
     "}",
     "Rules:",
-    "- Use only headings/sections that are clearly supported by the text segment.",
+    "- Use only true document headings/sections that are clearly supported by page layout plus text.",
     "- Prefer conservative extraction over guessing.",
-    "- Do not include page index entries, table rows, figure labels, or prose sentences.",
-    "- Do not infer hierarchy beyond the explicit heading numbering or structure visible in the segment.",
+    "- Do not include table column headers, field labels, figure labels, unit/value rows, worksheet fragments, or prose sentences.",
+    "- Do not infer hierarchy beyond the explicit heading numbering or structure visible on the page.",
+    "- Confidence should reflect how likely the candidate is to be a real navigational section heading in the document.",
     "- If no reliable semantic structure is detectable, return {\"candidates\":[]}.",
-    `Page number: ${pageNumber}`,
-    `Chunk index: ${chunkIndex}`,
+    `Page number: ${page.pageNumber}`,
+    `Render scale: ${renderScale}`,
     "",
-    chunkText,
+    "Extracted page text:",
+    page.text,
   ].join("\n")
 }
 
@@ -439,11 +454,12 @@ const buildSemanticAggregationPrompt = (
     level: number
     pageNumber: number
     excerpt?: string
+    confidence?: number
   }>
 ): string => {
   const candidateDump = JSON.stringify({ candidates }, null, 2)
   return [
-    "You assemble semantic document structure from heading candidates.",
+    "You assemble semantic document structure from page-understanding heading candidates.",
     "Return JSON only.",
     "Schema:",
     "{",
@@ -460,6 +476,7 @@ const buildSemanticAggregationPrompt = (
     "Rules:",
     "- Preserve hierarchy with nested children.",
     "- Use only candidate headings that form a reliable document structure.",
+    "- Favor candidates with strong confidence and clear section semantics; drop visually prominent noise.",
     "- Deduplicate repeated headings from overlapping segments.",
     "- Do not invent sections not present in the candidates.",
     "- If no reliable semantic structure is detectable, return {\"sections\":[]}.",
@@ -473,12 +490,16 @@ const buildSemanticAggregationPrompt = (
 const buildHeuristicSemanticArtifact = (
   record: StoredDocumentRecord,
   artifactPath: string,
-  sections: ReadonlyArray<LocalSemanticStructureNode>
+  sections: ReadonlyArray<LocalSemanticStructureNode>,
+  fallback?: LocalSemanticDocumentStructure["fallback"]
 ): Omit<LocalSemanticDocumentStructure, "cacheStatus"> => ({
   documentId: record.documentId,
   generatedAt: new Date().toISOString(),
   detector: "heading-heuristic-v1",
-  strategyKey: "heuristic::heading-heuristic-v1",
+  strategyKey: fallback
+    ? `agent-fallback::page-understanding-v1::${hashFragment(fallback.reason, 10)}`
+    : "heuristic::heading-heuristic-v1",
+  ...(fallback ? { fallback } : {}),
   sourceSizeBytes: record.sizeBytes,
   sourceMtimeMs: record.mtimeMs,
   pageIndexArtifactPath: record.artifactPaths.structureJsonPath,
@@ -490,6 +511,43 @@ const buildHeuristicSemanticArtifact = (
     children: sections,
   },
 })
+
+const extractSemanticCandidatesFromRenderedPage = async (input: {
+  page: LocalPageContent
+  request: LocalSemanticDocumentRequest
+  config: EchoPdfConfig
+  env: Env
+  provider: string
+  model: string
+}): Promise<ReadonlyArray<SemanticAgentCandidate>> => {
+  const renderArtifact = await ensureRenderArtifact({
+    pdfPath: input.request.pdfPath,
+    workspaceDir: input.request.workspaceDir,
+    forceRefresh: input.request.forceRefresh,
+    config: input.config,
+    pageNumber: input.page.pageNumber,
+  })
+  const imageBytes = new Uint8Array(await readFile(renderArtifact.imagePath))
+  const imageDataUrl = toDataUrl(imageBytes, renderArtifact.mimeType)
+  const response = await visionRecognize({
+    config: input.config,
+    env: input.env,
+    providerAlias: input.provider,
+    model: input.model,
+    prompt: buildSemanticPageUnderstandingPrompt(input.page, renderArtifact.renderScale),
+    imageDataUrl,
+    runtimeApiKeys: input.request.providerApiKeys,
+  })
+  const parsed = parseJsonObject(response) as { candidates?: unknown[] }
+  return (Array.isArray(parsed?.candidates) ? parsed.candidates : [])
+    .map((candidate) => normalizeSemanticAgentCandidate(candidate, input.page.pageNumber))
+    .filter((candidate): candidate is SemanticAgentCandidate => candidate !== null)
+}
+
+const summarizeSemanticAgentFailure = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.replace(/\s+/g, " ").trim().slice(0, 240) || "unknown agent semantic failure"
+}
 
 const ensureSemanticStructureArtifact = async (
   request: LocalSemanticDocumentRequest
@@ -512,7 +570,7 @@ const ensureSemanticStructureArtifact = async (
     model = resolveModelForProvider(config, provider, request.model)
   }
   const strategyKey = model
-    ? `agent::agent-structured-v1::${provider}::${model}::${semanticBudget.pageSelection}::${semanticBudget.chunkMaxChars}::${semanticBudget.chunkOverlapChars}`
+    ? `agent::page-understanding-v1::${provider}::${model}::${config.service.defaultRenderScale}::${semanticBudget.pageSelection}::${semanticBudget.chunkMaxChars}::${semanticBudget.chunkOverlapChars}`
     : "heuristic::heading-heuristic-v1"
   if (!request.forceRefresh && await fileExists(artifactPath)) {
     const cached = await readJson<Omit<LocalSemanticDocumentStructure, "cacheStatus"> & { cacheStatus?: unknown }>(artifactPath)
@@ -535,32 +593,21 @@ const ensureSemanticStructureArtifact = async (
   let artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus">
   if (model) {
     try {
-      const candidateMap = new Map<string, { title: string; level: number; pageNumber: number; excerpt?: string }>()
+      const candidateMap = new Map<string, SemanticAgentCandidate>()
       for (const page of pages) {
-        const chunks = splitSemanticTextIntoChunks(page.text, semanticBudget)
-        for (const [chunkIndex, chunkText] of chunks.entries()) {
-          const response = await generateText({
-            config,
-            env,
-            providerAlias: provider,
-            model,
-            prompt: buildSemanticPrompt(page.pageNumber, chunkIndex + 1, chunkText),
-            runtimeApiKeys: request.providerApiKeys,
-          })
-          const parsed = parseJsonObject(response) as { candidates?: Array<{ title?: unknown; level?: unknown; excerpt?: unknown }> }
-          for (const candidate of Array.isArray(parsed?.candidates) ? parsed.candidates : []) {
-            const title = typeof candidate?.title === "string" ? candidate.title.trim() : ""
-            const level = typeof candidate?.level === "number" && Number.isInteger(candidate.level) && candidate.level > 0 ? candidate.level : 0
-            if (!title || level <= 0) continue
-            const key = `${page.pageNumber}:${level}:${title}`
-            if (!candidateMap.has(key)) {
-              candidateMap.set(key, {
-                title,
-                level,
-                pageNumber: page.pageNumber,
-                excerpt: typeof candidate?.excerpt === "string" ? candidate.excerpt.trim() : undefined,
-              })
-            }
+        const candidates = await extractSemanticCandidatesFromRenderedPage({
+          page,
+          request,
+          config,
+          env,
+          provider,
+          model,
+        })
+        for (const candidate of candidates) {
+          const key = `${candidate.pageNumber}:${candidate.level}:${candidate.title}`
+          const existing = candidateMap.get(key)
+          if (!existing || candidate.confidence > existing.confidence) {
+            candidateMap.set(key, candidate)
           }
         }
       }
@@ -590,8 +637,17 @@ const ensureSemanticStructureArtifact = async (
           children: sections,
         },
       }
-    } catch {
-      artifact = buildHeuristicSemanticArtifact(record, artifactPath, buildSemanticSectionTree(pages))
+    } catch (error) {
+      artifact = buildHeuristicSemanticArtifact(
+        record,
+        artifactPath,
+        buildSemanticSectionTree(pages),
+        {
+          from: "agent-structured-v1",
+          to: "heading-heuristic-v1",
+          reason: summarizeSemanticAgentFailure(error),
+        }
+      )
     }
   } else {
     artifact = buildHeuristicSemanticArtifact(record, artifactPath, buildSemanticSectionTree(pages))
