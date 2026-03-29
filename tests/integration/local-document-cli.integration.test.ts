@@ -139,7 +139,7 @@ const runSourceCheckoutCliDev = async (repoDir: string, args: string[]): Promise
 }
 
 describe("local document CLI", () => {
-  itWithNode20("reads a PDF through the five mainline primitives", async () => {
+  itWithNode20("reads a PDF through the zero-config local primitives", async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-"))
 
     const { stdout: docRaw } = await runCli(rootDir, ["document", fixturePdf, "--workspace", workspaceDir])
@@ -163,18 +163,6 @@ describe("local document CLI", () => {
     }
     expect(structure.documentId).toBe(doc.documentId)
     expect(structure.root.children?.[0]?.pageNumber).toBe(1)
-
-    const { stdout: semanticRaw } = await runCli(rootDir, ["semantic", fixturePdf, "--workspace", workspaceDir])
-    const semantic = JSON.parse(semanticRaw) as {
-      documentId: string
-      pageIndexArtifactPath: string
-      root: {
-        type: string
-      }
-    }
-    expect(semantic.documentId).toBe(doc.documentId)
-    expect(semantic.pageIndexArtifactPath.endsWith("structure.json")).toBe(true)
-    expect(semantic.root.type).toBe("document")
 
     const { stdout: pageRaw } = await runCli(rootDir, ["page", fixturePdf, "--page", "1", "--workspace", workspaceDir])
     const page = JSON.parse(pageRaw) as {
@@ -215,6 +203,18 @@ describe("local document CLI", () => {
       documentId?: string
     }
     expect(stored.documentId).toBe(doc.documentId)
+  })
+
+  itWithNode20("rejects zero-config semantic runs with setup guidance", async () => {
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-semantic-missing-"))
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-semantic-missing-"))
+
+    const { stderr } = await runCliFailure(rootDir, ["semantic", fixturePdf, "--workspace", workspaceDir], {
+      HOME: homeDir,
+    })
+
+    expect(stderr).toContain("semantic requires a configured model for provider")
+    expect(stderr).toContain("echo-pdf model set --provider")
   })
 
   itWithNode20("prints help around the five top-level primitives only", async () => {
