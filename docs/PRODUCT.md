@@ -15,6 +15,8 @@
 
 These are the product surfaces that define the current phase. They carry the primary product and semver expectations.
 
+For the package-level contract, see [`docs/PACKAGING.md`](./PACKAGING.md).
+
 ## Target Users
 
 - developers building local AI agents or IDE integrations that need PDF context
