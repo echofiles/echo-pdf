@@ -90,11 +90,16 @@ const startSemanticCliTestProvider = async (options?: {
           .join("\n")
         : ""
 
-    if (prompt.includes("You extract semantic heading candidates from one rendered PDF page.")) {
+    if (prompt.includes("Extract headings, tables, formulas")) {
       const pageNumber = Number(prompt.match(/Page number: (\d+)/)?.[1] ?? "0")
-      const response = pageNumber === 1
-        ? { candidates: [{ title: "1 Overview", level: 1, excerpt: "1 Overview", confidence: 0.96 }] }
-        : { candidates: [] }
+      const response = {
+        candidates: pageNumber === 1
+          ? [{ title: "1 Overview", level: 1, excerpt: "1 Overview", confidence: 0.96 }]
+          : [],
+        tables: [],
+        formulas: [],
+        figures: [],
+      }
       res.writeHead(200, { "content-type": "application/json" })
       res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] }))
       return
