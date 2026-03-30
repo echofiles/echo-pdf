@@ -46,7 +46,7 @@ const DEFAULT_UNDERSTANDING_PROMPT = [
   '- If nothing is found for a category, return an empty array for that key.',
 ].join("\n")
 
-const normalizeFigureItems = (value: unknown): LocalFigureArtifactItem[] => {
+export const normalizeFigureItems = (value: unknown): LocalFigureArtifactItem[] => {
   if (!Array.isArray(value)) return []
   return value.flatMap((item, index) => {
     const figure = item as {
@@ -69,7 +69,7 @@ const normalizeFigureItems = (value: unknown): LocalFigureArtifactItem[] => {
   })
 }
 
-const normalizeUnderstandingTables = (value: unknown): LocalPageUnderstandingTableItem[] => {
+export const normalizeUnderstandingTables = (value: unknown): LocalPageUnderstandingTableItem[] => {
   if (!Array.isArray(value)) return []
   return value.flatMap((item, index) => {
     const table = item as {
@@ -90,7 +90,7 @@ const normalizeUnderstandingTables = (value: unknown): LocalPageUnderstandingTab
   })
 }
 
-const normalizeUnderstandingFormulas = (value: unknown): LocalPageUnderstandingFormulaItem[] => {
+export const normalizeUnderstandingFormulas = (value: unknown): LocalPageUnderstandingFormulaItem[] => {
   if (!Array.isArray(value)) return []
   return value.flatMap((item, index) => {
     const formula = item as {

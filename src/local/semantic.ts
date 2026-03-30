@@ -19,7 +19,7 @@ import {
   resolveEnv,
   writeJson,
 } from "./shared.js"
-import { get_page_understanding } from "./understanding.js"
+import { normalizeFigureItems, normalizeUnderstandingFormulas, normalizeUnderstandingTables } from "./understanding.js"
 import type {
   LocalPageContent,
   LocalPageUnderstandingArtifact,
@@ -105,32 +105,35 @@ const toSemanticTree = (
   return nodes
 }
 
-const buildSemanticPageUnderstandingPrompt = (
+const buildCombinedPagePrompt = (
   page: LocalPageContent,
   renderScale: number
 ): string => {
   return [
-    "You extract semantic heading candidates from one rendered PDF page.",
-    "Primary evidence is the page image layout. Use the extracted page text only as supporting context.",
+    "Analyze this rendered PDF page image. Extract headings, tables, formulas, and figures.",
+    "Primary evidence is the page image layout. Use the extracted page text as supporting context.",
     "Return JSON only.",
     "Schema:",
     "{",
-    '  "candidates": [',
-    "    {",
-    '      "title": "string",',
-    '      "level": 1,',
-    '      "excerpt": "short evidence string",',
-    '      "confidence": 0.0',
-    "    }",
-    "  ]",
+    '  "candidates": [{ "title": "string", "level": 1, "excerpt": "short evidence", "confidence": 0.0 }],',
+    '  "tables": [{ "latexTabular": "\\\\begin{tabular}...\\\\end{tabular}", "caption": "optional", "truncatedTop": false, "truncatedBottom": false }],',
+    '  "formulas": [{ "latexMath": "LaTeX expression", "label": "optional", "truncatedTop": false, "truncatedBottom": false }],',
+    '  "figures": [{ "figureType": "schematic|chart|photo|diagram|other", "caption": "optional", "description": "brief description", "truncatedTop": false, "truncatedBottom": false }]',
     "}",
-    "Rules:",
-    "- Use only true document headings/sections that are clearly supported by page layout plus text.",
-    "- Prefer conservative extraction over guessing.",
-    "- Do not include table column headers, field labels, figure labels, unit/value rows, worksheet fragments, or prose sentences.",
-    "- Do not infer hierarchy beyond the explicit heading numbering or structure visible on the page.",
-    "- Confidence should reflect how likely the candidate is to be a real navigational section heading in the document.",
-    '- If no reliable semantic structure is detectable, return {"candidates":[]}.',
+    "Heading rules:",
+    "- candidates: true document headings/sections supported by page layout plus text.",
+    "- Prefer conservative extraction. Do not include table headers, field labels, or prose sentences.",
+    "- Confidence reflects how likely the candidate is a real navigational section heading.",
+    "Table rules:",
+    "- Tables must be complete LaTeX tabular environments.",
+    "Formula rules:",
+    "- Use LaTeX math notation. Skip trivial inline math or single symbols.",
+    "Figure rules:",
+    "- Describe by type, caption, and brief visual description. Do not crop or encode images.",
+    "Truncation:",
+    "- Set truncatedTop/truncatedBottom to true if elements appear cut off at the page boundary.",
+    "Empty:",
+    '- If nothing found for a category, return an empty array for that key.',
     `Page number: ${page.pageNumber}`,
     `Render scale: ${renderScale}`,
     "",
@@ -197,14 +200,19 @@ const resolveSemanticAgentContext = (
   return { provider, model }
 }
 
-const extractSemanticCandidatesFromRenderedPage = async (input: {
+interface CombinedPageResult {
+  candidates: ReadonlyArray<SemanticAgentCandidate>
+  understanding: LocalPageUnderstandingArtifact
+}
+
+const extractCombinedPageData = async (input: {
   page: LocalPageContent
   request: LocalSemanticDocumentRequest
   config: EchoPdfConfig
   env: Env
   provider: string
   model: string
-}): Promise<ReadonlyArray<SemanticAgentCandidate>> => {
+}): Promise<CombinedPageResult> => {
   const renderArtifact = await ensureRenderArtifact({
     pdfPath: input.request.pdfPath,
     workspaceDir: input.request.workspaceDir,
@@ -219,14 +227,46 @@ const extractSemanticCandidatesFromRenderedPage = async (input: {
     env: input.env,
     providerAlias: input.provider,
     model: input.model,
-    prompt: buildSemanticPageUnderstandingPrompt(input.page, renderArtifact.renderScale),
+    prompt: buildCombinedPagePrompt(input.page, renderArtifact.renderScale),
     imageDataUrl,
     runtimeApiKeys: input.request.providerApiKeys,
   })
-  const parsed = parseJsonObject(response) as { candidates?: unknown[] }
-  return (Array.isArray(parsed?.candidates) ? parsed.candidates : [])
-    .map((candidate) => normalizeSemanticAgentCandidate(candidate, input.page.pageNumber))
-    .filter((candidate): candidate is SemanticAgentCandidate => candidate !== null)
+  const parsed = parseJsonObject(response) as {
+    candidates?: unknown[]
+    tables?: unknown
+    formulas?: unknown
+    figures?: unknown
+  }
+  const candidates = (Array.isArray(parsed?.candidates) ? parsed.candidates : [])
+    .map((c) => normalizeSemanticAgentCandidate(c, input.page.pageNumber))
+    .filter((c): c is SemanticAgentCandidate => c !== null)
+
+  const tables = normalizeUnderstandingTables(parsed?.tables)
+  const formulas = normalizeUnderstandingFormulas(parsed?.formulas)
+  const figures = normalizeFigureItems(parsed?.figures)
+
+  const pageArtifactPath = path.join(input.request.workspaceDir ?? "", "pages", `${pageLabel(input.page.pageNumber)}.json`)
+  const understanding: LocalPageUnderstandingArtifact = {
+    documentId: input.page.documentId,
+    pageNumber: input.page.pageNumber,
+    renderScale: renderArtifact.renderScale,
+    sourceSizeBytes: 0,
+    sourceMtimeMs: 0,
+    provider: input.provider,
+    model: input.model,
+    prompt: "",
+    imagePath: renderArtifact.imagePath,
+    pageArtifactPath,
+    renderArtifactPath: renderArtifact.artifactPath,
+    artifactPath: "",
+    generatedAt: new Date().toISOString(),
+    tables,
+    formulas,
+    figures,
+    cacheStatus: "fresh",
+  }
+
+  return { candidates, understanding }
 }
 
 const mergeCrossPageTables = (
@@ -347,8 +387,9 @@ const ensureSemanticStructureArtifact = async (
   const pageArtifactPaths = new Map(pages.map((page) => [page.pageNumber, page.artifactPath]))
 
   const candidateMap = new Map<string, SemanticAgentCandidate>()
+  const understandings: LocalPageUnderstandingArtifact[] = []
   for (const page of pages) {
-    const candidates = await extractSemanticCandidatesFromRenderedPage({
+    const result = await extractCombinedPageData({
       page,
       request,
       config,
@@ -356,28 +397,14 @@ const ensureSemanticStructureArtifact = async (
       provider,
       model,
     })
-    for (const candidate of candidates) {
+    for (const candidate of result.candidates) {
       const key = `${candidate.pageNumber}:${candidate.level}:${candidate.title}`
       const existing = candidateMap.get(key)
       if (!existing || candidate.confidence > existing.confidence) {
         candidateMap.set(key, candidate)
       }
     }
-  }
-  const understandings: LocalPageUnderstandingArtifact[] = []
-  for (const page of pages) {
-    const pu = await get_page_understanding({
-      pdfPath: request.pdfPath,
-      workspaceDir: request.workspaceDir,
-      forceRefresh: request.forceRefresh,
-      config,
-      pageNumber: page.pageNumber,
-      provider,
-      model,
-      env,
-      providerApiKeys: request.providerApiKeys,
-    })
-    understandings.push(pu)
+    understandings.push(result.understanding)
   }
 
   const aggregated = await generateText({
