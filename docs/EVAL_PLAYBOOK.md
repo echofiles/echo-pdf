@@ -2,7 +2,7 @@
 
 ## Scope
 
-This playbook is for `echo-pdf` issue `#42` only.
+This playbook covers local eval operations for `echo-pdf`.
 
 Allowed:
 
@@ -53,8 +53,7 @@ npm run eval:fetch-public-samples
 Compare along explicit axes only:
 
 - `semantic structure`
-  - provider/model
-  - model
+  - provider/model selection
   - chunk budget
 
 Do not hide blocked provider runs. Report them as blocked.

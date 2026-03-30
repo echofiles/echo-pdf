@@ -2,7 +2,7 @@
 
 import { readFile } from "node:fs/promises"
 import path from "node:path"
-import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
+import { resolveModelForProvider, resolveProviderAlias } from "../provider-defaults.js"
 import { toDataUrl } from "../file-utils.js"
 import { generateText, visionRecognize } from "../provider-client.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
