@@ -58,17 +58,21 @@ echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1 --scale 2
 ```
 
-To run the VL-first semantic path locally, configure a provider key and model once, then run `semantic`:
+To run provider-required primitives, configure a provider key and model once:
 
 ```bash
 echo-pdf provider set --provider openai --api-key "$OPENAI_API_KEY"
 echo-pdf model set --provider openai --model gpt-4.1-mini
+
 echo-pdf semantic ./sample.pdf
+echo-pdf tables ./sample.pdf --page 1
+echo-pdf formulas ./sample.pdf --page 1
+echo-pdf understanding ./sample.pdf --page 1
 ```
 
-`echo-pdf semantic` now uses the CLI profile's provider/model/api-key settings. If the selected provider or model is missing, it fails early with a clear setup error instead of quietly dropping back to a weaker path.
+Provider-required primitives (`semantic`, `tables`, `formulas`, `understanding`) use the CLI profile's provider/model/api-key settings. If the selected provider or model is missing, they fail early with a clear setup error.
 
-For a local OpenAI-compatible LLM server, point a provider at `http://localhost:...` and leave `apiKeyEnv` empty in `echo-pdf.config.json`. Then configure the CLI profile without a dummy key:
+The CLI ships with a built-in `ollama` provider alias pointing at `http://127.0.0.1:11434/v1`. To use a local Ollama server:
 
 ```bash
 echo-pdf provider set --provider ollama --api-key ""
@@ -76,7 +80,7 @@ echo-pdf model set --provider ollama --model llava:13b
 echo-pdf semantic ./sample.pdf --provider ollama
 ```
 
-This works for local OpenAI-compatible servers such as Ollama, llama.cpp, vLLM, LM Studio, or LocalAI, as long as the selected model supports vision input.
+The built-in provider aliases are `openai`, `vercel_gateway`, `openrouter`, and `ollama`. Other local OpenAI-compatible servers (llama.cpp, vLLM, LM Studio, LocalAI) can be configured by overriding the config via the `ECHO_PDF_CONFIG_JSON` environment variable or by editing the bundled `echo-pdf.config.json` in a source checkout. The selected model must support vision input.
 
 What these commands map to:
 
@@ -146,8 +150,9 @@ const understanding = await get_page_understanding({ pdfPath: "./sample.pdf", pa
 Notes:
 
 - `get_document_structure()` returns the stable page index: `document -> pages[]`
-- `get_semantic_document_structure()` returns a separate semantic structure layer; it does not replace `pages[]`
+- `get_semantic_document_structure()` returns a heading/section tree plus optional cross-page merged `tables[]`, `formulas[]`, and `figures[]`; it does not replace `pages[]`
 - `get_page_render()` materializes a reusable PNG plus render metadata and is the mainline visual input path
+- `get_page_understanding()` extracts tables, formulas, and figures from a single page in one LLM call
 
 Migration note:
 
