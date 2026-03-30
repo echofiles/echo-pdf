@@ -1,9 +1,0 @@
-{
-  "documentId": "d5d9a359f20bdb77",
-  "pageNumber": 13,
-  "title": "Page 13: Attention Visualizations",
-  "preview": "Attention Visualizations Input-Input Layer5 Itisinthis spirit that a majority of American governments have passed new laws since 2009 making the registration or",
-  "text": "Attention Visualizations\r\nInput-Input Layer5 Itisinthis spirit that\r\na\r\nmajority\r\nof\r\nAmerican\r\ngovernments\r\nhave\r\npassed\r\nnew\r\nlaws\r\nsince\r\n2009\r\nmaking\r\nthe\r\nregistration\r\nor\r\nvoting\r\nprocess\r\nmore\r\ndifficult\r\n.\r\n<EOS>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\nIt\r\nis\r\nin\r\nthis\r\nspirit\r\nthat\r\na\r\nmajority\r\nof\r\nAmerican\r\ngovernments\r\nhave\r\npassed\r\nnew\r\nlaws\r\nsince\r\n2009\r\nmaking\r\nthe\r\nregistration\r\nor\r\nvoting\r\nprocess\r\nmore\r\ndifficult\r\n.\r\n<EOS>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\n<pad>\r\nFigure 3: An example of the attention mechanism following long-distance dependencies in the\r\nencoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of\r\nthe verb ‘making’, completing the phrase ‘making...more difficult’. Attentions here shown only for\r\nthe word ‘making’. Different colors represent different heads. Best viewed in color.\r\n13",
-  "chars": 875,
-  "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0013.json"
-}

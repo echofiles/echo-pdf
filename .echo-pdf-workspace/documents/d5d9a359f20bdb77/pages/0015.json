@@ -1,9 +1,0 @@
-{
-  "documentId": "d5d9a359f20bdb77",
-  "pageNumber": 15,
-  "title": "Page 15: Input-Input Layer5 The Law will never beperfect",
-  "preview": "Input-Input Layer5 The Law will never beperfect , but its application should be just - this is what we are missing , in my opinion . <EOS> <pad> The Law will ne",
-  "text": "Input-Input Layer5 The Law will never beperfect\r\n,\r\nbut\r\nits\r\napplication\r\nshould\r\nbe\r\njust\r\n-\r\nthis\r\nis\r\nwhat\r\nwe\r\nare\r\nmissing\r\n,\r\nin\r\nmy\r\nopinion\r\n.\r\n<EOS>\r\n<pad>\r\nThe\r\nLaw\r\nwill\r\nnever\r\nbe\r\nperfect\r\n,\r\nbut\r\nits\r\napplication\r\nshould\r\nbe\r\njust\r\n-\r\nthis\r\nis\r\nwhat\r\nwe\r\nare\r\nmissing\r\n,\r\nin\r\nmy\r\nopinion\r\n.\r\n<EOS>\r\n<pad>\r\nInput-Input Layer5 The Law will never beperfect\r\n,\r\nbut\r\nits\r\napplication\r\nshould\r\nbe\r\njust\r\n-\r\nthis\r\nis\r\nwhat\r\nwe\r\nare\r\nmissing\r\n,\r\nin\r\nmy\r\nopinion\r\n.\r\n<EOS>\r\n<pad>\r\nThe\r\nLaw\r\nwill\r\nnever\r\nbe\r\nperfect\r\n,\r\nbut\r\nits\r\napplication\r\nshould\r\nbe\r\njust\r\n-\r\nthis\r\nis\r\nwhat\r\nwe\r\nare\r\nmissing\r\n,\r\nin\r\nmy\r\nopinion\r\n.\r\n<EOS>\r\n<pad>\r\nFigure 5: Many of the attention heads exhibit behaviour that seems related to the structure of the\r\nsentence. We give two such examples above, from two different heads from the encoder self-attention\r\nat layer 5 of 6. The heads clearly learned to perform different tasks.\r\n15",
-  "chars": 917,
-  "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0015.json"
-}
