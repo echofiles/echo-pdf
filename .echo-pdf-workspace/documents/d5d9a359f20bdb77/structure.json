@@ -1,0 +1,131 @@
+{
+  "documentId": "d5d9a359f20bdb77",
+  "generatedAt": "2026-03-30T05:14:11.778Z",
+  "root": {
+    "id": "d5d9a359f20bdb77",
+    "type": "document",
+    "title": "attention-is-all-you-need.pdf",
+    "children": [
+      {
+        "id": "page-1",
+        "type": "page",
+        "title": "Page 1: Provided proper attribution is provided, Google hereby grants permission to",
+        "pageNumber": 1,
+        "preview": "Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and figures in this paper solely for use in journalistic or sch",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0001.json"
+      },
+      {
+        "id": "page-2",
+        "type": "page",
+        "title": "Page 2: 1 Introduction",
+        "pageNumber": 2,
+        "preview": "1 Introduction Recurrent neural networks, long short-term memory [13] and gated recurrent [7] neural networks in particular, have been firmly established as sta",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0002.json"
+      },
+      {
+        "id": "page-3",
+        "type": "page",
+        "title": "Page 3: Figure 1: The Transformer - model architecture.",
+        "pageNumber": 3,
+        "preview": "Figure 1: The Transformer - model architecture. The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected l",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0003.json"
+      },
+      {
+        "id": "page-4",
+        "type": "page",
+        "title": "Page 4: Scaled Dot-Product Attention Multi-Head Attention",
+        "pageNumber": 4,
+        "preview": "Scaled Dot-Product Attention Multi-Head Attention Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention laye",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0004.json"
+      },
+      {
+        "id": "page-5",
+        "type": "page",
+        "title": "Page 5: output values. These are concatenated and once again projected, resulting in the",
+        "pageNumber": 5,
+        "preview": "output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure 2. Multi-head attention allows the model to",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0005.json"
+      },
+      {
+        "id": "page-6",
+        "type": "page",
+        "title": "Page 6: Table 1: Maximum path lengths, per-layer complexity and minimum number of sequen",
+        "pageNumber": 6,
+        "preview": "Table 1: Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. n is the sequence length, d is the re",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0006.json"
+      },
+      {
+        "id": "page-7",
+        "type": "page",
+        "title": "Page 7: length n is smaller than the representation dimensionality d, which is most ofte",
+        "pageNumber": 7,
+        "preview": "length n is smaller than the representation dimensionality d, which is most often the case with sentence representations used by state-of-the-art models in mach",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0007.json"
+      },
+      {
+        "id": "page-8",
+        "type": "page",
+        "title": "Page 8: Table 2: The Transformer achieves better BLEU scores than previous state-of-the-",
+        "pageNumber": 8,
+        "preview": "Table 2: The Transformer achieves better BLEU scores than previous state-of-the-art models on the English-to-German and English-to-French newstest2014 tests at ",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0008.json"
+      },
+      {
+        "id": "page-9",
+        "type": "page",
+        "title": "Page 9: Table 3: Variations on the Transformer architecture. Unlisted values are identic",
+        "pageNumber": 9,
+        "preview": "Table 3: Variations on the Transformer architecture. Unlisted values are identical to those of the base model. All metrics are on the English-to-German translat",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0009.json"
+      },
+      {
+        "id": "page-10",
+        "type": "page",
+        "title": "Page 10: Table 4: The Transformer generalizes well to English constituency parsing (Resul",
+        "pageNumber": 10,
+        "preview": "Table 4: The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ) Parser Training WSJ 23 F1 Vinyals & Kaiser el al. (",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0010.json"
+      },
+      {
+        "id": "page-11",
+        "type": "page",
+        "title": "Page 11: [5] Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Fethi Bougares, Holger",
+        "pageNumber": 11,
+        "preview": "[5] Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Fethi Bougares, Holger Schwenk, and Yoshua Bengio. Learning phrase representations using rnn encoder-d",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0011.json"
+      },
+      {
+        "id": "page-12",
+        "type": "page",
+        "title": "Page 12: [25] Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini. Building",
+        "pageNumber": 12,
+        "preview": "[25] Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank. Computational linguisti",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0012.json"
+      },
+      {
+        "id": "page-13",
+        "type": "page",
+        "title": "Page 13: Attention Visualizations",
+        "pageNumber": 13,
+        "preview": "Attention Visualizations Input-Input Layer5 Itisinthis spirit that a majority of American governments have passed new laws since 2009 making the registration or",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0013.json"
+      },
+      {
+        "id": "page-14",
+        "type": "page",
+        "title": "Page 14: Input-Input Layer5 The Law will never beperfect",
+        "pageNumber": 14,
+        "preview": "Input-Input Layer5 The Law will never beperfect , but its application should be just - this is what we are missing , in my opinion . <EOS> <pad> The Law will ne",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0014.json"
+      },
+      {
+        "id": "page-15",
+        "type": "page",
+        "title": "Page 15: Input-Input Layer5 The Law will never beperfect",
+        "pageNumber": 15,
+        "preview": "Input-Input Layer5 The Law will never beperfect , but its application should be just - this is what we are missing , in my opinion . <EOS> <pad> The Law will ne",
+        "artifactPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages/0015.json"
+      }
+    ]
+  }
+}

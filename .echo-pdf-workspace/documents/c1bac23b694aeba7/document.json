@@ -1,0 +1,18 @@
+{
+  "documentId": "c1bac23b694aeba7",
+  "sourcePath": "/Users/huangjinfeng/workspace/echofiles/testcase/finance/guoxin-eastmoney-equity-report-20250316.pdf",
+  "filename": "guoxin-eastmoney-equity-report-20250316.pdf",
+  "sizeBytes": 553026,
+  "mtimeMs": 1774790580665.8838,
+  "pageCount": 6,
+  "indexedAt": "2026-03-30T05:12:28.801Z",
+  "artifactPaths": {
+    "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace",
+    "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7",
+    "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7/document.json",
+    "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7/structure.json",
+    "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7/semantic-structure.json",
+    "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7/pages",
+    "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/c1bac23b694aeba7/renders"
+  }
+}

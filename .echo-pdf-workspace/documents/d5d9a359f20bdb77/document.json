@@ -1,0 +1,18 @@
+{
+  "documentId": "d5d9a359f20bdb77",
+  "sourcePath": "/Users/huangjinfeng/workspace/echofiles/testcase/academic/attention-is-all-you-need.pdf",
+  "filename": "attention-is-all-you-need.pdf",
+  "sizeBytes": 2215244,
+  "mtimeMs": 1774790300302.887,
+  "pageCount": 15,
+  "indexedAt": "2026-03-30T05:14:11.778Z",
+  "artifactPaths": {
+    "workspaceDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace",
+    "documentDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77",
+    "documentJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/document.json",
+    "structureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/structure.json",
+    "semanticStructureJsonPath": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/semantic-structure.json",
+    "pagesDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/pages",
+    "rendersDir": "/Users/huangjinfeng/workspace/echofiles/echo-pdf/.echo-pdf-workspace/documents/d5d9a359f20bdb77/renders"
+  }
+}
