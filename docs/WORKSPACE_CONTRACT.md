@@ -176,6 +176,14 @@ Each semantic section may expose:
 - `excerpt`
 - `children`
 
+Optional cross-page merged fields when present:
+
+- `tables` (array of `{ id, latexTabular, caption?, startPage, endPage, crossPageHint? }`)
+- `formulas` (array of `{ id, latexMath, label?, startPage, endPage, crossPageHint? }`)
+- `figures` (array of `{ id, figureType, caption?, description?, startPage, endPage, crossPageHint? }`)
+
+These fields are populated by cross-page merging of per-page understanding results. They are absent when no elements are found.
+
 Detector requirements:
 
 - `detector` must identify the semantic extraction path that produced the artifact

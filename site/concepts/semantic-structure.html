@@ -24,23 +24,37 @@
           <h1>Semantic structure is a separate layer.</h1>
           <p class="lead">
             <code>get_semantic_document_structure()</code> writes <code>semantic-structure.json</code> alongside the page index.
-            It adds heading and section structure without changing the shape of <code>pages[]</code>.
+            It adds heading and section structure plus cross-page merged tables, formulas, and figures without changing the shape of <code>pages[]</code>.
           </p>
         </section>
         <section class="cards">
           <article class="card">
-            <h3>Primary path</h3>
-            <p>Agent-first extraction using local provider/model configuration.</p>
-            <p><code>detector = agent-structured-v1</code></p>
+            <h3>Combined per-page extraction</h3>
+            <p>One vision call per page extracts heading candidates, tables (LaTeX tabular), formulas (LaTeX math), and figures in a single prompt.</p>
           </article>
+          <article class="card">
+            <h3>Cross-page aggregation</h3>
+            <p>Headings are assembled into a section tree. Tables, formulas, and figures are merged across page boundaries using truncation flags.</p>
+          </article>
+          <article class="card">
+            <h3>Output shape</h3>
+            <p><code>root</code> contains the heading tree. Optional top-level <code>tables[]</code>, <code>formulas[]</code>, and <code>figures[]</code> carry cross-page merged elements with <code>startPage</code>/<code>endPage</code>.</p>
+          </article>
+        </section>
+
+        <section class="cards" style="margin-top:20px;">
           <article class="card">
             <h3>LLM requirement</h3>
             <p>Semantic extraction requires an explicitly configured local provider and model.</p>
-            <p><code>provider + model must resolve before extraction runs</code></p>
+            <p><code>detector = agent-structured-v1</code></p>
           </article>
           <article class="card">
             <h3>Downstream rule</h3>
             <p>Read detector and strategy metadata before assuming semantic richness or cache reuse.</p>
+          </article>
+          <article class="card">
+            <h3>Not domain logic</h3>
+            <p>The semantic layer is general document structure. Domain-specific interpretation belongs downstream.</p>
           </article>
         </section>
 

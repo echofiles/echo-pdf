@@ -51,8 +51,8 @@
               <ul>
                 <li><code>document.json</code> with source snapshot and page count</li>
                 <li><code>structure.json</code> with a stable <code>document -&gt; pages[]</code> index</li>
-                <li><code>semantic-structure.json</code> when semantic extraction is requested</li>
-                <li>page JSON and render PNG artifacts under one workspace root</li>
+                <li><code>semantic-structure.json</code> with heading tree + cross-page tables/formulas/figures</li>
+                <li>page JSON, render PNG, and per-page <code>tables/</code>, <code>formulas/</code>, <code>understanding/</code> artifacts</li>
               </ul>
               <p class="kicker" style="margin-top:20px;">Non-goals in this phase</p>
               <ul>
@@ -65,8 +65,8 @@
           </div>
           <div class="metrics">
             <div class="metric card">
-              <strong>5</strong>
-              <p>mainline local primitives in the VL-first path, mirrored by the CLI and package API.</p>
+              <strong>8</strong>
+              <p>local primitives: document, structure, semantic, page, render, tables, formulas, understanding.</p>
             </div>
             <div class="metric card">
               <strong>3</strong>
@@ -91,23 +91,23 @@ echo-pdf page ./sample.pdf --page 1
 echo-pdf render ./sample.pdf --page 1</code></pre>
           </div>
           <div class="panel">
-            <h2>Provider-backed semantic setup</h2>
-            <pre><code># Cloud provider
+            <h2>Provider-backed extraction</h2>
+            <pre><code># Configure provider once
 echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY
 echo-pdf model set --provider openai --model gpt-4.1-mini
-echo-pdf semantic ./sample.pdf
 
-# Local OpenAI-compatible provider
-echo-pdf provider set --provider ollama --api-key ""
-echo-pdf model set --provider ollama --model llava:13b
-echo-pdf semantic ./sample.pdf --provider ollama</code></pre>
+# Then use any provider-required primitive
+echo-pdf semantic ./sample.pdf
+echo-pdf tables ./sample.pdf --page 1
+echo-pdf formulas ./sample.pdf --page 1
+echo-pdf understanding ./sample.pdf --page 1</code></pre>
           </div>
         </section>
 
         <section class="callout warn" style="margin-top:24px;">
-          <h3>Semantic is not zero-config.</h3>
+          <h3>Provider-required primitives are not zero-config.</h3>
           <p>
-            <code>document</code>, <code>structure</code>, <code>page</code>, and <code>render</code> work without provider setup. <code>semantic</code> requires a configured local provider and model.
+            <code>document</code>, <code>structure</code>, <code>page</code>, and <code>render</code> work without provider setup. <code>semantic</code>, <code>tables</code>, <code>formulas</code>, and <code>understanding</code> require a configured local provider and model.
           </p>
           <p>
             That provider may be a cloud API or a local OpenAI-compatible server such as Ollama, LM Studio, vLLM, llama.cpp, or LocalAI. Slow local vision models may need a higher provider <code>timeoutMs</code>.
@@ -120,10 +120,11 @@ echo-pdf semantic ./sample.pdf --provider ollama</code></pre>
             <pre><code>{
   "documentId": "b1d2f6a8e9c4f013",
   "artifactPaths": {
-    "documentJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/document.json",
-    "structureJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/structure.json",
-    "semanticStructureJsonPath": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/semantic-structure.json",
-    "pagesDir": ".echo-pdf-workspace/documents/b1d2f6a8e9c4f013/pages"
+    "documentJsonPath": "...documents/b1d2f6a8e9c4f013/document.json",
+    "structureJsonPath": "...documents/b1d2f6a8e9c4f013/structure.json",
+    "semanticStructureJsonPath": "...documents/b1d2f6a8e9c4f013/semantic-structure.json",
+    "pagesDir": "...documents/b1d2f6a8e9c4f013/pages",
+    "rendersDir": "...documents/b1d2f6a8e9c4f013/renders"
   },
   "pageCount": 12,
   "cacheStatus": "fresh"
@@ -138,8 +139,11 @@ echo-pdf semantic ./sample.pdf --provider ollama</code></pre>
             <ul class="artifact-tree">
               <li><span>document.json</span>source path, snapshot, page count, artifact roots</li>
               <li><span>structure.json</span>stable page index for deterministic traversal</li>
-              <li><span>semantic-structure.json</span>heading / section layer, separate from <code>pages[]</code></li>
-              <li><span>renders/0001.scale-2.png</span>page render proof, ready for VL reuse</li>
+              <li><span>semantic-structure.json</span>heading tree + cross-page merged tables/formulas/figures</li>
+              <li><span>renders/</span>page render PNGs, ready for VL reuse</li>
+              <li><span>tables/</span>per-page LaTeX tabular artifacts</li>
+              <li><span>formulas/</span>per-page LaTeX math artifacts</li>
+              <li><span>understanding/</span>combined per-page tables + formulas + figures</li>
             </ul>
           </article>
           <article class="panel">

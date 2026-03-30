@@ -35,7 +35,7 @@
             <tbody>
               <tr><td><code>get_document</code></td><td>document metadata</td><td><code>document.json</code></td><td>source snapshot and document root</td></tr>
               <tr><td><code>get_document_structure</code></td><td>stable page index</td><td><code>structure.json</code></td><td>iterate pages and locate page artifacts</td></tr>
-              <tr><td><code>get_semantic_document_structure</code></td><td>heading / section tree</td><td><code>semantic-structure.json</code></td><td>chapter navigation without mutating <code>pages[]</code>; requires provider + model and can target a local OpenAI-compatible server</td></tr>
+              <tr><td><code>get_semantic_document_structure</code></td><td>heading tree + cross-page tables, formulas, figures</td><td><code>semantic-structure.json</code></td><td>chapter navigation plus merged structured elements without mutating <code>pages[]</code>; requires provider + model</td></tr>
               <tr><td><code>get_page_content</code></td><td>page text artifact</td><td><code>pages/&lt;page&gt;.json</code></td><td>page retrieval and semantic input</td></tr>
               <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse and VL input</td></tr>
               <tr><td><code>get_page_tables_latex</code></td><td>LaTeX tabular artifacts</td><td><code>tables/&lt;page&gt;...json</code></td><td>structured table extraction; requires provider + model</td></tr>

@@ -12,7 +12,7 @@ Primary surfaces:
 Core local primitives:
 - get_document
 - get_document_structure
-- get_semantic_document_structure (requires provider and model)
+- get_semantic_document_structure (requires provider and model; outputs heading tree + cross-page merged tables, formulas, and figures)
 - get_page_content
 - get_page_render
 - get_page_tables_latex (requires provider and model; outputs LaTeX tabular)
