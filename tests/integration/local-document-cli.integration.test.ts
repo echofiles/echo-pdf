@@ -109,6 +109,17 @@ const startSemanticCliTestProvider = async (options?: {
       return
     }
 
+    if (prompt.includes("Analyze this rendered PDF page image")) {
+      const response = {
+        tables: [{ latexTabular: "\\begin{tabular}{cc}\na & b\\\\\n\\end{tabular}", caption: "Test Table", truncatedTop: false, truncatedBottom: false }],
+        formulas: [{ latexMath: "E = mc^2", label: "eq:1", truncatedTop: false, truncatedBottom: false }],
+        figures: [{ figureType: "diagram", caption: "Test Figure", description: "A test diagram", truncatedTop: false, truncatedBottom: false }],
+      }
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] }))
+      return
+    }
+
     if (prompt.includes("tabular") || prompt.includes("table")) {
       const response = {
         tables: [{ latexTabular: "\\begin{tabular}{cc}\na & b\\\\\n\\end{tabular}", caption: "Test Table" }],
@@ -443,6 +454,48 @@ describe("local document CLI", () => {
     expect(result.cacheStatus).toBe("fresh")
     expect(result.formulas.length).toBeGreaterThan(0)
     expect(result.formulas[0]?.latexMath).toBe("E = mc^2")
+  })
+
+  itWithNode20("extracts combined page understanding via the understanding CLI command", async () => {
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-home-understanding-"))
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-cli-understanding-"))
+    const providerServer = await startSemanticCliTestProvider()
+    semanticCliTestServers.push(providerServer.close)
+    const env = {
+      HOME: homeDir,
+      ECHO_PDF_CONFIG_JSON: JSON.stringify({
+        service: { defaultRenderScale: 2 },
+        pdfium: { wasmUrl: "https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.7.0/dist/pdfium.wasm" },
+        agent: { defaultProvider: "openai", defaultModel: "", tablePrompt: "unused" },
+        providers: {
+          openai: {
+            type: "openai",
+            apiKeyEnv: "OPENAI_API_KEY",
+            baseUrl: providerServer.baseUrl,
+            endpoints: { chatCompletionsPath: "/chat/completions", modelsPath: "/models" },
+          },
+        },
+      }),
+    }
+
+    await runCli(rootDir, ["provider", "set", "--provider", "openai", "--api-key", "test-key"], env)
+    await runCli(rootDir, ["model", "set", "--provider", "openai", "--model", "test-model"], env)
+
+    const { stdout } = await runCli(rootDir, ["understanding", realFixturePdf, "--page", "1", "--workspace", workspaceDir], env)
+    const result = JSON.parse(stdout) as {
+      tables: Array<{ latexTabular: string }>
+      formulas: Array<{ latexMath: string }>
+      figures: Array<{ figureType: string; description: string }>
+      cacheStatus: string
+    }
+
+    expect(result.cacheStatus).toBe("fresh")
+    expect(result.tables.length).toBeGreaterThan(0)
+    expect(result.tables[0]?.latexTabular).toContain("\\begin{tabular}")
+    expect(result.formulas.length).toBeGreaterThan(0)
+    expect(result.formulas[0]?.latexMath).toBe("E = mc^2")
+    expect(result.figures.length).toBeGreaterThan(0)
+    expect(result.figures[0]?.figureType).toBe("diagram")
   })
 
   itWithNode20("fails early with a clear model error instead of silently falling back", async () => {

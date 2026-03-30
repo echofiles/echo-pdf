@@ -42,6 +42,7 @@ describe("npm pack import smoke", () => {
         "if (typeof root.get_page_render !== 'function') throw new Error('root.get_page_render missing')",
         "if (typeof local.get_page_tables_latex !== 'function') throw new Error('local.get_page_tables_latex missing')",
         "if (typeof local.get_page_formulas_latex !== 'function') throw new Error('local.get_page_formulas_latex missing')",
+        "if (typeof local.get_page_understanding !== 'function') throw new Error('local.get_page_understanding missing')",
         "const pdfPath = process.argv[1]",
         "const workspaceDir = process.argv[2]",
         "const doc = await local.get_document({ pdfPath, workspaceDir })",

@@ -215,7 +215,7 @@ const loadLocalDocumentApi = async () => {
   return import(LOCAL_DOCUMENT_DIST_ENTRY.href)
 }
 
-const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render", "tables", "formulas"]
+const LOCAL_PRIMITIVE_COMMANDS = ["document", "structure", "semantic", "page", "render", "tables", "formulas", "understanding"]
 const REMOVED_DOCUMENT_ALIAS_TO_PRIMITIVE = {
   index: "document",
   get: "document",
@@ -336,6 +336,23 @@ const runLocalPrimitiveCommand = async (command, subcommand, rest, flags) => {
     return
   }
 
+  if (primitive === "understanding") {
+    const semanticContext = resolveLocalSemanticContext(flags)
+    const local = await loadLocalDocumentApi()
+    print(await local.get_page_understanding({
+      pdfPath,
+      workspaceDir,
+      forceRefresh,
+      pageNumber,
+      renderScale,
+      provider: semanticContext.provider,
+      model: semanticContext.model,
+      providerApiKeys: semanticContext.providerApiKeys,
+      prompt: typeof flags.prompt === "string" ? flags.prompt : undefined,
+    }))
+    return
+  }
+
   throw new Error(`Unsupported local primitive command: ${primitive}`)
 }
 
@@ -349,6 +366,7 @@ const usage = () => {
   process.stdout.write(`  render <file.pdf> --page <N> [--scale N] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  tables <file.pdf> --page <N> [--provider alias] [--model model] [--scale N] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`  formulas <file.pdf> --page <N> [--provider alias] [--model model] [--scale N] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
+  process.stdout.write(`  understanding <file.pdf> --page <N> [--provider alias] [--model model] [--scale N] [--prompt text] [--workspace DIR] [--force-refresh]\n`)
   process.stdout.write(`\nLocal config commands:\n`)
   process.stdout.write(`  provider set --provider <${getProviderSetNames().join("|")}> --api-key <KEY> [--profile name]\n`)
   process.stdout.write(`  provider use --provider <${getProviderAliases().join("|")}> [--profile name]\n`)

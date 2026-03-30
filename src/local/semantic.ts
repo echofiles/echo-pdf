@@ -19,11 +19,16 @@ import {
   resolveEnv,
   writeJson,
 } from "./shared.js"
+import { get_page_understanding } from "./understanding.js"
 import type {
   LocalPageContent,
+  LocalPageUnderstandingArtifact,
   LocalSemanticDocumentRequest,
   LocalSemanticDocumentStructure,
   LocalSemanticStructureNode,
+  MergedFigureItem,
+  MergedFormulaItem,
+  MergedTableItem,
   SemanticAgentCandidate,
   StoredDocumentRecord,
 } from "./types.js"
@@ -224,6 +229,94 @@ const extractSemanticCandidatesFromRenderedPage = async (input: {
     .filter((candidate): candidate is SemanticAgentCandidate => candidate !== null)
 }
 
+const mergeCrossPageTables = (
+  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+): MergedTableItem[] => {
+  const merged: MergedTableItem[] = []
+  let nextId = 1
+  for (const pu of understandings) {
+    for (const table of pu.tables) {
+      const prev = merged[merged.length - 1]
+      if (prev?.crossPageHint && table.truncatedTop) {
+        merged[merged.length - 1] = {
+          ...prev,
+          latexTabular: prev.latexTabular + "\n" + table.latexTabular,
+          endPage: pu.pageNumber,
+        }
+      } else {
+        merged.push({
+          id: `merged-table-${nextId++}`,
+          latexTabular: table.latexTabular,
+          caption: table.caption,
+          startPage: pu.pageNumber,
+          endPage: pu.pageNumber,
+          crossPageHint: table.truncatedBottom === true ? true : undefined,
+        })
+      }
+    }
+  }
+  return merged
+}
+
+const mergeCrossPageFormulas = (
+  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+): MergedFormulaItem[] => {
+  const merged: MergedFormulaItem[] = []
+  let nextId = 1
+  for (const pu of understandings) {
+    for (const formula of pu.formulas) {
+      const prev = merged[merged.length - 1]
+      if (prev?.crossPageHint && formula.truncatedTop) {
+        merged[merged.length - 1] = {
+          ...prev,
+          latexMath: prev.latexMath + " " + formula.latexMath,
+          endPage: pu.pageNumber,
+        }
+      } else {
+        merged.push({
+          id: `merged-formula-${nextId++}`,
+          latexMath: formula.latexMath,
+          label: formula.label,
+          startPage: pu.pageNumber,
+          endPage: pu.pageNumber,
+          crossPageHint: formula.truncatedBottom === true ? true : undefined,
+        })
+      }
+    }
+  }
+  return merged
+}
+
+const mergeCrossPageFigures = (
+  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+): MergedFigureItem[] => {
+  const merged: MergedFigureItem[] = []
+  let nextId = 1
+  for (const pu of understandings) {
+    for (const figure of pu.figures) {
+      const prev = merged[merged.length - 1]
+      if (prev?.crossPageHint && figure.truncatedTop) {
+        merged[merged.length - 1] = {
+          ...prev,
+          description: [prev.description, figure.description].filter(Boolean).join(" "),
+          endPage: pu.pageNumber,
+        }
+      } else {
+        merged.push({
+          id: `merged-figure-${nextId++}`,
+          figureType: figure.figureType,
+          caption: figure.caption,
+          description: figure.description,
+          startPage: pu.pageNumber,
+          endPage: pu.pageNumber,
+          crossPageHint: figure.truncatedBottom === true ? true : undefined,
+        })
+      }
+    }
+  }
+  return merged
+}
+
 const ensureSemanticStructureArtifact = async (
   request: LocalSemanticDocumentRequest
 ): Promise<LocalSemanticDocumentStructure> => {
@@ -271,6 +364,22 @@ const ensureSemanticStructureArtifact = async (
       }
     }
   }
+  const understandings: LocalPageUnderstandingArtifact[] = []
+  for (const page of pages) {
+    const pu = await get_page_understanding({
+      pdfPath: request.pdfPath,
+      workspaceDir: request.workspaceDir,
+      forceRefresh: request.forceRefresh,
+      config,
+      pageNumber: page.pageNumber,
+      provider,
+      model,
+      env,
+      providerApiKeys: request.providerApiKeys,
+    })
+    understandings.push(pu)
+  }
+
   const aggregated = await generateText({
     config,
     env,
@@ -281,6 +390,11 @@ const ensureSemanticStructureArtifact = async (
   })
   const parsed = parseJsonObject(aggregated) as { sections?: unknown }
   const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
+
+  const mergedTables = mergeCrossPageTables(understandings)
+  const mergedFormulas = mergeCrossPageFormulas(understandings)
+  const mergedFigures = mergeCrossPageFigures(understandings)
+
   const artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus"> = {
     documentId: record.documentId,
     generatedAt: new Date().toISOString(),
@@ -296,6 +410,9 @@ const ensureSemanticStructureArtifact = async (
       title: record.filename,
       children: sections,
     },
+    ...(mergedTables.length > 0 ? { tables: mergedTables } : {}),
+    ...(mergedFormulas.length > 0 ? { formulas: mergedFormulas } : {}),
+    ...(mergedFigures.length > 0 ? { figures: mergedFigures } : {}),
   }
 
   await writeJson(artifactPath, artifact)

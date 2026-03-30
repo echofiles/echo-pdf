@@ -136,6 +136,17 @@ const startSemanticTestProvider = async (options?: {
       return
     }
 
+    if (prompt.includes("Analyze this rendered PDF page image") || prompt.includes("tables") || prompt.includes("formulas") || prompt.includes("figures")) {
+      const response = {
+        tables: [],
+        formulas: [],
+        figures: [],
+      }
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] }))
+      return
+    }
+
     res.writeHead(400, { "content-type": "application/json" })
     res.end(JSON.stringify({ error: "unexpected prompt" }))
   })
@@ -397,7 +408,7 @@ describe("local semantic document structure", () => {
       provider: semanticContext.providerAlias,
       model: semanticContext.model,
       env: semanticContext.env,
-    })).rejects.toThrow("Text generation request failed: HTTP 500")
+    })).rejects.toThrow("HTTP 500")
   })
 
   itWithSemanticEnv("uses runtime provider/model overrides instead of config defaults", async () => {
