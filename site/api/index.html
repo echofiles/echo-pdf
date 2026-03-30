@@ -40,6 +40,7 @@
               <tr><td><code>get_page_render</code></td><td>render metadata</td><td><code>renders/&lt;page&gt;.json</code> + PNG</td><td>visual page reuse and VL input</td></tr>
               <tr><td><code>get_page_tables_latex</code></td><td>LaTeX tabular artifacts</td><td><code>tables/&lt;page&gt;...json</code></td><td>structured table extraction; requires provider + model</td></tr>
               <tr><td><code>get_page_formulas_latex</code></td><td>LaTeX math artifacts</td><td><code>formulas/&lt;page&gt;...json</code></td><td>displayed formula extraction; requires provider + model</td></tr>
+              <tr><td><code>get_page_understanding</code></td><td>tables + formulas + figures</td><td><code>understanding/&lt;page&gt;...json</code></td><td>combined single-page extraction in one LLM call; requires provider + model</td></tr>
             </tbody>
           </table>
         </section>
@@ -55,6 +56,7 @@
   get_page_render,
   get_page_tables_latex,
   get_page_formulas_latex,
+  get_page_understanding,
 } from "@echofiles/echo-pdf/local"</code></pre>
           </article>
           <article class="panel">

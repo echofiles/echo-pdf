@@ -39,6 +39,7 @@ describe("ts nodenext consumer smoke", () => {
         "local.get_page_render",
         "local.get_page_tables_latex",
         "local.get_page_formulas_latex",
+        "local.get_page_understanding",
         "",
       ].join("\n"))
       await writeFile(path.join(tempDir, "tsconfig.json"), JSON.stringify({

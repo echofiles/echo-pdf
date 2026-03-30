@@ -64,6 +64,9 @@ export interface LocalSemanticDocumentStructure {
   readonly pageIndexArtifactPath: string
   readonly artifactPath: string
   readonly root: LocalSemanticStructureNode
+  readonly tables?: ReadonlyArray<MergedTableItem>
+  readonly formulas?: ReadonlyArray<MergedFormulaItem>
+  readonly figures?: ReadonlyArray<MergedFigureItem>
   readonly cacheStatus: "fresh" | "reused"
 }
 
@@ -140,6 +143,87 @@ export interface LocalPageFormulasArtifact {
   readonly generatedAt: string
   readonly formulas: ReadonlyArray<LocalFormulaArtifactItem>
   readonly cacheStatus: "fresh" | "reused"
+}
+
+export interface LocalFigureArtifactItem {
+  readonly id: string
+  readonly figureType: "schematic" | "chart" | "photo" | "diagram" | "other"
+  readonly caption?: string
+  readonly description?: string
+  readonly truncatedTop?: boolean
+  readonly truncatedBottom?: boolean
+}
+
+export interface LocalPageUnderstandingTableItem {
+  readonly id: string
+  readonly latexTabular: string
+  readonly caption?: string
+  readonly truncatedTop?: boolean
+  readonly truncatedBottom?: boolean
+}
+
+export interface LocalPageUnderstandingFormulaItem {
+  readonly id: string
+  readonly latexMath: string
+  readonly label?: string
+  readonly truncatedTop?: boolean
+  readonly truncatedBottom?: boolean
+}
+
+export interface LocalPageUnderstandingArtifact {
+  readonly documentId: string
+  readonly pageNumber: number
+  readonly renderScale: number
+  readonly sourceSizeBytes: number
+  readonly sourceMtimeMs: number
+  readonly provider: string
+  readonly model: string
+  readonly prompt: string
+  readonly imagePath: string
+  readonly pageArtifactPath: string
+  readonly renderArtifactPath: string
+  readonly artifactPath: string
+  readonly generatedAt: string
+  readonly tables: ReadonlyArray<LocalPageUnderstandingTableItem>
+  readonly formulas: ReadonlyArray<LocalPageUnderstandingFormulaItem>
+  readonly figures: ReadonlyArray<LocalFigureArtifactItem>
+  readonly cacheStatus: "fresh" | "reused"
+}
+
+export interface LocalPageUnderstandingRequest extends LocalPageRenderRequest {
+  readonly provider?: string
+  readonly model?: string
+  readonly prompt?: string
+  readonly env?: Env
+  readonly providerApiKeys?: Record<string, string>
+}
+
+export interface MergedTableItem {
+  readonly id: string
+  readonly latexTabular: string
+  readonly caption?: string
+  readonly startPage: number
+  readonly endPage: number
+  readonly crossPageHint?: boolean
+}
+
+export interface MergedFormulaItem {
+  readonly id: string
+  readonly latexMath: string
+  readonly label?: string
+  readonly startPage: number
+  readonly endPage: number
+  readonly crossPageHint?: boolean
+}
+
+export interface MergedFigureItem {
+  readonly id: string
+  readonly figureType: "schematic" | "chart" | "photo" | "diagram" | "other"
+  readonly caption?: string
+  readonly description?: string
+  readonly startPage: number
+  readonly endPage: number
+  readonly crossPageHint?: boolean
 }
 
 export interface LocalDocumentRequest {

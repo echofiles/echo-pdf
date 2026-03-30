@@ -17,6 +17,7 @@ Core local primitives:
 - get_page_render
 - get_page_tables_latex (requires provider and model; outputs LaTeX tabular)
 - get_page_formulas_latex (requires provider and model; outputs LaTeX math)
+- get_page_understanding (requires provider and model; combined tables + formulas + figures in one call)
 
 Provider-backed semantic CLI setup:
 - echo-pdf provider set --provider openai --api-key $OPENAI_API_KEY

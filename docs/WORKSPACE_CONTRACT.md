@@ -264,6 +264,34 @@ Downstream use:
 - LaTeX math extraction from rendered page images
 - structured formula reuse by downstream technical document agents
 
+### `understanding/<page>.scale-<scale>.provider-<provider>.model-<model>.prompt-<hash>.json`
+
+Optional page-level combined understanding artifact.
+
+Required JSON fields:
+
+- `documentId`
+- `pageNumber`
+- `renderScale`
+- `sourceSizeBytes`
+- `sourceMtimeMs`
+- `provider`
+- `model`
+- `prompt`
+- `imagePath`
+- `pageArtifactPath`
+- `renderArtifactPath`
+- `artifactPath`
+- `generatedAt`
+- `tables` (array of `{ id, latexTabular, caption?, truncatedTop?, truncatedBottom? }`)
+- `formulas` (array of `{ id, latexMath, label?, truncatedTop?, truncatedBottom? }`)
+- `figures` (array of `{ id, figureType, caption?, description?, truncatedTop?, truncatedBottom? }`)
+
+Downstream use:
+
+- combined single-page extraction of tables, formulas, and figures in one LLM call
+- cross-page element detection via truncation flags
+
 ## Cache Semantics
 
 ### Baseline indexing reuse
@@ -291,7 +319,7 @@ Additional reuse rules:
 
 - render artifacts are keyed by page number and render scale
 - semantic artifacts are keyed by source snapshot plus `strategyKey`
-- table and formula artifacts are keyed by page number, render scale, provider, model, and prompt hash
+- table, formula, and understanding artifacts are keyed by page number, render scale, provider, model, and prompt hash
 
 ## Traceability Guarantees
 
