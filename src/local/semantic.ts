@@ -2,7 +2,7 @@
 
 import { readFile } from "node:fs/promises"
 import path from "node:path"
-import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
+import { resolveModelForProvider, resolveProviderAlias } from "../provider-defaults.js"
 import { toDataUrl } from "../file-utils.js"
 import { generateText, visionRecognize } from "../provider-client.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
@@ -22,7 +22,6 @@ import {
 import { normalizeFigureItems, normalizeUnderstandingFormulas, normalizeUnderstandingTables } from "./understanding.js"
 import type {
   LocalPageContent,
-  LocalPageUnderstandingArtifact,
   LocalSemanticDocumentRequest,
   LocalSemanticDocumentStructure,
   LocalSemanticStructureNode,
@@ -200,9 +199,16 @@ const resolveSemanticAgentContext = (
   return { provider, model }
 }
 
+interface PageUnderstandingElements {
+  readonly pageNumber: number
+  readonly tables: ReadonlyArray<import("./types.js").LocalPageUnderstandingTableItem>
+  readonly formulas: ReadonlyArray<import("./types.js").LocalPageUnderstandingFormulaItem>
+  readonly figures: ReadonlyArray<import("./types.js").LocalFigureArtifactItem>
+}
+
 interface CombinedPageResult {
   candidates: ReadonlyArray<SemanticAgentCandidate>
-  understanding: LocalPageUnderstandingArtifact
+  elements: PageUnderstandingElements
 }
 
 const extractCombinedPageData = async (input: {
@@ -245,32 +251,19 @@ const extractCombinedPageData = async (input: {
   const formulas = normalizeUnderstandingFormulas(parsed?.formulas)
   const figures = normalizeFigureItems(parsed?.figures)
 
-  const pageArtifactPath = path.join(input.request.workspaceDir ?? "", "pages", `${pageLabel(input.page.pageNumber)}.json`)
-  const understanding: LocalPageUnderstandingArtifact = {
-    documentId: input.page.documentId,
-    pageNumber: input.page.pageNumber,
-    renderScale: renderArtifact.renderScale,
-    sourceSizeBytes: 0,
-    sourceMtimeMs: 0,
-    provider: input.provider,
-    model: input.model,
-    prompt: "",
-    imagePath: renderArtifact.imagePath,
-    pageArtifactPath,
-    renderArtifactPath: renderArtifact.artifactPath,
-    artifactPath: "",
-    generatedAt: new Date().toISOString(),
-    tables,
-    formulas,
-    figures,
-    cacheStatus: "fresh",
+  return {
+    candidates,
+    elements: {
+      pageNumber: input.page.pageNumber,
+      tables,
+      formulas,
+      figures,
+    },
   }
-
-  return { candidates, understanding }
 }
 
 const mergeCrossPageTables = (
-  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+  understandings: ReadonlyArray<PageUnderstandingElements>
 ): MergedTableItem[] => {
   const merged: MergedTableItem[] = []
   let nextId = 1
@@ -299,7 +292,7 @@ const mergeCrossPageTables = (
 }
 
 const mergeCrossPageFormulas = (
-  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+  understandings: ReadonlyArray<PageUnderstandingElements>
 ): MergedFormulaItem[] => {
   const merged: MergedFormulaItem[] = []
   let nextId = 1
@@ -328,7 +321,7 @@ const mergeCrossPageFormulas = (
 }
 
 const mergeCrossPageFigures = (
-  understandings: ReadonlyArray<LocalPageUnderstandingArtifact>
+  understandings: ReadonlyArray<PageUnderstandingElements>
 ): MergedFigureItem[] => {
   const merged: MergedFigureItem[] = []
   let nextId = 1
@@ -387,7 +380,7 @@ const ensureSemanticStructureArtifact = async (
   const pageArtifactPaths = new Map(pages.map((page) => [page.pageNumber, page.artifactPath]))
 
   const candidateMap = new Map<string, SemanticAgentCandidate>()
-  const understandings: LocalPageUnderstandingArtifact[] = []
+  const pageElements: PageUnderstandingElements[] = []
   for (const page of pages) {
     const result = await extractCombinedPageData({
       page,
@@ -404,7 +397,7 @@ const ensureSemanticStructureArtifact = async (
         candidateMap.set(key, candidate)
       }
     }
-    understandings.push(result.understanding)
+    pageElements.push(result.elements)
   }
 
   const aggregated = await generateText({
@@ -418,9 +411,9 @@ const ensureSemanticStructureArtifact = async (
   const parsed = parseJsonObject(aggregated) as { sections?: unknown }
   const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
 
-  const mergedTables = mergeCrossPageTables(understandings)
-  const mergedFormulas = mergeCrossPageFormulas(understandings)
-  const mergedFigures = mergeCrossPageFigures(understandings)
+  const mergedTables = mergeCrossPageTables(pageElements)
+  const mergedFormulas = mergeCrossPageFormulas(pageElements)
+  const mergedFigures = mergeCrossPageFigures(pageElements)
 
   const artifact: Omit<LocalSemanticDocumentStructure, "cacheStatus"> = {
     documentId: record.documentId,

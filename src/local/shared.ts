@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
-import { resolveModelForProvider, resolveProviderAlias } from "../agent-defaults.js"
+import { resolveModelForProvider, resolveProviderAlias } from "../provider-defaults.js"
 import { loadEchoPdfConfig } from "../pdf-config.js"
 import type { EchoPdfConfig } from "../pdf-types.js"
 import type { Env } from "../types.js"
