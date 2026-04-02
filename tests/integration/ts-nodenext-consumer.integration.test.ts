@@ -17,11 +17,13 @@ const run = async (cmd: string, args: string[], cwd: string): Promise<string> =>
 
 describe("ts nodenext consumer smoke", () => {
   it("typechecks package root/local imports in a fresh consumer", async () => {
-    const filename = (await run("bun", ["pm", "pack", "--quiet"], rootDir)).trim()
-    expect(filename.endsWith(".tgz")).toBe(true)
-    const tgzPath = path.join(rootDir, filename)
-
     const tempDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-ts-"))
+    const packDir = path.join(tempDir, "pack")
+    await run("mkdir", ["-p", packDir], rootDir)
+    const packedFilename = (await run("bun", ["pm", "pack", "--quiet", "--destination", packDir], rootDir)).trim()
+    expect(packedFilename.endsWith(".tgz")).toBe(true)
+    const tgzPath = path.isAbsolute(packedFilename) ? packedFilename : path.join(packDir, packedFilename)
+
     try {
       await writeFile(path.join(tempDir, "package.json"), JSON.stringify({ name: "echo-pdf-ts-smoke", private: true }, null, 2))
       await run("bun", ["add", tgzPath], tempDir)
@@ -53,7 +55,6 @@ describe("ts nodenext consumer smoke", () => {
 
       await run("bunx", ["tsc", "--noEmit"], tempDir)
     } finally {
-      await rm(tgzPath, { force: true })
       await rm(tempDir, { recursive: true, force: true })
     }
   })
