@@ -187,12 +187,12 @@ Published docs site:
 ## Development
 
 ```bash
-npm ci
-npm run build
-npm run typecheck
-npm run test:unit
-npm run test:acceptance
-npm run test:integration
+bun install --frozen-lockfile
+bun run build
+bun run typecheck
+bun run test:unit
+bun run test:acceptance
+bun run test:integration
 ```
 
 For source-checkout CLI development and repo-local workflows, see [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md).

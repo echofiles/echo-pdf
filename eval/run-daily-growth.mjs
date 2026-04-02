@@ -12,7 +12,7 @@ const rootDir = path.resolve(__dirname, "..")
 const outDir = process.env.ECHO_PDF_DAILY_OUT_DIR
   ? path.resolve(process.cwd(), process.env.ECHO_PDF_DAILY_OUT_DIR)
   : path.join(rootDir, "eval", "out", "daily-growth")
-const npmCacheDir = path.join(os.tmpdir(), "echo-pdf-daily-growth-npm-cache")
+const bunCacheDir = path.join(os.tmpdir(), "echo-pdf-daily-growth-bun-cache")
 
 const docsBaseUrl = String(process.env.ECHO_PDF_DAILY_DOCS_URL || "https://pdf.echofile.ai").replace(/\/+$/, "")
 const repository = String(process.env.GITHUB_REPOSITORY || "echofiles/echo-pdf")
@@ -35,7 +35,7 @@ const run = async (cmd, args, cwd = rootDir, extraEnv = {}) => {
       cwd,
       env: {
         ...process.env,
-        NPM_CONFIG_CACHE: npmCacheDir,
+        BUN_INSTALL_CACHE_DIR: bunCacheDir,
         ...extraEnv,
       },
       maxBuffer: 16 * 1024 * 1024,
@@ -246,17 +246,15 @@ const collectSmokeSignal = async () => {
     if (!result.ok) smoke.status = "failed"
   }
 
-  const build = await run("npm", ["run", "build"])
+  const build = await run("bun", ["run", "build"])
   recordStep("build", build)
   if (!build.ok) return smoke
 
-  const pack = await run("npm", ["pack", "--json"])
-  recordStep("npm-pack", pack)
+  const pack = await run("bun", ["pm", "pack", "--quiet"])
+  recordStep("bun-pack", pack)
   if (!pack.ok) return smoke
 
-  const parsedPack = JSON.parse(pack.stdout)
-  const filename = parsedPack?.[0]?.filename
-  smoke.packFilename = typeof filename === "string" ? filename : ""
+  smoke.packFilename = pack.stdout.trim()
   if (!smoke.packFilename) {
     smoke.status = "failed"
     smoke.steps.push({
@@ -264,7 +262,7 @@ const collectSmokeSignal = async () => {
       ok: false,
       durationMs: 0,
       stdoutPreview: "",
-      stderrPreview: "npm pack did not return a filename",
+      stderrPreview: "bun pm pack did not return a filename",
     })
     return smoke
   }
@@ -274,13 +272,11 @@ const collectSmokeSignal = async () => {
   smoke.consumerDir = consumerDir
 
   try {
-    const npmInit = await run("npm", ["init", "-y"], consumerDir)
-    recordStep("consumer-npm-init", npmInit)
-    if (!npmInit.ok) return smoke
+    await writeFile(path.join(consumerDir, "package.json"), JSON.stringify({ name: "echo-pdf-growth-smoke", private: true }, null, 2))
 
-    const npmInstall = await run("npm", ["i", tgzPath], consumerDir)
-    recordStep("consumer-install-package", npmInstall)
-    if (!npmInstall.ok) return smoke
+    const bunInstall = await run("bun", ["add", tgzPath], consumerDir)
+    recordStep("consumer-install-package", bunInstall)
+    if (!bunInstall.ok) return smoke
 
     const importCheck = await run(
       "node",
@@ -289,13 +285,11 @@ const collectSmokeSignal = async () => {
         "-e",
         [
           "const root = await import('@echofiles/echo-pdf')",
-          "const core = await import('@echofiles/echo-pdf/core')",
           "const local = await import('@echofiles/echo-pdf/local')",
-          "const worker = await import('@echofiles/echo-pdf/worker')",
-          "if (typeof root.callTool !== 'function') throw new Error('root.callTool missing')",
-          "if (typeof core.listToolSchemas !== 'function') throw new Error('core.listToolSchemas missing')",
+          "if (typeof root.get_document !== 'function') throw new Error('root.get_document missing')",
           "if (typeof local.get_document !== 'function') throw new Error('local.get_document missing')",
-          "if (!worker.default || typeof worker.default.fetch !== 'function') throw new Error('worker.fetch missing')",
+          "if (typeof local.get_semantic_document_structure !== 'function') throw new Error('local.get_semantic_document_structure missing')",
+          "if (typeof local.get_page_render !== 'function') throw new Error('local.get_page_render missing')",
           "console.log('ok')",
         ].join(";"),
       ],

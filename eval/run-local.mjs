@@ -272,7 +272,7 @@ const loadLocalDocumentApi = async () => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(
-      `Unable to load built local document API at ${distPath}. Run "npm run build" first. Detail: ${message}`
+      `Unable to load built local document API at ${distPath}. Run "bun run build" first. Detail: ${message}`
     )
   }
 }

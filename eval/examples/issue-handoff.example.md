@@ -17,7 +17,7 @@
 ## Reproduction
 
 ```bash
-npm run build
+bun run build
 node ./eval/run-local.mjs --suite known-bad
 ```
 

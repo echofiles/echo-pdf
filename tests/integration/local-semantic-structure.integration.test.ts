@@ -426,7 +426,7 @@ describe("local semantic document structure", () => {
   it("repairs near-valid aggregation JSON on a real PDF instead of crashing on invalid escapes", async () => {
     await ensureSample(
       paperPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
+      "Run `bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
     )
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-repair-"))
@@ -463,7 +463,7 @@ describe("local semantic document structure", () => {
   it("raises a classified semantic aggregation error when malformed JSON remains unrecoverable", async () => {
     await ensureSample(
       paperPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
+      "Run `bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
     )
     const local = await import("@echofiles/echo-pdf/local")
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-invalid-json-"))
@@ -643,11 +643,11 @@ describe("local semantic document structure", () => {
     await ensureSample(mixedTechnicalPdf, "The committed mixed-technical fixture should exist in the repo.")
     await ensureSample(
       paperPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` before this integration test."
+      "Run `bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` before this integration test."
     )
     await ensureSample(
       formPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample irs-form-w4` before this integration test."
+      "Run `bun run eval:fetch-public-samples -- --sample irs-form-w4` before this integration test."
     )
 
     const local = await import("@echofiles/echo-pdf/local")

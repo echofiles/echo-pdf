@@ -69,7 +69,7 @@ describe("semantic precision on real PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-form-"))
     await ensureSample(
       formPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample irs-form-w4` or prepare the shared public sample cache locally."
+      "Run `bun run eval:fetch-public-samples -- --sample irs-form-w4` or prepare the shared public sample cache locally."
     )
 
     const semantic = await local.get_semantic_document_structure({ pdfPath: formPdf, workspaceDir, provider, model }) as {
@@ -87,7 +87,7 @@ describe("semantic precision on real PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-paper-"))
     await ensureSample(
       paperPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
+      "Run `bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
     )
 
     const semantic = await local.get_semantic_document_structure({ pdfPath: paperPdf, workspaceDir, provider, model }) as {

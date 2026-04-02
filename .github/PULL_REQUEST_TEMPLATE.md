@@ -9,8 +9,8 @@
 -
 
 ## Tests
-- [ ] `npm test`
-- [ ] `npm run typecheck`
+- [ ] `bun run test`
+- [ ] `bun run typecheck`
 - [ ] Integration test notes (env-gated, local-first)
 
 ## Policy

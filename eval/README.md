@@ -18,9 +18,9 @@ Shared sample ownership lives outside `eval/`:
 Quick start:
 
 ```bash
-npm run eval:fetch-public-samples
-npm run build
-npm run eval:smoke
+bun run eval:fetch-public-samples
+bun run build
+bun run eval:smoke
 ```
 
 Provider-backed comparisons are optional and local-only. Set env vars before running `core` or `stress` suites:
@@ -29,7 +29,7 @@ Provider-backed comparisons are optional and local-only. Set env vars before run
 export ECHO_PDF_EVAL_SEMANTIC_PROVIDER=openai
 export ECHO_PDF_EVAL_SEMANTIC_MODEL=gpt-4.1-mini
 export OPENAI_API_KEY=...
-npm run eval:core
+bun run eval:core
 ```
 
 Outputs:

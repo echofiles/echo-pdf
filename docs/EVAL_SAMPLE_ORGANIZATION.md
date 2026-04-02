@@ -13,7 +13,7 @@
   - used where release-gating paths need stable local inputs
 - `samples/public-cache/`
   - fetched local cache of official/public PDFs
-  - hydrated with `npm run eval:fetch-public-samples`
+  - hydrated with `bun run eval:fetch-public-samples`
   - shared by acceptance tests and eval suites
 - `samples/public-sources.json`
   - registry of public documents and stable local filenames
