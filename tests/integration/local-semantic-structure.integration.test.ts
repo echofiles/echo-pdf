@@ -392,14 +392,26 @@ describe("local semantic document structure", () => {
     semanticTestServers.push(providerServer.close)
     const semanticContext = await buildSemanticProviderConfig(providerServer)
 
-    await expect(local.get_semantic_document_structure({
-      pdfPath: semanticPdf,
-      workspaceDir,
-      config: semanticContext.config,
-      provider: semanticContext.providerAlias,
-      model: semanticContext.model,
-      env: semanticContext.env,
-    })).rejects.toThrow("HTTP 500")
+    try {
+      await local.get_semantic_document_structure({
+        pdfPath: semanticPdf,
+        workspaceDir,
+        config: semanticContext.config,
+        provider: semanticContext.providerAlias,
+        model: semanticContext.model,
+        env: semanticContext.env,
+      })
+      throw new Error("expected semantic aggregation provider failure")
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: "ProviderRequestError",
+        code: "PROVIDER_HTTP_ERROR",
+      })
+      expect(error).toBeInstanceOf(Error)
+      expect((error as Error).message).toContain("Text generation request failed")
+      expect((error as Error).message).toContain("code=PROVIDER_HTTP_ERROR")
+      expect((error as Error).message).toContain("http=500")
+    }
   })
 
   itWithSemanticEnv("uses runtime provider/model overrides instead of config defaults", async () => {
