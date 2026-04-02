@@ -54,6 +54,10 @@ jobs:
         if: steps.pkg.outputs.should_publish == 'true'
         run: bun run typecheck
 
+      - name: Prepare shared public sample cache for acceptance-backed tests
+        if: steps.pkg.outputs.should_publish == 'true'
+        run: bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need,irs-form-w4
+
       - name: Test
         if: steps.pkg.outputs.should_publish == 'true'
         run: bun run test
