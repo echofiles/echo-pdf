@@ -54,10 +54,12 @@ const startSemanticTestProvider = async (options?: {
   failAggregation?: boolean
   emptyCandidates?: boolean
   emptySections?: boolean
+  aggregationContents?: string[]
 }): Promise<{
   baseUrl: string
   close: () => Promise<void>
 }> => {
+  let aggregationCallCount = 0
   const server = createServer(async (req, res) => {
     if (req.method !== "POST" || req.url !== "/chat/completions") {
       res.writeHead(404, { "content-type": "application/json" })
@@ -104,6 +106,13 @@ const startSemanticTestProvider = async (options?: {
       if (options?.failAggregation) {
         res.writeHead(500, { "content-type": "application/json" })
         res.end(JSON.stringify({ error: "aggregation failed for test" }))
+        return
+      }
+      if (options?.aggregationContents?.length) {
+        const content = options.aggregationContents[Math.min(aggregationCallCount, options.aggregationContents.length - 1)]
+        aggregationCallCount += 1
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(JSON.stringify({ choices: [{ message: { content } }] }))
         return
       }
       if (options?.emptySections) {
@@ -411,6 +420,81 @@ describe("local semantic document structure", () => {
       expect((error as Error).message).toContain("Text generation request failed")
       expect((error as Error).message).toContain("code=PROVIDER_HTTP_ERROR")
       expect((error as Error).message).toContain("http=500")
+    }
+  })
+
+  it("repairs near-valid aggregation JSON on a real PDF instead of crashing on invalid escapes", async () => {
+    await ensureSample(
+      paperPdf,
+      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
+    )
+    const local = await import("@echofiles/echo-pdf/local")
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-repair-"))
+    const providerServer = await startSemanticTestProvider({
+      aggregationContents: [
+        String.raw`{"sections":[{"title":"1 Introduction","level":1,"pageNumber":1,"excerpt":"See Equation \(1\)","children":[]},{"title":"3 Model Architecture","level":1,"pageNumber":4,"excerpt":"Model overview \_details","children":[]},{"title":"7 Conclusion","level":1,"pageNumber":8,"excerpt":"Conclusion","children":[]}]}`,
+      ],
+    })
+    semanticTestServers.push(providerServer.close)
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
+
+    const semantic = await local.get_semantic_document_structure({
+      pdfPath: paperPdf,
+      workspaceDir,
+      config: semanticContext.config,
+      provider: semanticContext.providerAlias,
+      model: semanticContext.model,
+      env: semanticContext.env,
+      forceRefresh: true,
+    }) as {
+      detector: string
+      root: { children?: Array<{ title?: string; excerpt?: string }> }
+    }
+
+    expect(semantic.detector).toBe("agent-structured-v1")
+    expect(semantic.root.children?.map((node) => node.title)).toEqual([
+      "1 Introduction",
+      "3 Model Architecture",
+      "7 Conclusion",
+    ])
+    expect(semantic.root.children?.[0]?.excerpt).toContain(String.raw`\(`)
+  })
+
+  it("raises a classified semantic aggregation error when malformed JSON remains unrecoverable", async () => {
+    await ensureSample(
+      paperPdf,
+      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` or prepare the shared public sample cache locally."
+    )
+    const local = await import("@echofiles/echo-pdf/local")
+    const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-semantic-invalid-json-"))
+    const providerServer = await startSemanticTestProvider({
+      aggregationContents: [
+        String.raw`{"sections":[{"title":"1 Introduction","level":1,"pageNumber":1,]}`,
+        String.raw`{"sections":[{"title":"1 Introduction","level":1,"pageNumber":1,]}`,
+      ],
+    })
+    semanticTestServers.push(providerServer.close)
+    const semanticContext = await buildSemanticProviderConfig(providerServer)
+
+    try {
+      await local.get_semantic_document_structure({
+        pdfPath: paperPdf,
+        workspaceDir,
+        config: semanticContext.config,
+        provider: semanticContext.providerAlias,
+        model: semanticContext.model,
+        env: semanticContext.env,
+        forceRefresh: true,
+      })
+      throw new Error("expected semantic aggregation to fail")
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: "SemanticAggregationModelOutputError",
+        code: "SEMANTIC_AGGREGATION_INVALID_JSON",
+      })
+      expect(error).toBeInstanceOf(Error)
+      expect((error as Error).message).toContain("semantic aggregation returned invalid JSON after repair and retry")
+      expect((error as Error).message).not.toContain("Bad escaped character in JSON")
     }
   })
 

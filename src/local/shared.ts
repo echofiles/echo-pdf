@@ -114,6 +114,101 @@ export const parseJsonObject = (value: string): unknown => {
   }
 }
 
+const validJsonEscape = (value: string): boolean => /["\\/bfnrt]/.test(value)
+
+const repairInvalidJsonEscapes = (value: string): { repairedText: string; repaired: boolean } => {
+  let repaired = false
+  let inString = false
+  let escaping = false
+  let unicodeDigitsRemaining = 0
+  let output = ""
+
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index] ?? ""
+    if (!inString) {
+      output += char
+      if (char === "\"") inString = true
+      continue
+    }
+
+    if (unicodeDigitsRemaining > 0) {
+      output += char
+      if (/^[0-9a-fA-F]$/.test(char)) {
+        unicodeDigitsRemaining -= 1
+      } else {
+        repaired = true
+        unicodeDigitsRemaining = 0
+      }
+      continue
+    }
+
+    if (escaping) {
+      if (validJsonEscape(char)) {
+        output += char
+      } else if (char === "u") {
+        output += char
+        unicodeDigitsRemaining = 4
+      } else {
+        output += `\\${char}`
+        repaired = true
+      }
+      escaping = false
+      continue
+    }
+
+    if (char === "\\") {
+      output += char
+      escaping = true
+      continue
+    }
+
+    output += char
+    if (char === "\"") inString = false
+  }
+
+  if (escaping) {
+    output += "\\"
+    repaired = true
+  }
+
+  return { repairedText: output, repaired }
+}
+
+export const parseJsonObjectWithRepair = (
+  value: string
+): { parsed: unknown; repaired: boolean } => {
+  const trimmed = stripCodeFences(value).trim()
+  if (!trimmed) return { parsed: null, repaired: false }
+
+  const candidates = [trimmed]
+  const start = trimmed.indexOf("{")
+  const end = trimmed.lastIndexOf("}")
+  if (start >= 0 && end > start) {
+    const sliced = trimmed.slice(start, end + 1)
+    if (sliced !== trimmed) candidates.push(sliced)
+  }
+
+  let lastError: Error | null = null
+  for (const candidate of candidates) {
+    try {
+      return { parsed: JSON.parse(candidate), repaired: false }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+    }
+
+    const repairedCandidate = repairInvalidJsonEscapes(candidate)
+    if (!repairedCandidate.repaired) continue
+    try {
+      return { parsed: JSON.parse(repairedCandidate.repairedText), repaired: true }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+    }
+  }
+
+  if (lastError) throw lastError
+  throw new Error("model output was not valid JSON")
+}
+
 export const normalizeTableItems = (value: unknown): LocalTableArtifactItem[] => {
   if (!Array.isArray(value)) return []
   return value.flatMap((item, index) => {

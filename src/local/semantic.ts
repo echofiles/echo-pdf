@@ -14,6 +14,7 @@ import {
   matchesStrategyKey,
   pageLabel,
   parseJsonObject,
+  parseJsonObjectWithRepair,
   readJson,
   resolveConfig,
   resolveEnv,
@@ -211,6 +212,24 @@ interface CombinedPageResult {
   elements: PageUnderstandingElements
 }
 
+class SemanticAggregationModelOutputError extends Error {
+  readonly code = "SEMANTIC_AGGREGATION_INVALID_JSON"
+
+  constructor(
+    message: string,
+    readonly detail: {
+      provider: string
+      model: string
+      repaired: boolean
+      retried: boolean
+      causeMessage?: string
+    }
+  ) {
+    super(message)
+    this.name = "SemanticAggregationModelOutputError"
+  }
+}
+
 const extractCombinedPageData = async (input: {
   page: LocalPageContent
   request: LocalSemanticDocumentRequest
@@ -259,6 +278,76 @@ const extractCombinedPageData = async (input: {
       formulas,
       figures,
     },
+  }
+}
+
+const buildSemanticAggregationRetryPrompt = (
+  record: StoredDocumentRecord,
+  candidates: ReadonlyArray<{
+    title: string
+    level: number
+    pageNumber: number
+    excerpt?: string
+    confidence?: number
+  }>
+): string => {
+  return [
+    buildSemanticAggregationPrompt(record, candidates),
+    "",
+    "Your previous response was not strict JSON.",
+    "Return the same semantic structure again, but this time produce strict RFC 8259 JSON only.",
+    "Do not wrap in markdown fences.",
+    "Do not use invalid backslash escapes such as \\(, \\), \\_, or \\- inside JSON strings.",
+  ].join("\n")
+}
+
+const parseSemanticAggregationResponse = async (input: {
+  aggregated: string
+  record: StoredDocumentRecord
+  candidates: ReadonlyArray<SemanticAgentCandidate>
+  config: EchoPdfConfig
+  env: Env
+  provider: string
+  model: string
+  runtimeApiKeys?: Record<string, string>
+}): Promise<{ sections?: unknown; repaired: boolean; retried: boolean }> => {
+  try {
+    const parsed = parseJsonObjectWithRepair(input.aggregated)
+    return {
+      sections: (parsed.parsed as { sections?: unknown } | null)?.sections,
+      repaired: parsed.repaired,
+      retried: false,
+    }
+  } catch (firstError) {
+    const causeMessage = firstError instanceof Error ? firstError.message : String(firstError)
+    const retried = await generateText({
+      config: input.config,
+      env: input.env,
+      providerAlias: input.provider,
+      model: input.model,
+      prompt: buildSemanticAggregationRetryPrompt(input.record, input.candidates),
+      runtimeApiKeys: input.runtimeApiKeys,
+    })
+    try {
+      const parsed = parseJsonObjectWithRepair(retried)
+      return {
+        sections: (parsed.parsed as { sections?: unknown } | null)?.sections,
+        repaired: parsed.repaired,
+        retried: true,
+      }
+    } catch (retryError) {
+      const retryCauseMessage = retryError instanceof Error ? retryError.message : String(retryError)
+      throw new SemanticAggregationModelOutputError(
+        "semantic aggregation returned invalid JSON after repair and retry",
+        {
+          provider: input.provider,
+          model: input.model,
+          repaired: false,
+          retried: true,
+          causeMessage: `${causeMessage}; retry=${retryCauseMessage}`,
+        }
+      )
+    }
   }
 }
 
@@ -408,8 +497,17 @@ const ensureSemanticStructureArtifact = async (
     prompt: buildSemanticAggregationPrompt(record, [...candidateMap.values()]),
     runtimeApiKeys: request.providerApiKeys,
   })
-  const parsed = parseJsonObject(aggregated) as { sections?: unknown }
-  const sections = toSemanticTree(parsed?.sections, pageArtifactPaths)
+  const parsed = await parseSemanticAggregationResponse({
+    aggregated,
+    record,
+    candidates: [...candidateMap.values()],
+    config,
+    env,
+    provider,
+    model,
+    runtimeApiKeys: request.providerApiKeys,
+  })
+  const sections = toSemanticTree(parsed.sections, pageArtifactPaths)
 
   const mergedTables = mergeCrossPageTables(pageElements)
   const mergedFormulas = mergeCrossPageFormulas(pageElements)
