@@ -99,7 +99,7 @@ The repo already carries the corresponding smoke checks:
   - verifies fresh import from a packed artifact and exercises the packaged local document/render runtime
 - `tests/integration/ts-nodenext-consumer.integration.test.ts`
   - verifies a fresh NodeNext consumer typechecks the public imports
-- `npm run test:import-smoke`
+- `bun run test:import-smoke`
   - the packaged smoke entrypoint used before publishing
 
 These checks are the expected verification path for package-level guarantees.

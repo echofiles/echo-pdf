@@ -9,7 +9,7 @@ if [[ -z "${current_node_major}" ]] || (( current_node_major < required_node_maj
   exit 1
 fi
 
-for cmd in npm curl grep sed; do
+for cmd in bun curl grep sed; do
   if ! command -v "${cmd}" >/dev/null 2>&1; then
     echo "Missing required command: ${cmd}"
     exit 1
@@ -23,4 +23,4 @@ if [[ "${CHECK_LLM_KEYS:-0}" == "1" ]]; then
   fi
 fi
 
-echo "runtime check passed: node=$(node -v), npm=$(npm -v)"
+echo "runtime check passed: node=$(node -v), bun=$(bun -v)"

@@ -23,6 +23,7 @@ If the current internal structure becomes more expensive than rebuilding, a gree
 
 ## Runtime Boundaries
 
+- Bun `1.3.5` is the default repo toolchain for install, verification, and local development.
 - Node.js `>= 20` is the baseline runtime. Do not treat older local Node versions as a repo bug.
 - Keep Node-only code inside the documented local runtime boundary.
 - Do not solve boundary problems by injecting Node globals or Node types into the whole project.
@@ -32,14 +33,14 @@ If the current internal structure becomes more expensive than rebuilding, a gree
 Always classify failures before changing code:
 
 1. Static/build validation
-   - `npm run check:runtime`
-   - `npm run typecheck`
+   - `bun run check:runtime`
+   - `bun run typecheck`
 2. Unit tests
-   - `npm run test:unit`
+   - `bun run test:unit`
 3. Integration tests
-   - `npm run test:integration`
+   - `bun run test:integration`
 4. Full verification
-   - `npm test`
+   - `bun run test`
 
 Rules:
 
@@ -79,7 +80,7 @@ Shared sample ownership is repo-level:
 - Prefer explicit local workflows over hosted assumptions.
 - Local artifacts should be inspectable and reusable.
 - Repeated local runs should reuse prior artifacts/workspace when reasonable.
-- Repo-internal source-checkout CLI debugging can use `npm run cli:dev -- <primitive> ...`.
+- Repo-internal source-checkout CLI debugging can use `bun run cli:dev -- <primitive> ...`.
 - `cli:dev` is an internal development helper only, not part of the public CLI/documentation surface.
 - Eval operations for issue `#42` live under `eval/` and `docs/EVAL_*.md`.
 

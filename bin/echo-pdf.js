@@ -203,13 +203,13 @@ const loadLocalDocumentApi = async () => {
     }
     throw new Error(
       "Internal source-checkout CLI dev mode requires Bun and src/local/index.ts. " +
-      "Use `npm run cli:dev -- <primitive> ...` only from a source checkout."
+      "Use `bun run cli:dev -- <primitive> ...` only from a source checkout."
     )
   }
   if (!fs.existsSync(LOCAL_DOCUMENT_DIST_PATH)) {
     throw new Error(
       "Local primitive commands require built artifacts in a source checkout. " +
-      "Run `npm run build` first, use the internal `npm run cli:dev -- <primitive> ...` path in this repo, or install the published package."
+      "Run `bun run build` first, use the internal `bun run cli:dev -- <primitive> ...` path in this repo, or install the published package."
     )
   }
   return import(LOCAL_DOCUMENT_DIST_ENTRY.href)

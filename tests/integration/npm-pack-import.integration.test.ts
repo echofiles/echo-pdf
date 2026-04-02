@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -14,24 +14,22 @@ const fixturePdf = repoOwnedSamplePaths.smokePdf
 
 const run = async (cmd: string, args: string[], cwd: string): Promise<string> => {
   const { stdout, stderr } = await execFileAsync(cmd, args, { cwd, env: process.env })
-  if (stderr?.trim()) {
-    // npm writes notices to stderr even on success; keep stdout authoritative.
-  }
+  void stderr
   return stdout
 }
 
-describe("npm pack import smoke", () => {
+describe("package pack import smoke", () => {
   it("imports package root/local and executes the packaged local runtime", async () => {
-    const packJson = await run("npm", ["pack", "--json"], rootDir)
-    const parsed = JSON.parse(packJson) as Array<{ filename?: string }>
-    const filename = parsed[0]?.filename
-    expect(typeof filename).toBe("string")
-    const tgzPath = path.join(rootDir, String(filename))
-
     const tempDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-pack-"))
+    const packDir = path.join(tempDir, "pack")
+    await run("mkdir", ["-p", packDir], rootDir)
+    const packedFilename = (await run("bun", ["pm", "pack", "--quiet", "--destination", packDir], rootDir)).trim()
+    expect(packedFilename.endsWith(".tgz")).toBe(true)
+    const tgzPath = path.isAbsolute(packedFilename) ? packedFilename : path.join(packDir, packedFilename)
+
     try {
-      await run("npm", ["init", "-y"], tempDir)
-      await run("npm", ["i", tgzPath], tempDir)
+      await writeFile(path.join(tempDir, "package.json"), JSON.stringify({ name: "echo-pdf-pack-smoke", private: true }, null, 2))
+      await run("bun", ["add", tgzPath], tempDir)
       const code = [
         "const root = await import('@echofiles/echo-pdf')",
         "const local = await import('@echofiles/echo-pdf/local')",

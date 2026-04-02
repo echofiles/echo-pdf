@@ -11,4 +11,4 @@ bash "${SCRIPT_DIR}/check-runtime.sh"
 # - SMOKE_LLM_PROVIDER
 # - SMOKE_LLM_MODEL
 # - TESTCASE_DIR
-npm run test:integration
+bun run test:integration

@@ -35,17 +35,17 @@ Use four suites, in this order:
 
 ## Standard Flow
 
-1. Run `npm run build`.
-2. Run `npm run eval:smoke`.
-3. If provider keys are available, run `npm run eval:core` and `npm run eval:stress`.
-4. Run `npm run eval:known-bad`.
+1. Run `bun run build`.
+2. Run `bun run eval:smoke`.
+3. If provider keys are available, run `bun run eval:core` and `bun run eval:stress`.
+4. Run `bun run eval:known-bad`.
 5. Inspect the generated summary JSON.
 6. Produce an issue handoff when a run is `failed` or when a `known-bad` case flips to `unexpected-pass`.
 
 Before those runs, cache the public PDFs locally:
 
 ```bash
-npm run eval:fetch-public-samples
+bun run eval:fetch-public-samples
 ```
 
 ## Comparison Rules

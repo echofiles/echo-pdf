@@ -22,7 +22,7 @@ Use this template when a suite run produces `failed` or `unexpected-pass`.
 ## Reproduction
 
 ```bash
-npm run build
+bun run build
 node ./eval/run-local.mjs --suite <suite>
 ```
 

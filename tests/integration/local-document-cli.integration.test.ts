@@ -173,7 +173,7 @@ afterEach(async () => {
 })
 
 const runSourceCheckoutCliDev = async (repoDir: string, args: string[]): Promise<{ stdout: string; stderr: string }> => {
-  const { stdout, stderr } = await execFileAsync("npm", ["run", "cli:dev", "--", ...args], {
+  const { stdout, stderr } = await execFileAsync("bun", ["run", "cli:dev", "--", ...args], {
     cwd: repoDir,
     env: process.env,
   })

@@ -128,7 +128,7 @@ describe("content-level acceptance on real local PDFs", () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), "echo-pdf-accept-semantic-"))
     await ensureAcceptanceInput(
       canonicalSemanticPdf,
-      "Run `npm run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the shared public sample cache."
+      "Run `bun run eval:fetch-public-samples -- --sample arxiv-attention-is-all-you-need` to prepare the shared public sample cache."
     )
 
     const first = await local.get_semantic_document_structure({

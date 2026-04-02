@@ -1,7 +1,7 @@
 {
   "name": "@echofiles/echo-pdf",
   "description": "Local-first PDF document component core with CLI, workspace artifacts, and reusable page primitives.",
-  "version": "0.11.2",
+  "version": "0.11.4",
   "type": "module",
   "homepage": "https://pdf.echofile.ai/",
   "repository": {
@@ -18,6 +18,7 @@
     "cli",
     "vision-language"
   ],
+  "packageManager": "bun@1.3.5",
   "publishConfig": {
     "access": "public"
   },
@@ -53,14 +54,14 @@
     "eval:stress": "node ./eval/run-local.mjs --suite stress",
     "eval:known-bad": "node ./eval/run-local.mjs --suite known-bad",
     "eval:fetch-public-samples": "node ./eval/fetch-public-samples.mjs",
-    "typecheck": "npm run check:runtime && tsc --noEmit",
-    "test:unit": "npm run check:runtime && vitest run tests/unit",
-    "test:acceptance": "npm run check:runtime && npm run build && vitest run tests/acceptance",
-    "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
-    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration/local-document-cli.integration.test.ts tests/integration/local-document.integration.test.ts tests/integration/local-provider-stability.integration.test.ts tests/integration/local-semantic-structure.integration.test.ts tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
-    "test": "npm run test:unit && npm run test:acceptance && npm run test:integration",
+    "typecheck": "bun run check:runtime && tsc --noEmit",
+    "test:unit": "bun run check:runtime && vitest run tests/unit",
+    "test:acceptance": "bun run check:runtime && bun run build && vitest run tests/acceptance",
+    "test:import-smoke": "bun run check:runtime && bun run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
+    "test:integration": "bun run check:runtime && bun run build && vitest run tests/integration/local-document-cli.integration.test.ts tests/integration/local-document.integration.test.ts tests/integration/local-provider-stability.integration.test.ts tests/integration/local-semantic-structure.integration.test.ts tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
+    "test": "bun run test:unit && bun run test:acceptance && bun run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
-    "prepublishOnly": "npm run build && npm run typecheck && npm run test"
+    "prepublishOnly": "bun run build && bun run typecheck && bun run test"
   },
   "engines": {
     "node": ">=20.0.0"
