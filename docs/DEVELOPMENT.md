@@ -23,6 +23,7 @@ If the current internal structure becomes more expensive than rebuilding, a gree
 
 ## Runtime Boundaries
 
+- Bun `1.3.5` is the default repo toolchain for install, verification, and local development.
 - Node.js `>= 20` is the baseline runtime. Do not treat older local Node versions as a repo bug.
 - Keep Node-only code inside the documented local runtime boundary.
 - Do not solve boundary problems by injecting Node globals or Node types into the whole project.
