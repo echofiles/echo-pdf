@@ -1,7 +1,7 @@
 {
   "name": "@echofiles/echo-pdf",
   "description": "Local-first PDF document component core with CLI, workspace artifacts, and reusable page primitives.",
-  "version": "0.11.0",
+  "version": "0.11.2",
   "type": "module",
   "homepage": "https://pdf.echofile.ai/",
   "repository": {
@@ -57,7 +57,7 @@
     "test:unit": "npm run check:runtime && vitest run tests/unit",
     "test:acceptance": "npm run check:runtime && npm run build && vitest run tests/acceptance",
     "test:import-smoke": "npm run check:runtime && npm run build && vitest run tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
-    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration/local-document-cli.integration.test.ts tests/integration/local-document.integration.test.ts tests/integration/local-semantic-structure.integration.test.ts tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
+    "test:integration": "npm run check:runtime && npm run build && vitest run tests/integration/local-document-cli.integration.test.ts tests/integration/local-document.integration.test.ts tests/integration/local-provider-stability.integration.test.ts tests/integration/local-semantic-structure.integration.test.ts tests/integration/npm-pack-import.integration.test.ts tests/integration/ts-nodenext-consumer.integration.test.ts",
     "test": "npm run test:unit && npm run test:acceptance && npm run test:integration",
     "smoke": "bash ./scripts/smoke.sh",
     "prepublishOnly": "npm run build && npm run typecheck && npm run test"
